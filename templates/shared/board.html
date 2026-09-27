@@ -6,6 +6,20 @@
 {# Recharge une seule fois, au changement de période (voir app.js). #}
 {% block main_attrs %}x-data="periodClock" data-reload-in="{{ reload_in }}"{% endblock %}
 
+{% block before_columns %}
+  {% if saturday_plan %}
+    {# Plan du samedi : visible par tous, lecture seule. #}
+    <section class="mb-space-6 flex flex-wrap items-center gap-space-4 rounded-md border border-honey-dark bg-surface-0 p-space-4" aria-label="Samedi">
+      <span class="hex flex h-12 w-12 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="wheel" icon_size="h-7 w-7" %}</span>
+      <div class="flex-1">
+        <p class="text-lg text-ink-soft">{% if saturday_plan.date == today %}Aujourd'hui, on fait :{% else %}Samedi {{ saturday_plan.date|date:"j F" }}, on fait :{% endif %}</p>
+        <p class="font-display text-2xl font-semibold">{{ saturday_plan.activity_name }}</p>
+      </div>
+      {% if saturday_plan.activity %}{% include "components/_activity_badges.html" with activity=saturday_plan.activity %}{% endif %}
+    </section>
+  {% endif %}
+{% endblock %}
+
 {% block columns %}
   {% for column in columns %}
     {% include "shared/_column.html" %}

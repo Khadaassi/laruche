@@ -18,8 +18,11 @@ from apps.household.models import HouseholdChore
 from apps.household.selectors import chores_by_day, set_chore_done
 from apps.household.views import requested_monday
 from apps.household.week import build_week
+from apps.saturday.draw import close_past_plans, current_plan
+from apps.saturday.models import PlanStatus
 from apps.school.models import Lunch
 from apps.school.selectors import school_days_for
+from apps.stars.selectors import balances
 from apps.tasks.periods import PERIOD_PHRASES, current_period, seconds_until_next_period
 from apps.tasks.selectors import group_by_person, tasks_for_day
 from apps.tasks.services import set_done
@@ -51,8 +54,10 @@ def child_columns(request, person=None):
     school_today = school_days_for(request.family, today, people=children)
     school_tomorrow = school_days_for(request.family, tomorrow, people=children)
     chores_today = chores_by_day(request.family, today, 1)[today]
+    stars = balances(request.family, people=children)
     columns = group_by_person(children, tasks)
     for column in columns:
+        column.stars = stars.get(column.person.pk)
         # Ménage du jour de l'enfant (toutes périodes), coché comme ses tâches.
         column.chores = [o for o in chores_today if o.chore.assignee_id == column.person.pk]
         column.tickable = can_tick(request, column.person)
@@ -77,10 +82,14 @@ def tomorrow_hint(day) -> str:
 def board(request):
     """Affichage partagé : une colonne par enfant, tâches de la période en cours."""
     period = current_period()
+    today = timezone.localdate()
+    close_past_plans(request.family, today)
+    plan = current_plan(request.family, today)
     return render(
         request,
         "shared/board.html",
         {
+            "saturday_plan": plan if plan and plan.status == PlanStatus.PLANNED else None,
             "columns": child_columns(request),
             "period": period,
             "period_phrase": PERIOD_PHRASES[period],

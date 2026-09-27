@@ -1,4 +1,4 @@
-{# Compteur + alvéoles de progression d'une colonne (tâches + ménage). `oob` pour HTMX. #}
+{# Compteur, alvéoles du jour (tâches + ménage) et étoiles. `oob` : mis à jour à chaque coche. #}
 <div id="child-status-{{ column.person.pk }}" {% if oob %}hx-swap-oob="true"{% endif %}>
   <p class="text-lg text-ink-soft" aria-live="polite">
     {% if not column.total %}Rien à faire pour l'instant
@@ -11,5 +11,12 @@
         <span class="hex block h-5 w-5 {% if is_done %}bg-sage{% else %}bg-border{% endif %}"></span>
       {% endfor %}
     </div>
+  {% endif %}
+  {% if column.stars %}
+    <p class="mt-1 flex items-center gap-space-2 font-medium">
+      <span class="hex flex h-6 w-6 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="celebration" icon_size="h-3.5 w-3.5" %}</span>
+      {{ column.stars.balance }} étoile{{ column.stars.balance|pluralize }}
+      <span class="font-normal text-ink-soft">· palier dans {{ column.stars.to_next_tier }}</span>
+    </p>
   {% endif %}
 </div>

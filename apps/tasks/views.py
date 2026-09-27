@@ -7,6 +7,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.core.preparation import tomorrow_items
 from apps.families.access import family_member_required, parent_required
 from apps.families.models import Person
+from apps.saturday.draw import close_past_plans, current_plan
 from apps.school.selectors import school_days_for
 
 from .forms import TaskForm
@@ -16,6 +17,7 @@ from .selectors import count_remaining, group_by_period, tasks_for_day
 from .services import set_done
 
 PERSON_PARAM = "personne"
+SATURDAY = 5
 
 
 def selected_person(request, raw):
@@ -49,6 +51,8 @@ def home(request):
     if person:
         children = children.filter(pk=person.pk)
     school = school_days_for(request.family, now.date(), people=children)
+    close_past_plans(request.family, now.date())
+    saturday_plan = current_plan(request.family, now.date())
     return render(
         request,
         "parent/home.html",
@@ -61,6 +65,8 @@ def home(request):
             "remaining": count_remaining(tasks),
             "school_today": [(c, school[c.pk]) for c in children if c.pk in school],
             "tomorrow": tomorrow_items(request.family, now.date(), people=people),
+            "saturday_plan": saturday_plan,
+            "is_saturday": now.date().weekday() == SATURDAY,
         },
     )
 
