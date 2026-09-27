@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FBF6EC">
+  <title>{% block title %}La Ruche{% endblock %}</title>
+
+  {# HTMX compatible CSP : pas d'eval (hx-on interdit), pas de styles injectés. #}
+  <meta name="htmx-config" content='{"allowEval": false, "allowScriptTags": false, "includeIndicatorStyles": false}'>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+
+  {# Ordre important : app.js enregistre les composants avant le démarrage d'Alpine. #}
+  <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+  <script src="{% static 'vendor/alpine-csp.min.js' %}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+{# Le cookie CSRF est HttpOnly : HTMX reçoit le jeton ici, pas via document.cookie. #}
+<body class="{% block body_class %}min-h-dvh{% endblock %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  {% block layout %}{% endblock %}
+</body>
+</html>
