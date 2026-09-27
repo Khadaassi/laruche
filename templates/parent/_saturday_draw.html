@@ -1,5 +1,6 @@
 {% comment %}
-Zone de tirage (remplacée par HTMX à chaque tour). Les filtres sont de gros
+Zone de tirage (remplacée par HTMX à chaque tour), partagée par le téléphone
+parent et l'écran partagé : spin_url_name / validate_url_name viennent du contexte. Les filtres sont de gros
 boutons ; « Retourne » renvoie les mêmes filtres. Le serveur compte les tours.
 {% endcomment %}
 <div id="saturday-draw" class="space-y-space-4">
@@ -20,13 +21,13 @@ boutons ; « Retourne » renvoie les mêmes filtres. Le serveur compte les tours
         <h2 id="draw-result-title" class="text-3xl">{{ plan.activity.name }}</h2>
         <div class="flex justify-center">{% include "components/_activity_badges.html" with activity=plan.activity %}</div>
 
-        <form method="post" action="{% url 'saturday:validate' plan.pk %}">
+        <form method="post" action="{% url validate_url_name plan.pk %}">
           {% csrf_token %}
           <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-space-4 font-display text-xl font-semibold text-ink hover:bg-honey-dark">On y va !</button>
         </form>
 
         {% if spins_left > 0 %}
-          <form method="post" action="{% url 'saturday:spin' %}" hx-post="{% url 'saturday:spin' %}" hx-target="#saturday-draw" hx-swap="outerHTML">
+          <form method="post" action="{% url spin_url_name %}" hx-post="{% url spin_url_name %}" hx-target="#saturday-draw" hx-swap="outerHTML">
             {% csrf_token %}
             <input type="hidden" name="cost" value="{{ filters.cost.value|default:'any' }}">
             <input type="hidden" name="place" value="{{ filters.place.value|default:'any' }}">
@@ -42,7 +43,7 @@ boutons ; « Retourne » renvoie les mêmes filtres. Le serveur compte les tours
   {% endif %}
 
   {% if not plan or plan.status == "drawing" and not plan.activity %}
-    <form method="post" action="{% url 'saturday:spin' %}" hx-post="{% url 'saturday:spin' %}" hx-target="#saturday-draw" hx-swap="outerHTML"
+    <form method="post" action="{% url spin_url_name %}" hx-post="{% url spin_url_name %}" hx-target="#saturday-draw" hx-swap="outerHTML"
           class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4">
       {% csrf_token %}
       {% include "parent/_chip_choices.html" with field=filters.cost cols="grid-cols-1" %}

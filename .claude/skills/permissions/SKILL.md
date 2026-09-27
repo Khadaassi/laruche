@@ -62,9 +62,15 @@ famille, et chaque modèle revérifie dans `clean()` que la personne est de la f
 | Donnée / action | Parent | Enfant (compte) / appareil partagé |
 |---|---|---|
 | Catalogue d'activités | Lecture + écriture (Réglages → Activités du samedi) | Aucun accès |
-| Tirage, relances, « On y va ! », « C'est fait », annulation | Oui (`/samedi/…`) | **Non** : le parent lance, tout le monde regarde (403 compte enfant, connexion demandée pour l'appareil) |
+| Tirage, relances, « On y va ! » | Oui (`/samedi/…`) | Sur l'écran partagé **uniquement après confirmation du mot de passe d'un parent de la famille** (`/affichage/samedi/`) : droit temporaire (10 min) en session, limité à la roue, au nom de ce parent. Sinon 403 |
+| « C'est fait », annulation d'un plan | Oui (`/samedi/…`) | Non |
 | Plan validé du samedi | Accueil parent | Bandeau en lecture seule sur l'écran partagé |
 | Étoiles | Soldes de chaque enfant et pot commun (page du samedi) | Son solde et son palier sur sa colonne (lecture) |
+
+La confirmation parent sur l'écran partagé réutilise `display/parent_check.py` : même
+formulaire, même garde `EXIT_DISPLAY` que la sortie du mode tablette, même cible (l'appareil,
+ou le compte enfant connecté) — les échecs des deux usages s'additionnent. Un enfant ou un
+parent d'une autre famille est refusé.
 
 La dépense d'étoiles n'a lieu qu'à la validation par un parent, sous verrou de la famille ;
 le serveur refuse une activité que le pot ne peut pas payer. La limite de 3 tirages par

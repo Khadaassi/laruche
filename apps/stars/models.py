@@ -42,3 +42,23 @@ class StarDebit(models.Model):
 
     def __str__(self):
         return f"{self.person} : {self.amount} ★"
+
+
+class TierCelebration(models.Model):
+    """Dernier palier d'étoiles déjà fêté pour un enfant (écran partagé).
+
+    Garantit une seule célébration par palier : l'écran ne la montre que s'il
+    réussit à faire avancer ce compteur (mise à jour conditionnelle atomique).
+    """
+
+    person = models.OneToOneField(
+        "families.Person", on_delete=models.CASCADE, related_name="tier_celebration"
+    )
+    tier = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "palier fêté"
+
+    def __str__(self):
+        return f"{self.person} : palier {self.tier}"

@@ -123,3 +123,57 @@
     animation: confetti-burst 1.2s ease-out forwards;
   }
 }
+
+/* --- Palier d'étoiles --------------------------------------------------------
+   Célébration distincte de la roue : le badge étoilé arrive en tournoyant et
+   des alvéoles montent (au lieu de confettis qui éclatent). Une seule fois :
+   le serveur n'envoie ce bloc qu'au franchissement du palier. */
+@layer components {
+  .tier-bubbles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .tier-bubbles span {
+    position: absolute;
+    bottom: -16px;
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+    background: var(--color-honey);
+  }
+  .tier-bubbles span:nth-child(2n) { background: var(--color-sage); }
+  .tier-bubbles span:nth-child(3n) { background: var(--color-terracotta); }
+  .tier-bubbles span:nth-child(1) { left: 8%; }
+  .tier-bubbles span:nth-child(2) { left: 20%; animation-delay: 120ms; }
+  .tier-bubbles span:nth-child(3) { left: 33%; animation-delay: 60ms; }
+  .tier-bubbles span:nth-child(4) { left: 46%; animation-delay: 240ms; }
+  .tier-bubbles span:nth-child(5) { left: 58%; animation-delay: 30ms; }
+  .tier-bubbles span:nth-child(6) { left: 70%; animation-delay: 180ms; }
+  .tier-bubbles span:nth-child(7) { left: 82%; animation-delay: 90ms; }
+  .tier-bubbles span:nth-child(8) { left: 92%; animation-delay: 300ms; }
+}
+
+@keyframes tier-badge-in {
+  0% { transform: scale(0.2) rotate(-200deg); }
+  70% { transform: scale(1.15) rotate(15deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes tier-rise {
+  0% { opacity: 1; transform: translateY(0) scale(0.6); }
+  100% { opacity: 0; transform: translateY(-140px) scale(1.1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-motion='reduced']) .tier-badge {
+    animation: tier-badge-in 700ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  }
+  html:not([data-motion='reduced']) .tier-bubbles span {
+    animation-name: tier-rise;
+    animation-duration: 1.6s;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+  }
+}

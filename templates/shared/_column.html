@@ -1,6 +1,6 @@
 {% with person=column.person %}
 <section class="flex snap-start flex-col gap-space-4 rounded-md border border-border bg-surface-0 p-space-6" aria-labelledby="child-{{ person.pk }}">
-  <header class="flex items-center gap-space-4">
+  <header class="flex items-start gap-space-4">
     {% include "components/_avatar.html" with size="h-20 w-20 text-4xl" %}
     <div>
       <h2 id="child-{{ person.pk }}" class="text-3xl">{{ person.name }}</h2>

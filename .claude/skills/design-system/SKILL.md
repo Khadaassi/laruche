@@ -133,6 +133,10 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
 - **Roue du samedi** : `parent/_wheel.html`, secteurs alternant `honey`, `surface-0` et
   `honey-dark` (texte `ink` : contrastes AA), pointeur `terracotta`, moyeu hexagonal.
 - **Étoiles** : alvéole `honey` + icône étoile + « 12 étoiles · palier dans 8 ».
+- **Célébration de palier** (colonne de l'enfant, écran partagé) : encart `bg-surface-100`
+  bordé `honey-dark`, « Palier 2 ! Bravo Lina, 20 étoiles gagnées ! ». Distincte de la
+  roue pour rester reconnaissable : badge étoilé qui arrive en tournoyant et alvéoles qui
+  **montent** (la roue, elle, éclate en confettis). Une seule fois par palier.
 - **Suppression** : page de confirmation (pas de `confirm()`), bouton `bg-terracotta
   text-surface-0`.
 - **Progression en alvéoles** (écran partagé) : une alvéole par tâche de la période,
@@ -163,8 +167,12 @@ les adaptations de largeur passent par les breakpoints Tailwind.
 ## Mouvement & célébration — règles pour toute animation future
 
 Implémenté : la roue du samedi (rotation ~3,6 s, puis révélation du résultat avec
-confettis hexagonaux, une seule fois, jamais en boucle) — c'est la « vraie célébration »
-de la règle 2 ; le rebond du badge à la coche (`hex-pop`, 150 ms, `assets/css/app.css`),
+confettis hexagonaux, une seule fois, jamais en boucle) et le palier d'étoiles (badge qui
+tournoie, alvéoles qui montent, ~1,6 s, une seule fois par palier) — les deux « vraies
+célébrations » de la règle 2. En mouvement réduit, les deux deviennent un état statique
+(résultat / encart « Palier N ! » sans mouvement). L'interrupteur des réglages n'existe
+pas encore dans l'interface : le CSS et le JS honorent déjà `data-motion="reduced"`.
+Aussi : le rebond du badge à la coche (`hex-pop`, 150 ms, `assets/css/app.css`),
 limité au geste de l'utilisateur et désactivé en mouvement réduit (système ou
 `data-motion="reduced"`). Toute animation ajoutée ensuite doit respecter :
 
