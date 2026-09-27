@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Image de production de La Ruche (Google Cloud Run).
+# Image de production de La Ruche (Render, voir render.yaml).
 # Deux étapes : Node construit le CSS et copie le JS vendor, puis l'image
 # Python finale ne contient que l'app, ses dépendances et les statiques.
 
@@ -47,6 +47,4 @@ RUN DJANGO_SECRET_KEY=collectstatic-only \
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
 USER app
 
-# gunicorn écoute sur $PORT (fourni par Cloud Run). Un seul worker, plusieurs
-# threads : recommandé par Cloud Run, et léger en mémoire.
-CMD ["gunicorn", "config.wsgi:application", "--workers", "1", "--threads", "8", "--timeout", "0"]
+CMD ["scripts/start.sh"]
