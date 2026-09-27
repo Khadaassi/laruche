@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth import login, logout
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
@@ -6,9 +8,14 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.accounts.forms import LoginForm
+from apps.celebrations.models import Celebration
 from apps.core.ratelimit import BLOCKED_MESSAGE, EXIT_DISPLAY
 from apps.families.access import get_membership, parent_required
 from apps.families.models import Person
+from apps.household.views import requested_monday
+from apps.household.week import build_week
+from apps.school.models import Lunch
+from apps.school.selectors import school_days_for
 from apps.tasks.periods import PERIOD_PHRASES, current_period, seconds_until_next_period
 from apps.tasks.selectors import group_by_person, tasks_for_day
 from apps.tasks.services import set_done
@@ -28,17 +35,34 @@ def child_columns(request, person=None):
     """Colonnes de la période en cours : une par enfant de la famille (ou une seule).
 
     Toujours tous les enfants, quel que soit le visiteur ; seule la
-    possibilité de cocher (`column.tickable`) dépend de lui.
+    possibilité de cocher (`column.tickable`) dépend de lui. Chaque colonne
+    porte aussi la journée d'école du jour et un rappel pour demain.
     """
     today, period = timezone.localdate(), current_period()
+    tomorrow = today + datetime.timedelta(days=1)
     children = Person.objects.for_family(request.family).children()
     if person is not None:
         children = children.filter(pk=person.pk)
     tasks = tasks_for_day(request.family, today, people=children, period=period)
+    school_today = school_days_for(request.family, today, people=children)
+    school_tomorrow = school_days_for(request.family, tomorrow, people=children)
     columns = group_by_person(children, tasks)
     for column in columns:
         column.tickable = can_tick(request, column.person)
+        column.school = school_today.get(column.person.pk)
+        column.tomorrow = tomorrow_hint(school_tomorrow.get(column.person.pk))
     return columns
+
+
+def tomorrow_hint(day) -> str:
+    """Rappel court pour la colonne d'un enfant (sandwich, pas d'école)."""
+    if day is None:
+        return ""
+    if day.lunch == Lunch.PACKED:
+        return "Demain : sandwich"
+    if day.lunch == Lunch.NONE and day.is_override:
+        return "Demain : pas d'école"
+    return ""
 
 
 @require_GET
@@ -55,6 +79,45 @@ def board(request):
             "period_phrase": PERIOD_PHRASES[period],
             "today": timezone.localdate(),
             "reload_in": seconds_until_next_period(),
+        },
+    )
+
+
+@require_GET
+@shared_display_required
+def week(request):
+    """Semainier en lecture seule : une colonne par jour (ménage, école, fêtes)."""
+    return render(
+        request,
+        "shared/week.html",
+        {
+            "today": timezone.localdate(),
+            "reload_in": seconds_until_next_period(),
+            **build_week(request.family, requested_monday(request)),
+        },
+    )
+
+
+@require_GET
+@shared_display_required
+def celebrations(request):
+    """Fêtes à venir en lecture seule : préparatifs et recettes.
+
+    La liste de cadeaux n'est jamais montrée sur l'écran partagé : les
+    enfants la verraient, surprise gâchée.
+    """
+    upcoming = (
+        Celebration.objects.for_family(request.family)
+        .filter(date__gte=timezone.localdate())
+        .prefetch_related("todos__assignee", "recipes")[:6]
+    )
+    return render(
+        request,
+        "shared/celebrations.html",
+        {
+            "today": timezone.localdate(),
+            "reload_in": seconds_until_next_period(),
+            "celebrations": upcoming,
         },
     )
 

@@ -4,8 +4,10 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from apps.core.preparation import tomorrow_items
 from apps.families.access import family_member_required, parent_required
 from apps.families.models import Person
+from apps.school.selectors import school_days_for
 
 from .forms import TaskForm
 from .models import Task
@@ -41,7 +43,12 @@ def home(request):
         return redirect("display:board")
     person = selected_person(request, request.GET.get(PERSON_PARAM))
     now = timezone.localtime()
-    tasks = tasks_for_day(request.family, now.date(), people=[person] if person else None)
+    people = [person] if person else None
+    tasks = tasks_for_day(request.family, now.date(), people=people)
+    children = Person.objects.for_family(request.family).children()
+    if person:
+        children = children.filter(pk=person.pk)
+    school = school_days_for(request.family, now.date(), people=children)
     return render(
         request,
         "parent/home.html",
@@ -52,6 +59,8 @@ def home(request):
             "selected": person,
             "groups": group_by_period(tasks, current=period_at(now.time())),
             "remaining": count_remaining(tasks),
+            "school_today": [(c, school[c.pk]) for c in children if c.pk in school],
+            "tomorrow": tomorrow_items(request.family, now.date(), people=people),
         },
     )
 

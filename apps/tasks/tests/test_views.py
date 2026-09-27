@@ -214,7 +214,7 @@ class ManageTasksTests(SecureClientMixin, TestCase):
 class ComingSoonTests(SecureClientMixin, TestCase):
     def test_stub_pages_for_members(self):
         self.client.force_login(join(make_family()))
-        for name in ("core:week", "core:menu", "core:shopping"):
+        for name in ("core:menu",):
             with self.subTest(name=name):
                 response = self.get(reverse(name))
                 self.assertContains(response, "arrive bientôt")

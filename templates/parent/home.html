@@ -30,6 +30,41 @@
     {% include "components/_remaining.html" %}
   </section>
 
+  {% if school_today or tomorrow %}
+    <div class="mb-space-4 space-y-space-4">
+      {% if school_today %}
+        <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="school-title">
+          <h2 id="school-title" class="mb-space-2 text-lg">Aujourd'hui à l'école</h2>
+          <ul class="space-y-space-2">
+            {% for person, school_day in school_today %}
+              <li class="flex flex-wrap items-center gap-space-2">
+                {% include "components/_avatar.html" %}
+                <span class="mr-space-2 font-medium">{{ person.name }}</span>
+                {% include "components/_school_badges.html" %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+      {% if tomorrow %}
+        <section class="rounded-md border border-border-strong bg-surface-0 p-space-4" aria-labelledby="tomorrow-title">
+          <h2 id="tomorrow-title" class="mb-space-2 flex items-center gap-space-2 text-lg">
+            <span class="hex flex h-7 w-7 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="tomorrow" %}</span>
+            À préparer pour demain
+          </h2>
+          <ul class="space-y-1">
+            {% for item in tomorrow %}
+              <li class="flex items-center gap-space-2">
+                {% include "components/_icon.html" with name=item.kind icon_size="h-5 w-5" %}
+                {{ item.text }}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    </div>
+  {% endif %}
+
   {# Détection par la largeur d'écran (breakpoint md), jamais par user-agent. #}
     <a href="{% url 'display:board' %}"
        class="mb-space-4 hidden items-center justify-between rounded-md border border-border-strong bg-surface-0 p-space-4 font-medium md:flex">
