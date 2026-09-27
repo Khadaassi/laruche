@@ -1,0 +1,34 @@
+{% extends "layouts/shared_display.html" %}
+{% block title %}Affichage partagé — La Ruche{% endblock %}
+
+{% block top_nav %}
+  <div class="flex min-h-16 flex-wrap items-center gap-x-space-6 gap-y-space-2 py-space-2">
+    <div class="flex items-center gap-space-2">
+      {% include "components/_logo.html" with size="h-10 w-10" %}
+      <span class="font-display text-2xl font-semibold">{{ request.family.name }}</span>
+    </div>
+    <p class="text-lg text-ink-soft">{{ today|date:"l j F"|capfirst }}</p>
+    <p class="rounded-sm bg-honey px-space-4 py-1 font-display text-lg font-semibold text-ink">{{ period.label }}</p>
+    <div class="ml-auto">
+      {% if request.display_device %}
+        <a href="{% url 'display:exit' %}" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong px-space-4 font-medium">Mode parent</a>
+      {% else %}
+        <a href="{% url 'tasks:home' %}" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong px-space-4 font-medium">Retour à mon compte</a>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{# Recharge une seule fois, au changement de période (voir app.js). #}
+{% block main_attrs %}x-data="periodClock" data-reload-in="{{ reload_in }}"{% endblock %}
+
+{% block columns %}
+  {% for column in columns %}
+    {% include "shared/_column.html" %}
+  {% empty %}
+    <div class="rounded-md border border-border bg-surface-0 p-space-8 text-center">
+      <p class="text-lg font-medium">Aucun enfant dans cette famille pour l'instant.</p>
+      <p class="mt-space-2 text-ink-soft">Un parent peut en ajouter depuis ses réglages.</p>
+    </div>
+  {% endfor %}
+{% endblock %}

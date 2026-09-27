@@ -4,7 +4,9 @@ Famille de gabarits « affichage partagé » — tablette / ordinateur commun po
 dans la maison. Les enfants partagent le MÊME écran : pas de session par enfant.
 - Navigation HORIZONTALE EN HAUT (pas de barre mobile en bas).
 - Zone principale en colonnes côte à côte, une par enfant, visibles
-  simultanément (bloc « columns »). Pas de repli en une colonne qui défile.
+  simultanément (bloc « columns »). Pas de repli en une colonne qui défile :
+  si l'écran est trop étroit pour toutes les colonnes, elles défilent
+  horizontalement (scroll-snap) mais restent côte à côte.
 - Voir .claude/skills/permissions/SKILL.md pour le mode « affichage partagé ».
 Les pages partagées étendent ce gabarit : templates/shared/<page>.html
 {% endcomment %}
@@ -16,8 +18,8 @@ Les pages partagées étendent ce gabarit : templates/shared/<page>.html
     {% block top_nav %}{% endblock %}
   </nav>
 
-  <main id="main" class="flex-1 p-space-6">
-    <div class="grid auto-cols-fr grid-flow-col gap-space-6">
+  <main id="main" class="flex-1 p-space-6" {% block main_attrs %}{% endblock %}>
+    <div class="grid snap-x snap-mandatory auto-cols-[minmax(17rem,1fr)] grid-flow-col gap-space-6 overflow-x-auto md:snap-none">
       {% block columns %}{% endblock %}
     </div>
   </main>
