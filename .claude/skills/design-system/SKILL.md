@@ -170,7 +170,36 @@ Ne pas faire un seul gabarit « responsive » : les usages sont trop différents
 | Navigation | Barre **fixe en bas**, labels toujours visibles | Barre **horizontale en haut** |
 | Accueil | Sélecteur de famille, période du jour ouverte, « 3 tâches restantes » (pas de %) | Avatar hexagonal, progression en alvéoles vers le palier d'étoiles |
 | URL | `/` et pages parent | `/affichage/` |
-| Navigation | Accueil / Semaine / Fêtes / Menu / Réglages | Onglets Aujourd'hui / Semaine / Fêtes |
+| Navigation | Accueil / Semaine / Fêtes / Cuisine / Réglages | Onglets Aujourd'hui / Semaine / Fêtes / Samedi / Menu |
+
+### Navigation parent : onglet « Cuisine » (Phase 4)
+
+La barre du bas reste à **5 entrées, labels toujours visibles** (contrainte de la Phase 0 :
+au-delà, les libellés ne tiennent plus sur un téléphone de 360 px). Menu, courses et
+recettes partagent **un seul onglet « Cuisine »** (icône couverts, `/menu/`), avec en haut
+de chacune de ces pages un **sélecteur interne à 3 segments** : *Menu · Courses · Recettes*
+(`parent/_kitchen_tabs.html`, liens `aria-current="page"`, même recette que le sélecteur de
+personne de l'accueil : segment actif `bg-ink text-surface-0`).
+
+Pourquoi cette option plutôt qu'un bouton « Courses » dans l'écran Menu :
+- **La liste de courses est un usage autonome** (au magasin, téléphone à la main, sans
+  passer par le menu) : elle doit être à **deux taps de n'importe quelle page**, toujours au
+  même endroit. Un bouton au milieu de la page Menu la rendrait dépendante du défilement
+  et de la semaine affichée.
+- Menu, recettes et courses forment **un seul flux** (je choisis des recettes → je planifie
+  → j'envoie aux courses) : un onglet commun rend ce lien visible, et « Recettes » y trouve
+  sa place sans 6e onglet.
+- **Aucun onglet existant n'est sacrifié** (Semaine, Fêtes et Réglages gardent leur place),
+  et l'URL `/menu/` historique reste l'entrée de l'onglet.
+- Le libellé « Cuisine » est un mot court (tient sous l'icône) qui couvre les trois vues ;
+  « Menu » seul aurait été trompeur une fois sur la liste de courses.
+
+L'onglet est actif (`nav_active = "kitchen"`) sur les trois vues et leurs sous-pages.
+Le bouton **« Envoyer aux courses »** du menu reste en plus un raccourci contextuel
+(transfert du menu de la semaine affichée), pas le seul accès à la liste.
+
+Les enfants n'ont pas la liste de courses : l'écran partagé ne gagne qu'un onglet
+**« Menu »** en lecture seule (voir `permissions/SKILL.md`).
 
 Les pages publiques (connexion, inscription, erreurs) utilisent un troisième gabarit
 minimal, `layouts/public.html` : une carte centrée, sans navigation.
