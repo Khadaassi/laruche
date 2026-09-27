@@ -67,6 +67,9 @@ class SharedScreenTierTests(SecureClientMixin, TestCase):
         first = self.tick()
         self.assertContains(first, "Palier 1 !")
         self.assertContains(first, "Bravo Lina, 10 étoiles gagnées !")
+        # La journée terminée est dite dans l'encart du palier, sans second encart.
+        self.assertContains(first, "Journée terminée : +1 étoile")
+        self.assertNotContains(first, "Journée terminée ! +1")
         # Décocher / recocher, puis recharger l'écran : pas de doublon.
         self.assertNotContains(self.tick(done=False), "Palier 1 !")
         self.assertNotContains(self.tick(), "Palier 1 !")

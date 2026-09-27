@@ -12,6 +12,23 @@
       {% endfor %}
     </div>
   {% endif %}
+  {% if column.celebrate_day and not column.celebrate_tier %}
+    {# Journée complète : une seule fois par étoile du jour (le serveur ne la renvoie qu'une fois). #}
+    <div class="day-celebration mt-space-2 rounded-md border-2 border-sage bg-surface-100 p-space-4" role="status">
+      <div class="flex items-center gap-space-4">
+        <span class="day-stamp hex flex h-16 w-16 shrink-0 items-center justify-center bg-sage text-surface-0" aria-hidden="true">{% include "components/_check.html" with check_size="h-8 w-8" %}</span>
+        <div>
+          <p class="flex items-center gap-space-2 font-display text-2xl font-semibold">
+            Journée terminée ! +1
+            <span class="day-star hex inline-flex h-8 w-8 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="celebration" icon_size="h-4 w-4" %}</span>
+            <span class="sr-only">étoile</span>
+          </p>
+          <p class="text-ink-soft">Bravo {{ column.person.name }}, tout est fait aujourd'hui !</p>
+        </div>
+      </div>
+      <div class="day-cells mt-space-2 flex gap-1" aria-hidden="true">{% for _ in "1234567" %}<span class="hex block h-4 w-4 bg-sage"></span>{% endfor %}</div>
+    </div>
+  {% endif %}
   {% if column.celebrate_tier %}
     {# Nouveau palier : célébration une seule fois (le serveur ne la renvoie qu'au franchissement). #}
     <div class="tier-celebration relative mt-space-2 overflow-hidden rounded-md border border-honey-dark bg-surface-100 p-space-4" role="status">
@@ -21,6 +38,7 @@
         <div>
           <p class="font-display text-2xl font-semibold">Palier {{ column.celebrate_tier }} !</p>
           <p class="text-ink-soft">Bravo {{ column.person.name }}, {% widthratio column.celebrate_tier 1 10 %} étoiles gagnées !</p>
+          {% if column.celebrate_day %}<p class="font-medium">Journée terminée : +1 étoile</p>{% endif %}
         </div>
       </div>
     </div>

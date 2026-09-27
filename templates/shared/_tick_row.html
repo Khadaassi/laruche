@@ -15,7 +15,7 @@ colonne est cochable par ce visiteur (sinon lecture seule, refusée côté serve
       <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
     </span>
     <label for="{{ input_prefix }}{{ item_pk }}" class="min-w-0 flex-1 py-space-2 text-xl {% if column.tickable %}cursor-pointer{% endif %}">{{ title }}{% if not column.tickable %}<span class="sr-only"> (lecture seule)</span>{% endif %}</label>
-    <span class="hidden whitespace-nowrap rounded-sm bg-sage px-space-2 py-1 text-sm font-semibold text-surface-0 group-has-[:checked]:inline">Fait ! +1</span>
+    <span class="hidden whitespace-nowrap rounded-sm bg-sage px-space-2 py-1 text-sm font-semibold text-surface-0 group-has-[:checked]:inline">Fait</span>
     <span class="task-badge hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-surface-0 group-has-[:checked]:bg-sage" aria-hidden="true">
       <span class="hidden group-has-[:checked]:block">{% include "components/_check.html" with check_size="h-5 w-5" %}</span>
     </span>

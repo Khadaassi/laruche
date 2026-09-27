@@ -1,3 +1,4 @@
 {# Réponse HTMX au cochage : uniquement les compteurs, remplacés hors bande. #}
 {% include "components/_remaining.html" with oob=True %}
 <span id="remaining-{{ period.value }}" hx-swap-oob="true" class="ml-auto text-sm text-ink-soft">{% include "parent/_period_count.html" with count=period_remaining total=1 %}</span>
+{% include "parent/_day_star_note.html" with oob=True %}
