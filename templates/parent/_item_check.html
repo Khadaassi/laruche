@@ -1,0 +1,21 @@
+{% comment %}
+Case à cocher d'un préparatif ou d'un cadeau (cochage optimiste, réponse 204).
+Paramètres : item, kind (preparatifs|cadeaux), label, detail, done_label.
+{% endcomment %}
+{% url 'celebrations:toggle_item' kind item.pk as toggle_url %}
+<form method="post" action="{{ toggle_url }}" data-task-form hx-post="{{ toggle_url }}" hx-trigger="change" hx-swap="none"
+      class="task-row group flex flex-1 items-center gap-space-4">
+  {% csrf_token %}
+  <span class="relative flex shrink-0">
+    <input type="checkbox" name="done" id="{{ kind }}-{{ item.pk }}"
+           class="h-7 w-7 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage"
+           {% if item.done %}checked{% endif %}>
+    <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
+  </span>
+  <label for="{{ kind }}-{{ item.pk }}" class="flex-1 cursor-pointer">
+    <span class="block group-has-[:checked]:text-ink-soft group-has-[:checked]:line-through">{{ label }}</span>
+    {% if detail %}<span class="text-sm text-ink-soft">{{ detail }}</span>{% endif %}
+  </label>
+  <span class="hidden text-sm font-medium text-sage group-has-[:checked]:inline">{{ done_label }}</span>
+  <noscript><button type="submit" class="rounded-sm border border-border-strong px-space-2 text-sm">OK</button></noscript>
+</form>

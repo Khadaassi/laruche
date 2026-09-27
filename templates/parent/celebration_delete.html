@@ -1,0 +1,15 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Supprimer {{ celebration.name }} — La Ruche{% endblock %}
+
+{% block header %}{% include "parent/_header.html" with title="Supprimer la fête" %}{% endblock %}
+
+{% block content %}
+  <div class="rounded-md border border-border bg-surface-0 p-space-4">
+    <p class="mb-space-4">Supprimer « {{ celebration.name }} » du {{ celebration.date|date:"j F Y" }}, avec ses préparatifs, ses cadeaux et ses idées de recettes ?</p>
+    <form method="post" class="space-y-space-2">
+      {% csrf_token %}
+      <button type="submit" class="w-full rounded-lg bg-terracotta px-space-6 py-3 font-medium text-surface-0">Oui, supprimer</button>
+      <a href="{% url 'celebrations:detail' celebration.pk %}" class="flex min-h-11 w-full items-center justify-center rounded-lg border border-border-strong font-medium">Annuler</a>
+    </form>
+  </div>
+{% endblock %}

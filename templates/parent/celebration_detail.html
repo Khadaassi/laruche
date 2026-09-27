@@ -1,0 +1,95 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}{{ celebration.name }} — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'celebrations:index' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Fêtes</a>
+  {% include "parent/_header.html" with title=celebration.name subtitle=celebration.date|date:"l j F Y"|capfirst %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-space-6">
+  {# Préparatifs #}
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="todos-title">
+    <h2 id="todos-title" class="mb-space-2 text-lg">Préparatifs</h2>
+    <ul class="divide-y divide-border">
+      {% for todo in todos %}
+        <li class="flex items-center gap-space-2 py-space-2">
+          {% include "parent/_item_check.html" with item=todo kind="preparatifs" label=todo.title detail=todo.assignee.name done_label="Fait" %}
+          {% include "parent/_delete_item.html" with item=todo kind="preparatifs" label=todo.title %}
+        </li>
+      {% empty %}
+        <li class="py-space-2 text-ink-soft">Rien pour l'instant.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="{% url 'celebrations:add_item' celebration.pk 'preparatifs' %}" class="mt-space-4 space-y-space-2 border-t border-border pt-space-4" novalidate>
+      {% csrf_token %}
+      {% include "components/_field.html" with field=todo_form.title %}
+      {% include "components/_field.html" with field=todo_form.assignee %}
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Ajouter le préparatif</button>
+    </form>
+  </section>
+
+  {# Cadeaux #}
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="gifts-title">
+    <h2 id="gifts-title" class="mb-space-2 text-lg">Cadeaux</h2>
+    <p class="mb-space-2 text-sm text-ink-soft">Visible par les parents uniquement : jamais affichée sur l'écran des enfants.</p>
+    <ul class="divide-y divide-border">
+      {% for gift in gifts %}
+        <li class="flex items-center gap-space-2 py-space-2">
+          {% include "parent/_item_check.html" with item=gift kind="cadeaux" label=gift.item detail=gift.detail done_label="Acheté" %}
+          {% include "parent/_delete_item.html" with item=gift kind="cadeaux" label=gift.item %}
+        </li>
+      {% empty %}
+        <li class="py-space-2 text-ink-soft">Aucun cadeau noté.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="{% url 'celebrations:add_item' celebration.pk 'cadeaux' %}" class="mt-space-4 space-y-space-2 border-t border-border pt-space-4" novalidate>
+      {% csrf_token %}
+      {% include "components/_field.html" with field=gift_form.item %}
+      <div class="grid grid-cols-2 gap-space-2">
+        {% include "components/_field.html" with field=gift_form.recipient %}
+        {% include "components/_field.html" with field=gift_form.recipient_name %}
+        {% include "components/_field.html" with field=gift_form.buyer %}
+        {% include "components/_field.html" with field=gift_form.buyer_name %}
+      </div>
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Ajouter le cadeau</button>
+    </form>
+  </section>
+
+  {# Idées de recettes #}
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="recipes-title">
+    <h2 id="recipes-title" class="mb-space-2 text-lg">Idées de recettes</h2>
+    <ul class="divide-y divide-border">
+      {% for recipe in recipes %}
+        <li class="flex items-start gap-space-2 py-space-2">
+          <div class="flex-1">
+            <p class="font-medium">{{ recipe.name }}</p>
+            {% if recipe.notes %}<p class="whitespace-pre-line text-sm text-ink-soft">{{ recipe.notes }}</p>{% endif %}
+          </div>
+          {% include "parent/_delete_item.html" with item=recipe kind="recettes" label=recipe.name %}
+        </li>
+      {% empty %}
+        <li class="py-space-2 text-ink-soft">Aucune idée pour l'instant.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="{% url 'celebrations:add_item' celebration.pk 'recettes' %}" class="mt-space-4 space-y-space-2 border-t border-border pt-space-4" novalidate>
+      {% csrf_token %}
+      {% include "components/_field.html" with field=recipe_form.name %}
+      {% include "components/_field.html" with field=recipe_form.notes %}
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Ajouter la recette</button>
+    </form>
+  </section>
+
+  {# Modifier / supprimer la fête #}
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="edit-title">
+    <h2 id="edit-title" class="mb-space-4 text-lg">Modifier la fête</h2>
+    <form method="post" action="{% url 'celebrations:edit' celebration.pk %}" class="space-y-space-4" novalidate>
+      {% csrf_token %}
+      {% include "components/_field.html" with field=edit_form.name %}
+      {% include "components/_field.html" with field=edit_form.date %}
+      <button type="submit" class="w-full rounded-lg border border-border-strong px-space-6 py-3 font-medium">Enregistrer</button>
+    </form>
+    <a href="{% url 'celebrations:delete' celebration.pk %}" class="mt-space-4 flex min-h-11 items-center justify-center font-medium text-terracotta underline">Supprimer cette fête</a>
+  </section>
+</div>
+{% endblock %}
