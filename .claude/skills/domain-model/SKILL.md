@@ -5,7 +5,7 @@ description: Modèle de domaine de La Ruche (familles, membres, personnes, tâch
 
 # Modèle de domaine — La Ruche
 
-État à la fin de la **Phase 2** (école, ménage, fêtes). Les règles d'accès qui
+État à la fin de la **Phase 3** (étoiles, roue du samedi). Les règles d'accès qui
 s'appliquent à ces modèles sont dans `permissions/SKILL.md`.
 
 ## Vue d'ensemble
@@ -29,6 +29,12 @@ families.Family ──1:N── celebrations.Celebration (nom, date)
                               ├──1:N── CelebrationTodo (titre, qui, fait)
                               ├──1:N── GiftItem (cadeau, pour qui, apporté par, acheté)
                               └──1:N── RecipeIdea (nom, notes)
+
+stars.StarSpend (famille, total, motif) ──1:N── stars.StarDebit (enfant, montant)
+   (étoiles gagnées : déduites des TaskCompletion / ChoreCompletion des enfants)
+
+families.Family ──1:N── saturday.SaturdayActivity (catalogue : saison, lieu, prix, étoiles, dernière fois)
+                └──1:N── saturday.SaturdayPlan (samedi, statut, activité, tirages, dépense d'étoiles)
 ```
 
 | App | Modèle | Rôle |
@@ -47,6 +53,9 @@ families.Family ──1:N── celebrations.Celebration (nom, date)
 | `celebrations` | `CelebrationTodo` | Préparatif unique : `title`, `assignee` (facultatif), `done`. |
 | `celebrations` | `GiftItem` | Cadeau : `item`, `recipient` / `recipient_name`, `buyer` / `buyer_name` (personne de la famille ou nom libre), `done` (acheté). |
 | `celebrations` | `RecipeIdea` | Idée de recette : `name`, `notes` libres. |
+| `stars` | `StarSpend` / `StarDebit` | Dépense d'étoiles de la famille et part de chaque enfant. Les étoiles gagnées ne sont pas stockées. |
+| `saturday` | `SaturdayActivity` | Activité du catalogue : `name`, `season` (toutes / 4 saisons), `place` (sortie / maison), `is_free`, `price` indicatif, `star_cost` (0 = pas d'étoiles), `last_done_on`. Catalogue de départ (18 activités) à la création d'une famille. |
+| `saturday` | `SaturdayPlan` | Un samedi d'une famille (unique `(family, date)`) : `status` (tirage en cours / prévu / fait), activité proposée puis validée, `activity_name` (copie pour l'historique), `spins` (≤ 3), `star_spend`. |
 | `display` | `SharedDisplayDevice` | Tablette commune autorisée par un parent. Stocke l'empreinte SHA-256 du jeton, `last_used_at`, `revoked_at`. |
 
 ## Règles métier
@@ -235,6 +244,25 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
   message clair. Annuler un plan validé rouvre le tirage (décision explicite d'un parent).
 - Le serveur tire ; le navigateur ne fait qu'animer la roue vers le résultat déjà choisi
   (aucune triche possible en rechargeant). Pas d'IA : tirage pondéré classique.
+
+### Catalogue de départ
+
+18 activités génériques (pas d'adresse), pensées pour la région lilloise : musée,
+médiathèque, jeux de société, ciné maison, pâtisserie, chasse au trésor, piscine,
+pique-nique, ferme pédagogique, fête foraine, vélo sur voie verte, parc d'attractions,
+forêt, match de foot, cirque, marché de Noël, patinoire, cabane en couvertures. Chaque
+saison a au moins une activité « maison » (le tirage n'est jamais vide par mauvais temps).
+Ajouté à la création de chaque famille, et par migration de données aux familles
+existantes (sans doublon : seulement si la famille n'a encore aucune activité).
+
+### Animation
+
+La roue est dessinée en SVG côté serveur (secteurs, libellés, rotation finale) : pas de
+style inline, CSP intacte. Le composant Alpine `wheel` applique la rotation via le CSSOM,
+puis révèle le résultat avec une célébration (confettis hexagonaux en CSS, une seule fois).
+En mouvement réduit (système ou `data-motion="reduced"`), la roue est posée directement sur
+le résultat, sans rotation ni confettis. Quand peu d'activités sont éligibles, la roue est
+garnie d'autres activités de la saison, pour le décor seulement.
 
 ### Plan du samedi
 
