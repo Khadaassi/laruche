@@ -1,0 +1,106 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Envoyer le menu aux courses — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'shopping:index' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Courses</a>
+  {% include "parent/_header.html" with title="Envoyer le menu aux courses" %}
+{% endblock %}
+
+{% block content %}
+  {% include "parent/_week_nav.html" with base_url_name="shopping:transfer" %}
+
+  {% if plan.is_empty and not plan.removed %}
+    <div class="rounded-md border border-border bg-surface-0 p-space-4">
+      <p class="mb-space-2 font-medium">Aucun ingrédient à envoyer cette semaine.</p>
+      <p class="text-ink-soft">Ajoutez des recettes (avec leurs ingrédients) au <a href="{% url 'meals:menu' %}?semaine={{ monday|date:'Y-m-d' }}" class="font-medium text-ink underline">menu de la semaine</a>.</p>
+    </div>
+  {% else %}
+  <form method="post" class="space-y-space-4" novalidate>
+    {% csrf_token %}
+
+    {% if plan.conflicts %}
+      <section class="rounded-md border-2 border-honey-dark bg-surface-0 p-space-4" aria-labelledby="conflicts-title">
+        <h2 id="conflicts-title" class="mb-space-2 text-lg">Déjà cochés : que faire ?</h2>
+        <p class="mb-space-4 text-sm text-ink-soft">Ces articles sont déjà achetés ou à la maison, mais le menu en demande maintenant une autre quantité. Rien ne change sans votre choix.</p>
+        <ul class="space-y-space-4">
+          {% for item, need in plan.conflicts %}
+            <li>
+              <fieldset {% if item.pk in missing %}aria-describedby="missing-{{ item.pk }}"{% endif %}>
+                <legend class="mb-1">
+                  <span class="font-medium">{{ item.name }}</span>
+                  <span class="block text-sm text-ink-soft">
+                    {% if item.status == "bought" %}Acheté{% else %}Déjà à la maison{% endif %} : {{ item.quantity_display|default:"sans quantité" }} · au menu maintenant : {{ need.quantity_display|default:"sans quantité" }}
+                  </span>
+                </legend>
+                <div class="grid grid-cols-2 gap-space-2">
+                  <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">
+                    <input type="radio" name="choice_{{ item.pk }}" value="keep" class="sr-only" required>
+                    <span>{% if item.status == "bought" %}Garder coché{% else %}Garder « à la maison »{% endif %}</span>
+                  </label>
+                  <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">
+                    <input type="radio" name="choice_{{ item.pk }}" value="rebuy" class="sr-only" required>
+                    <span>Remettre à acheter</span>
+                  </label>
+                </div>
+                {% if item.pk in missing %}<p id="missing-{{ item.pk }}" class="mt-1 text-sm font-medium text-terracotta" role="alert">Choisissez une option pour cet article.</p>{% endif %}
+              </fieldset>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if plan.added %}
+      <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="added-title">
+        <h2 id="added-title" class="mb-space-2 text-lg">À ajouter ({{ plan.added|length }})</h2>
+        <ul class="divide-y divide-border">
+          {% for need in plan.added %}
+            <li class="py-space-2">
+              <span class="font-medium">{{ need.name }}</span>{% if need.quantity_display %} <span class="text-ink-soft">· {{ need.quantity_display }}</span>{% endif %}
+              <span class="block text-sm text-ink-soft">{{ need.recipes_label }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if plan.updated %}
+      <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="updated-title">
+        <h2 id="updated-title" class="mb-space-2 text-lg">Quantités mises à jour ({{ plan.updated|length }})</h2>
+        <ul class="divide-y divide-border">
+          {% for item, need in plan.updated %}
+            <li class="py-space-2"><span class="font-medium">{{ item.name }}</span> <span class="text-ink-soft">· {{ item.quantity_display|default:"sans quantité" }} → {{ need.quantity_display|default:"sans quantité" }}</span></li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if plan.removed %}
+      <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="removed-title">
+        <h2 id="removed-title" class="mb-space-2 text-lg">Retirés de la liste ({{ plan.removed|length }})</h2>
+        <p class="mb-space-2 text-sm text-ink-soft">Plus au menu de la semaine.</p>
+        <ul class="divide-y divide-border">
+          {% for item in plan.removed %}<li class="py-space-2">{{ item.name }}{% if item.quantity_display %} <span class="text-ink-soft">· {{ item.quantity_display }}</span>{% endif %}</li>{% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if plan.unchanged or plan.kept or plan.stale_bought %}
+      <section class="rounded-md border border-border bg-surface-0 p-space-4 text-sm text-ink-soft" aria-label="Inchangé">
+        {% if plan.unchanged %}<p>{{ plan.unchanged|length }} article{{ plan.unchanged|length|pluralize }} déjà sur la liste, sans changement.</p>{% endif %}
+        {% if plan.kept %}<p>{{ plan.kept|length }} article{{ plan.kept|length|pluralize }} déjà coché{{ plan.kept|length|pluralize }} ou à la maison, même quantité : rien ne change.</p>{% endif %}
+        {% if plan.stale_bought %}<p>Achetés mais plus au menu, gardés cochés : {% for item in plan.stale_bought %}{{ item.name }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+      </section>
+    {% endif %}
+
+    {% if plan.has_changes %}
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Mettre à jour la liste de courses</button>
+    {% else %}
+      <p class="rounded-md border border-border bg-surface-0 p-space-4 font-medium">
+        La liste est déjà à jour pour cette semaine.
+        <a href="{% url 'shopping:index' %}" class="block font-normal underline">Retour aux courses</a>
+      </p>
+    {% endif %}
+  </form>
+  {% endif %}
+{% endblock %}

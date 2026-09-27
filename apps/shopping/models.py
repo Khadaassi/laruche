@@ -52,7 +52,7 @@ class ShoppingItem(models.Model):
     recurring = models.BooleanField(
         "revient chaque semaine",
         default=False,
-        help_text="Produit habituel : reste sur la liste quand on retire les achats.",
+        help_text="Reste sur la liste quand on retire les achats.",
     )
     merge_key = models.CharField(max_length=120, blank=True)
     recipes = models.CharField("pour", max_length=200, blank=True)

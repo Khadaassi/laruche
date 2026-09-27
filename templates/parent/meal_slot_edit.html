@@ -1,0 +1,20 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}{{ meal.label }} du {{ date|date:"j F" }} — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{{ menu_url }}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Menu</a>
+  {% include "parent/_header.html" with title=meal.label subtitle=date|date:"l j F"|capfirst %}
+{% endblock %}
+
+{% block content %}
+  <form method="post" class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" novalidate>
+    {% csrf_token %}
+    {% include "parent/_chip_choices.html" with field=form.kind cols="grid-cols-2" %}
+    {% include "components/_field.html" with field=form.recipe %}
+    {% if not form.recipe.field.queryset.exists %}
+      <p class="text-sm text-ink-soft">Aucune recette : <a href="{% url 'meals:recipes' %}" class="font-medium text-ink underline">en créer une</a>.</p>
+    {% endif %}
+    {% include "components/_field.html" with field=form.note %}
+    <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
+  </form>
+{% endblock %}

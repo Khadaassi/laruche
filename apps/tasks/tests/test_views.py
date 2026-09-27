@@ -211,25 +211,6 @@ class ManageTasksTests(SecureClientMixin, TestCase):
         self.assertFalse(Task.objects.filter(pk=task.pk).exists())
 
 
-class ComingSoonTests(SecureClientMixin, TestCase):
-    def test_stub_pages_for_members(self):
-        self.client.force_login(join(make_family()))
-        for name in ("core:menu",):
-            with self.subTest(name=name):
-                response = self.get(reverse(name))
-                self.assertContains(response, "arrive bientôt")
-                self.assertContains(response, 'aria-current="page"')
-
-    def test_stub_pages_refused_to_child_accounts(self):
-        family = make_family()
-        join(family)
-        self.client.force_login(join(family, "Lina"))
-        self.assertEqual(self.get(reverse("core:menu")).status_code, 403)
-
-    def test_stub_pages_require_login(self):
-        self.assertEqual(self.get(reverse("core:menu")).status_code, 302)
-
-
 class WarmHeaderTests(SecureClientMixin, TestCase):
     """En-tête de l'accueil : salutation selon la période, étoiles de la famille."""
 

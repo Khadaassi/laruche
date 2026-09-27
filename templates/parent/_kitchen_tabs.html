@@ -1,0 +1,12 @@
+{% comment %}
+Sélecteur interne de l'onglet « Cuisine » : Menu · Courses · Recettes.
+Paramètre : kitchen_tab (menu, shopping, recipes). Voir design-system/SKILL.md.
+{% endcomment %}
+{% url 'meals:menu' as menu_url %}{% url 'shopping:index' as shopping_url %}{% url 'meals:recipes' as recipes_url %}
+<nav aria-label="Cuisine" class="mb-space-4">
+  <ul class="grid grid-cols-3 gap-space-2">
+    <li><a href="{{ menu_url }}" class="flex h-11 items-center justify-center gap-1 rounded-sm border font-medium {% if kitchen_tab == 'menu' %}border-ink bg-ink text-surface-0{% else %}border-border-strong bg-surface-0 text-ink{% endif %}" {% if kitchen_tab == 'menu' %}aria-current="page"{% endif %}>{% include "components/_icon.html" with name="menu" %}Menu</a></li>
+    <li><a href="{{ shopping_url }}" class="flex h-11 items-center justify-center gap-1 rounded-sm border font-medium {% if kitchen_tab == 'shopping' %}border-ink bg-ink text-surface-0{% else %}border-border-strong bg-surface-0 text-ink{% endif %}" {% if kitchen_tab == 'shopping' %}aria-current="page"{% endif %}>{% include "components/_icon.html" with name="shopping" %}Courses</a></li>
+    <li><a href="{{ recipes_url }}" class="flex h-11 items-center justify-center gap-1 rounded-sm border font-medium {% if kitchen_tab == 'recipes' %}border-ink bg-ink text-surface-0{% else %}border-border-strong bg-surface-0 text-ink{% endif %}" {% if kitchen_tab == 'recipes' %}aria-current="page"{% endif %}>{% include "components/_icon.html" with name="recipe" %}Recettes</a></li>
+  </ul>
+</nav>

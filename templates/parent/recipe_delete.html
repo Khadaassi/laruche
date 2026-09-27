@@ -1,0 +1,22 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Supprimer {{ recipe.name }} — La Ruche{% endblock %}
+
+{% block header %}{% include "parent/_header.html" with title="Supprimer la recette" %}{% endblock %}
+
+{% block content %}
+  <div class="rounded-md border border-border bg-surface-0 p-space-4">
+    <p class="mb-space-2">Supprimer « {{ recipe.name }} », avec ses ingrédients et ses étapes ?</p>
+    {% if planned %}
+      <p class="mb-space-2 font-medium">Elle sera aussi retirée du menu :</p>
+      <ul class="mb-space-4 list-inside list-disc text-ink-soft">
+        {% for slot in planned %}<li>{{ slot.get_meal_display }} du {{ slot.date|date:"l j F" }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    <p class="mb-space-4 text-sm text-ink-soft">Les articles déjà sur la liste de courses restent en place.</p>
+    <form method="post" class="space-y-space-2">
+      {% csrf_token %}
+      <button type="submit" class="w-full rounded-lg bg-terracotta px-space-6 py-3 font-medium text-surface-0">Oui, supprimer</button>
+      <a href="{% url 'meals:recipe_detail' recipe.pk %}" class="flex min-h-11 w-full items-center justify-center rounded-lg border border-border-strong font-medium">Annuler</a>
+    </form>
+  </div>
+{% endblock %}
