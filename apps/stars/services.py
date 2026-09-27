@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from apps.families.models import Family
 
-from .models import DayStar, StarDebit, StarSpend, TierCelebration
+from .models import DayStar, StarDebit, StarOpeningBalance, StarSpend, TierCelebration
 from .selectors import balances, day_progress
 
 
@@ -28,6 +28,36 @@ def award_day_star(person, day: datetime.date) -> bool:
         return False
     _, created = DayStar.objects.get_or_create(person=person, date=day)
     return created
+
+
+class OpeningBalanceError(Exception):
+    """Solde de départ refusé (pas un enfant, montant nul, déjà enregistré)."""
+
+
+@transaction.atomic
+def grant_opening_balance(person, amount: int, reason: str) -> StarOpeningBalance:
+    """Enregistre le solde de départ d'un enfant, une seule fois.
+
+    Le palier atteint par ce seul solde est marqué comme déjà fêté : ces étoiles
+    ont été gagnées ailleurs, l'écran partagé ne fête que les paliers franchis
+    ensuite dans La Ruche. Refus (rien n'est écrit) si ce n'est pas un enfant, si
+    le montant n'est pas positif ou si l'enfant a déjà un solde de départ (la
+    contrainte OneToOne le garantit aussi en base).
+    """
+    if not person.is_child:
+        raise OpeningBalanceError(f"{person} n'est pas un enfant.")
+    if amount <= 0:
+        raise OpeningBalanceError("Le solde de départ doit être positif.")
+    if StarOpeningBalance.objects.filter(person=person).exists():
+        raise OpeningBalanceError(f"{person} a déjà un solde de départ.")
+    opening = StarOpeningBalance.objects.create(person=person, amount=amount, reason=reason)
+    tier = balances(person.family, people=[person])[person.pk].tier
+    if tier:
+        celebration, _ = TierCelebration.objects.get_or_create(person=person)
+        if celebration.tier < tier:
+            celebration.tier = tier
+            celebration.save(update_fields=["tier", "updated_at"])
+    return opening
 
 
 def claim_day_celebration(person, day: datetime.date) -> bool:
