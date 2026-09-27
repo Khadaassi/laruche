@@ -33,7 +33,7 @@ Modèle et choix documentés dans `.claude/skills/domain-model/SKILL.md`.
 config/                 réglages, urls, wsgi/asgi (settings.py unique, piloté par env)
 apps/
   core/                 transverse : /healthz/, tests des gabarits/sécurité
-  accounts/             accounts.User, connexion par e-mail, inscription par code famille
+  accounts/             accounts.User, connexion par identifiant ou e-mail, inscription par code famille
   families/             Family, FamilyMembership, Person ; access.py (décorateurs d'accès), réglages
   tasks/                Task, TaskCompletion, périodes, accueil parent, cochage
   display/              SharedDisplayDevice, écran partagé tablette (aujourd'hui, semaine, fêtes)

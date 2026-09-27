@@ -48,9 +48,9 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 
 | App | Modèle | Rôle |
 |---|---|---|
-| `accounts` | `User` | Compte. Connexion par e-mail (`username` = e-mail en minuscules). Propriété `user.family`. |
+| `accounts` | `User` | Compte. Connexion par **identifiant court ou e-mail** : `login_name` facultatif, unique, en minuscules (« khadija », « enfants ») ; `username` = e-mail en minuscules (ou `username` interne aléatoire pour un compte écran partagé, sans e-mail). Propriété `user.family`. |
 | `families` | `Family` | Foyer. `name`, `invite_code` unique (normalisé : majuscules, sans espaces ni tirets). |
-| `families` | `FamilyMembership` | Rattache **un compte à une seule famille** (OneToOne) avec son `role` (`parent` / `child`). Pilote les permissions. |
+| `families` | `FamilyMembership` | Rattache **un compte à une seule famille** (OneToOne) avec son `role` (`parent` / `child` / `display`). Pilote les permissions. `display` = compte « écran partagé » : jamais de `Person`, au plus un par famille. |
 | `families` | `Person` | Membre **tel qu'affiché** (colonne, avatar, tâches). Lié à un `User` s'il a un compte, sinon non (jeune enfant). `role` affiché, `avatar_color`. |
 | `tasks` | `Task` | Tâche récurrente d'une personne : `title`, `period` (matin/midi/soir), `weekdays` (masque de bits), période facultative `start_date` / `end_date`, `position` (ordre choisi par le parent). |
 | `tasks` | `TaskCompletion` | « Fait » pour une tâche **à une date**. Absence de ligne = à faire. Unique `(task, date)`. `completed_by` vide si coché depuis l'affichage partagé. |
@@ -543,7 +543,7 @@ veut la vérification d'e-mail, la réinitialisation de mot de passe ou la conne
 
 | Action | Limites (une seule saturée suffit à bloquer) |
 |---|---|
-| Connexion | 20 échecs / 15 min par IP ; 10 échecs / 15 min par compte visé (e-mail) |
+| Connexion | 20 échecs / 15 min par IP ; 10 échecs / 15 min par compte visé (identifiant et e-mail du même compte comptent ensemble) |
 | Rejoindre une famille (code inconnu) | 10 / h par IP ; 100 / h au total (toutes IP) |
 | Sortie du mode tablette (mot de passe parent) | 10 / 15 min par IP ; 5 / 15 min par appareil |
 
@@ -557,6 +557,23 @@ passer à un cache partagé (Redis).
 
 **`username` = e-mail normalisé.** Évite un modèle `User` sans `username` (migration
 lourde) tout en garantissant l'unicité de l'e-mail par la contrainte existante.
+
+**Identifiant court (`login_name`), en plus de l'e-mail.** Usage familial : on se connecte
+avec « khadija » ou « enfants » plutôt qu'une adresse. Champ facultatif, unique sur toute
+l'application, 2 à 30 signes `[a-z0-9._-]`, stocké en minuscules. Le formulaire de
+connexion accepte l'un ou l'autre (`accounts.forms.resolve_login` : un « @ » = e-mail,
+sinon identifiant traduit en `username`) ; un identifiant inconnu donne le même message
+qu'un mauvais mot de passe. Même résolution pour la cible du rate-limit, afin qu'on ne
+double pas les essais en alternant identifiant et e-mail. Un parent donne ou retire les
+identifiants des comptes de sa famille (Réglages → Comptes et identifiants).
+
+**Compte « écran partagé » (`Role.DISPLAY`).** Équivalent, avec identifiant + mot de
+passe, d'un appareil partagé : utile sur un ordinateur de la maison où l'on préfère se
+connecter plutôt que d'activer le mode tablette. Créé par un parent (Réglages → Affichage
+partagé), un seul par famille, sans e-mail ni `Person` (donc sans colonne à lui). À la
+connexion, l'accueil le renvoie sur `/affichage/` ; toutes les colonnes y sont cochables
+(`tickable_person_id = None`), aucune vue parent (403). « Mode parent » demande le mot de
+passe d'un parent de la famille, déconnecte le compte et connecte ce parent.
 
 **Un compte = une famille (`OneToOneField`).** La famille de la requête n'est jamais
 ambiguë. Des familles recomposées (un compte dans deux foyers) demanderaient de passer

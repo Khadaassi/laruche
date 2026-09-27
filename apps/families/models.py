@@ -23,6 +23,9 @@ class Role(models.TextChoices):
 
     PARENT = "parent", "Parent"
     CHILD = "child", "Enfant"
+    # Appartenance seulement (jamais une Person) : compte « écran partagé » des enfants,
+    # sans colonne à lui, qui ouvre l'écran partagé avec toutes les colonnes cochables.
+    DISPLAY = "display", "Écran partagé"
 
 
 class AvatarColor(models.TextChoices):
@@ -87,6 +90,10 @@ class FamilyMembership(models.Model):
     @property
     def is_parent(self) -> bool:
         return self.role == Role.PARENT
+
+    @property
+    def is_display(self) -> bool:
+        return self.role == Role.DISPLAY
 
 
 class PersonQuerySet(models.QuerySet):

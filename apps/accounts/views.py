@@ -8,22 +8,26 @@ from django.views.decorators.http import require_http_methods
 from apps.core.ratelimit import BLOCKED_MESSAGE, JOIN_FAMILY, LOGIN
 from apps.families.services import create_family, join_family
 
-from .forms import MODE_CREATE, MODE_JOIN, LoginForm, SignupForm
+from .forms import MODE_CREATE, MODE_JOIN, LoginForm, SignupForm, resolve_login
 from .models import User
 
 TOO_MANY_REQUESTS = 429
 
 
 class EmailLoginView(LoginView):
-    """Connexion par e-mail, limitée en cas d'échecs répétés (IP et compte visé)."""
+    """Connexion par identifiant ou e-mail, limitée en cas d'échecs répétés.
+
+    Limites par IP et par compte visé : l'identifiant et l'e-mail d'un même
+    compte comptent ensemble (`resolve_login`).
+    """
 
     template_name = "accounts/login.html"
     form_class = LoginForm
     redirect_authenticated_user = True
 
     def post(self, request, *args, **kwargs):
-        email = request.POST.get("username", "")
-        if LOGIN.is_blocked(request, target=email):
+        target = resolve_login(request.POST.get("username", ""))
+        if LOGIN.is_blocked(request, target=target):
             # Formulaire vierge : le mot de passe n'est même pas vérifié.
             context = self.get_context_data(form=self.form_class(request))
             context["blocked"] = BLOCKED_MESSAGE
@@ -31,7 +35,9 @@ class EmailLoginView(LoginView):
         return super().post(request, *args, **kwargs)
 
     def form_invalid(self, form):
-        LOGIN.record_failure(self.request, target=self.request.POST.get("username", ""))
+        LOGIN.record_failure(
+            self.request, target=resolve_login(self.request.POST.get("username", ""))
+        )
         return super().form_invalid(form)
 
 

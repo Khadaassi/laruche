@@ -15,7 +15,7 @@
       {% include "shared/_tab.html" with key="saturday" label="Samedi" url=saturday_url %}
     </ul>
     <div class="ml-auto">
-      {% if request.display_device %}
+      {% if request.display_device or request.display_account %}
         <a href="{% url 'display:exit' %}" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong px-space-4 font-medium">Mode parent</a>
       {% elif request.tickable_person_id is None %}
         <a href="{% url 'tasks:home' %}" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong px-space-4 font-medium">Retour à mon compte</a>

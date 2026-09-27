@@ -45,6 +45,30 @@
       </form>
     </section>
 
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="accounts-title">
+      <h2 id="accounts-title" class="mb-space-2 text-lg">Comptes et identifiants</h2>
+      <p class="text-ink-soft">Chaque compte se connecte avec son identifiant ou son e-mail.</p>
+      <ul class="divide-y divide-border">
+        {% for membership, form in accounts %}
+          {% with account=membership.user %}
+          <li class="py-space-4">
+            <p class="font-medium">{% if account.person %}{{ account.person.name }}{% else %}{{ membership.get_role_display }}{% endif %}</p>
+            <p class="text-sm text-ink-soft">{{ membership.get_role_display }}{% if account.email %} · {{ account.email }}{% endif %}</p>
+            <form method="post" action="{% url 'families:update_login_name' account.pk %}" class="mt-space-2">
+              {% csrf_token %}
+              <label for="{{ form.login_name.id_for_label }}" class="sr-only">Identifiant de {% if account.person %}{{ account.person.name }}{% else %}{{ membership.get_role_display }}{% endif %}</label>
+              <div class="flex gap-space-2">
+                {{ form.login_name }}
+                <button type="submit" class="shrink-0 rounded-lg border border-border-strong px-space-4 font-medium">Enregistrer</button>
+              </div>
+              {% for error in form.login_name.errors %}<p class="mt-1 text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+            </form>
+          </li>
+          {% endwith %}
+        {% endfor %}
+      </ul>
+    </section>
+
     <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="tasks-title">
       <h2 id="tasks-title" class="mb-space-2 text-lg">Organisation</h2>
       <ul class="divide-y divide-border">
@@ -64,6 +88,24 @@
         {% include "components/_field.html" with field=device_form.name %}
         <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Activer sur cet appareil</button>
       </form>
+      <div class="mt-space-6 border-t border-border pt-space-4">
+        <h3 class="mb-space-2 font-display text-base">Compte « écran partagé »</h3>
+        {% if display_account %}
+          <p class="text-ink-soft">Identifiant <span class="font-medium text-ink">{{ display_account.login_name }}</span> : il ouvre directement l'écran des enfants, sans accès aux réglages. Pour en sortir, il faut le mot de passe d'un parent.</p>
+          <form method="post" action="{% url 'families:delete_display' %}" class="mt-space-2">
+            {% csrf_token %}
+            <button type="submit" class="rounded-sm border border-border-strong px-space-2 py-2 text-sm font-medium">Supprimer ce compte</button>
+          </form>
+        {% else %}
+          <p class="text-ink-soft">Pour un ordinateur ou une tablette où l'on préfère se connecter : un identifiant commun (ex. « enfants ») qui ouvre l'écran des enfants, toutes les colonnes cochables, sans accès aux réglages.</p>
+          <form method="post" action="{% url 'families:create_display' %}" class="mt-space-4 space-y-space-2">
+            {% csrf_token %}
+            {% include "components/_field.html" with field=display_form.login_name %}
+            {% include "components/_field.html" with field=display_form.password %}
+            <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Créer le compte</button>
+          </form>
+        {% endif %}
+      </div>
       {% if devices %}
         <h3 class="mb-space-2 mt-space-6 font-display text-base">Appareils actifs</h3>
         <ul class="divide-y divide-border">
@@ -85,7 +127,7 @@
 
   <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="account-title">
     <h2 id="account-title" class="mb-space-2 text-lg">Mon compte</h2>
-    <p class="mb-space-4 text-ink-soft">{{ request.user.email }} · {{ request.membership.get_role_display }}</p>
+    <p class="mb-space-4 text-ink-soft">{% if request.user.login_name %}{{ request.user.login_name }} · {% endif %}{{ request.user.email }} · {{ request.membership.get_role_display }}</p>
     <form method="post" action="{% url 'accounts:logout' %}">
       {% csrf_token %}
       <button type="submit" class="w-full rounded-lg border border-border-strong px-space-6 py-3 font-medium">Se déconnecter</button>
