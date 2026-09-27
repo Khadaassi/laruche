@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.families",
+    "apps.tasks",
 ]
 
 MIDDLEWARE = [
