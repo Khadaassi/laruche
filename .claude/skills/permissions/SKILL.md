@@ -112,6 +112,17 @@ famille et `Absence.clean()` revérifie la famille. Point d'entrée : `Absence.o
 Vues `agenda` en `parent_required`, `Event.objects.for_family`, personnes proposées filtrées
 par famille (une personne d'une autre famille rend le formulaire invalide).
 
+### Comptes et identifiants
+
+| Donnée / action | Parent | Enfant (compte) / écran partagé |
+|---|---|---|
+| Identifiant de connexion d'un compte de la famille | Lecture + écriture (Réglages → Comptes et identifiants) | Aucun accès (403) |
+| Compte « écran partagé » (créer, supprimer) | Oui, un seul par famille | Aucun accès (403) |
+
+Vues `families` en `parent_required` ; le compte visé est cherché dans
+`User.objects.filter(membership__family=request.family)` (autre famille → 404). L'unicité
+d'un identifiant est vérifiée sur toute l'application et garantie en base.
+
 ### Un seul chemin d'accès enfant : l'écran partagé
 
 Usage réel : les enfants n'ont pas d'appareil individuel. Ils partagent **un même écran**
@@ -122,6 +133,7 @@ colonnes de **tous** les enfants de la famille.
 | Accès | Ce qui s'affiche | Colonnes cochables |
 |---|---|---|
 | Appareil partagé (jeton) | Écran partagé (Aujourd'hui, Semaine, Fêtes, Menu, Samedi) | Toutes (les enfants se partagent l'écran) |
+| Compte « écran partagé » (`display`) | Le même écran partagé ; aucune page parent (403) | Toutes, comme l'appareil ; sortie par le mot de passe d'un parent de la famille |
 | Compte enfant connecté | Le même écran partagé | **Uniquement la sienne** (les autres en lecture seule, refusées côté serveur en 403) |
 | Parent connecté | Vue parent ; écran partagé en aperçu | Toutes |
 
@@ -150,7 +162,7 @@ Principe retenu :
 4. Actions autorisées : lecture des profils/semainier/menu, cocher/décocher une tâche
    d'un enfant. Tout le reste (création, suppression, réglages, données parent) est refusé.
 5. **Sortie du mode** ou accès à la vue parent : ré-authentification d'un parent **de la
-   famille de l'appareil** (e-mail + mot de passe, `/affichage/quitter/`), qui révoque
+   famille de l'appareil** (identifiant ou e-mail + mot de passe, `/affichage/quitter/`), qui révoque
    l'appareil. (Un « code parent » plus court n'est pas implémenté.)
 6. Les parents voient la liste de leurs appareils partagés et peuvent en révoquer un
    (tablette perdue, etc.).

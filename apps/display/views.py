@@ -13,7 +13,7 @@ from apps.accounts.forms import LoginForm
 from apps.celebrations.models import Celebration
 from apps.celebrations.services import roll_over_recurring
 from apps.core.ratelimit import BLOCKED_MESSAGE
-from apps.families.access import parent_required
+from apps.families.access import get_membership, parent_required
 from apps.families.models import Person
 from apps.household.models import HouseholdChore
 from apps.household.selectors import chores_by_day, set_chore_done
@@ -341,17 +341,30 @@ def revoke(request, pk):
 @sensitive_post_parameters("password")
 @require_http_methods(["GET", "POST"])
 def exit_display(request):
-    """Quitter le mode : ré-authentification d'un parent de CETTE famille."""
+    """Quitter le mode : ré-authentification d'un parent de CETTE famille.
+
+    Appareil partagé : l'appareil est révoqué. Compte « écran partagé » : il est
+    déconnecté et le parent est connecté à sa place.
+    """
     device = get_device(request)
-    if device is None:
+    membership = get_membership(request.user)
+    if device is not None:
+        family = device.family
+    elif membership is not None and membership.is_display:
+        family = membership.family
+    else:
         return redirect("display:board")
     request.display_device = device
-    check = check_parent_password(request, device.family)
+    check = check_parent_password(request, family)
     if check.user is not None:
-        device.revoke()
+        if device is not None:
+            device.revoke()
+        else:
+            logout(request)
         login(request, check.user)
         response = redirect("tasks:home")
-        delete_device_cookie(response)
+        if device is not None:
+            delete_device_cookie(response)
         return response
     context = {"form": check.form, "blocked": BLOCKED_MESSAGE if check.blocked else ""}
     return render(request, "shared/exit.html", context, status=429 if check.blocked else 200)

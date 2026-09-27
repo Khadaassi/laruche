@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from apps.families.models import Family, normalize_invite_code
 
-from .models import User
+from .models import User, normalize_login_name
 
 FIELD_CLASSES = (
     "block w-full rounded-md border border-border-strong bg-surface-0 px-space-4 py-3 text-ink"
@@ -25,21 +25,49 @@ def normalize_email(raw: str) -> str:
     return (raw or "").strip().lower()
 
 
-class LoginForm(StyledFormMixin, AuthenticationForm):
-    """Connexion par e-mail : l'identifiant stocké est l'e-mail en minuscules."""
+def resolve_login(raw: str) -> str:
+    """`username` du compte visé par une saisie « identifiant ou e-mail ».
 
-    username = forms.EmailField(
-        label="Adresse e-mail",
-        widget=forms.EmailInput(attrs={"autocomplete": "email", "autofocus": True}),
+    Avec un « @ » : l'e-mail normalisé (c'est le `username` des comptes par e-mail).
+    Sinon : l'identifiant court, traduit en `username` du compte s'il existe. Un
+    identifiant inconnu est renvoyé tel quel (normalisé) : l'authentification
+    échoue avec le même message qu'un mauvais mot de passe. Sert aussi de cible au
+    rate-limit : identifiant et e-mail d'un même compte partagent le même compteur.
+    """
+    value = (raw or "").strip().lower()
+    if "@" in value:
+        return normalize_email(value)
+    username = (
+        User.objects.filter(login_name=normalize_login_name(value))
+        .values_list("username", flat=True)
+        .first()
+    )
+    return username or value
+
+
+class LoginForm(StyledFormMixin, AuthenticationForm):
+    """Connexion par identifiant court ou par e-mail."""
+
+    username = forms.CharField(
+        label="Identifiant ou e-mail",
+        max_length=254,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "username",
+                "autocapitalize": "none",
+                "spellcheck": "false",
+                "autofocus": True,
+            }
+        ),
     )
 
     error_messages = {
-        "invalid_login": "E-mail ou mot de passe incorrect.",
+        "invalid_login": "Identifiant, e-mail ou mot de passe incorrect.",
         "inactive": "Ce compte est désactivé.",
     }
 
     def clean_username(self):
-        return normalize_email(self.cleaned_data["username"])
+        return resolve_login(self.cleaned_data["username"])
 
 
 MODE_CREATE = "create"

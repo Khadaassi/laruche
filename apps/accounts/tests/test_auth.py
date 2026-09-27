@@ -126,7 +126,7 @@ class LoginTests(SecureClientMixin, TestCase):
         response = self.post(
             reverse("accounts:login"), {"username": "sam@example.test", "password": "faux"}
         )
-        self.assertContains(response, "E-mail ou mot de passe incorrect")
+        self.assertContains(response, "Identifiant, e-mail ou mot de passe incorrect")
 
     def test_logout_requires_post(self):
         self.client.force_login(make_user())
