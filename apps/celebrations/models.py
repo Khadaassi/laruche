@@ -8,14 +8,31 @@ class CelebrationQuerySet(models.QuerySet):
 
 
 class Celebration(models.Model):
-    """Une fête datée (Aïd, anniversaire…). Pas de récurrence annuelle :
-    les fêtes religieuses changent de date chaque année."""
+    """Une fête datée (Aïd, anniversaire…).
+
+    `recurs_yearly` : la fête se recrée l'année suivante, même jour et même
+    mois, une fois sa date passée (voir services.roll_over_recurring). À
+    laisser décoché pour les fêtes religieuses, dont la date change.
+    """
 
     family = models.ForeignKey(
         "families.Family", on_delete=models.CASCADE, related_name="celebrations"
     )
     name = models.CharField("nom", max_length=80)
     date = models.DateField("date")
+    recurs_yearly = models.BooleanField(
+        "chaque année",
+        default=False,
+        help_text="Anniversaire… (pas l'Aïd, dont la date change chaque année).",
+    )
+    previous = models.OneToOneField(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="next_occurrence",
+        help_text="Occurrence de l'année précédente dont celle-ci est la suite.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = CelebrationQuerySet.as_manager()

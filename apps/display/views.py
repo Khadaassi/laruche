@@ -10,6 +10,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.accounts.forms import LoginForm
 from apps.celebrations.models import Celebration
+from apps.celebrations.services import roll_over_recurring
 from apps.core.ratelimit import BLOCKED_MESSAGE, EXIT_DISPLAY
 from apps.families.access import get_membership, parent_required
 from apps.families.models import Person
@@ -112,6 +113,7 @@ def celebrations(request):
     La liste de cadeaux n'est jamais montrée sur l'écran partagé : les
     enfants la verraient, surprise gâchée.
     """
+    roll_over_recurring(request.family, timezone.localdate())
     upcoming = (
         Celebration.objects.for_family(request.family)
         .filter(date__gte=timezone.localdate())

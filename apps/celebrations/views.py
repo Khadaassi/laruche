@@ -13,6 +13,7 @@ from apps.families.access import parent_required
 
 from .forms import CelebrationForm, GiftForm, RecipeForm, TodoForm
 from .models import Celebration, CelebrationTodo, GiftItem, RecipeIdea
+from .services import roll_over_recurring
 
 # Sous-éléments : (modèle, formulaire, clé de contexte).
 ITEM_KINDS = {
@@ -43,6 +44,7 @@ def index(request):
         celebration.save()
         return redirect("celebrations:detail", pk=celebration.pk)
     today = timezone.localdate()
+    roll_over_recurring(request.family, today)
     celebrations = Celebration.objects.for_family(request.family)
     return render(
         request,

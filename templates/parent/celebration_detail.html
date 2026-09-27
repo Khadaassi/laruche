@@ -87,6 +87,10 @@
       {% csrf_token %}
       {% include "components/_field.html" with field=edit_form.name %}
       {% include "components/_field.html" with field=edit_form.date %}
+      <label class="flex min-h-11 cursor-pointer items-start gap-space-2">
+        {{ edit_form.recurs_yearly }}
+        <span><span class="font-medium">Chaque année</span><span class="block text-sm text-ink-soft">{{ edit_form.recurs_yearly.help_text }}</span></span>
+      </label>
       <button type="submit" class="w-full rounded-lg border border-border-strong px-space-6 py-3 font-medium">Enregistrer</button>
     </form>
     <a href="{% url 'celebrations:delete' celebration.pk %}" class="mt-space-4 flex min-h-11 items-center justify-center font-medium text-terracotta underline">Supprimer cette fête</a>

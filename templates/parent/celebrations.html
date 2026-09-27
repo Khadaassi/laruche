@@ -22,6 +22,10 @@
       {% csrf_token %}
       {% include "components/_field.html" with field=form.name %}
       {% include "components/_field.html" with field=form.date %}
+      <label class="flex min-h-11 cursor-pointer items-start gap-space-2">
+        {{ form.recurs_yearly }}
+        <span><span class="font-medium">Chaque année</span><span class="block text-sm text-ink-soft">{{ form.recurs_yearly.help_text }}</span></span>
+      </label>
       <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Créer la fête</button>
     </form>
   </section>

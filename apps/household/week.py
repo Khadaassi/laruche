@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from django.utils import timezone
 
 from apps.celebrations.models import Celebration
+from apps.celebrations.services import roll_over_recurring
 from apps.families.models import Person
 from apps.school.selectors import school_days_range
 
@@ -30,6 +31,7 @@ class DayPlan:
 
 def build_week(family, monday: datetime.date) -> dict:
     today = timezone.localdate()
+    roll_over_recurring(family, today)
     children = list(Person.objects.for_family(family).children())
     chores = chores_by_day(family, monday, 7)
     school = school_days_range(family, monday, 7, people=children)
