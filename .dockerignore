@@ -1,0 +1,24 @@
+# Secrets : jamais dans l'image
+.env
+.env.*
+
+# Environnements et caches locaux
+.git/
+.venv/
+node_modules/
+.ruff_cache/
+**/__pycache__/
+*.py[cod]
+db.sqlite3
+
+# Générés (reconstruits dans l'image)
+/staticfiles/
+/static/css/app.css
+/static/vendor/
+
+# Inutiles à l'exécution
+.github/
+.claude/
+.DS_Store
+.idea/
+.vscode/

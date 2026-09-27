@@ -54,6 +54,9 @@ SECRET_KEY = env_required("DJANGO_SECRET_KEY")
 
 # Liste blanche stricte : aucune valeur par défaut, joker interdit.
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
+# Render fournit l'hôte public exact du service (xxx.onrender.com) : pas un joker.
+if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+    ALLOWED_HOSTS.append(render_host)
 if "*" in ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS ne doit jamais contenir '*'.")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
@@ -71,6 +74,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "apps.core.middleware.LivenessMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

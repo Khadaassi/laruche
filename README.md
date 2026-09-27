@@ -49,25 +49,39 @@ uv run python manage.py makemigrations --check --dry-run
 uv run python manage.py test
 ```
 
-## Déployer
+## Déployer (Render + Neon)
 
-N'importe quel PaaS Python (Render, Fly.io, Railway…) + Neon :
+La production tourne sur **Render** (offre gratuite, Docker, Francfort) et la base
+sur **Neon** (branche principale). Tout est décrit dans `render.yaml` :
 
-1. **Base** : projet Neon, base `laruche`, récupérer l'URL de connexion *pooled* (`?sslmode=require`).
-2. **Variables d'environnement** sur l'hébergeur (voir `.env.example`) :
-   `DJANGO_SECRET_KEY` (nouvelle, jamais celle de dev), `DJANGO_ALLOWED_HOSTS=ton-domaine`,
-   `DJANGO_CSRF_TRUSTED_ORIGINS=https://ton-domaine`, `DATABASE_URL`, et
-   `DJANGO_BEHIND_PROXY=true` si l'hébergeur termine TLS (cas de Render/Fly/Railway).
-   Ne pas définir `DJANGO_DEBUG`.
-3. **Build** :
-   ```bash
-   pip install uv && uv sync --locked --no-dev
-   npm ci && npm run build
-   uv run python manage.py collectstatic --noinput
-   ```
-4. **Release** (avant chaque démarrage de version) : `uv run python manage.py migrate --noinput`
-5. **Démarrage** : `uv run gunicorn config.wsgi --bind 0.0.0.0:$PORT`
-6. **Sonde de santé** : `/healthz/` (exemptée de la redirection HTTPS).
+- image construite depuis le `Dockerfile` ; au démarrage, `scripts/start.sh`
+  applique les migrations puis lance gunicorn ;
+- déploiement automatique à chaque merge sur `main`, **uniquement si la CI est verte** ;
+- `DJANGO_SECRET_KEY` générée par Render, `DATABASE_URL` saisie à la création ;
+- `ALLOWED_HOSTS` reçoit automatiquement l'hôte `xxx.onrender.com` fourni par Render
+  (`RENDER_EXTERNAL_HOSTNAME`). Pour un domaine perso, ajouter `DJANGO_ALLOWED_HOSTS`.
+
+**Deux sondes :**
+
+| Chemin | Base de données | Usage |
+|---|---|---|
+| `/livez/` | non | Render (toutes les quelques secondes) et UptimeRobot |
+| `/healthz/` | oui (`SELECT 1`) | vérification manuelle après un déploiement |
+
+Ne jamais faire pointer une sonde fréquente vers `/healthz/` : Neon ne s'endormirait
+plus et épuiserait son quota gratuit (100 h de calcul par mois).
+
+### Installation (une seule fois)
+
+1. **Neon** : dans le projet, branche principale, base `laruche`, copier l'URL
+   *pooled* (`-pooler` dans l'hôte, `?sslmode=require`). C'est l'URL **de production**,
+   différente de celle de `.env`.
+2. **Render** : [dashboard.render.com](https://dashboard.render.com) → connexion avec
+   GitHub → **New** → **Blueprint** → dépôt `laruche` → coller l'URL Neon dans
+   `DATABASE_URL` → **Apply**.
+3. **Anti-veille** : [uptimerobot.com](https://uptimerobot.com) → *New monitor* → HTTP(s),
+   URL `https://<service>.onrender.com/livez/`, intervalle 5 minutes. Sans lui, l'offre
+   gratuite de Render met l'app en veille après 15 minutes sans visite.
 
 ## Workflow Git
 

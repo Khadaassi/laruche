@@ -1,0 +1,21 @@
+# Blueprint Render de La Ruche : Render → New → Blueprint → ce dépôt.
+# L'image vient du Dockerfile ; la base est sur Neon (DATABASE_URL saisie à la
+# création, jamais commitée). Spec : https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: laruche
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    # Déploie seulement quand la CI GitHub est verte sur le commit de main.
+    autoDeployTrigger: checksPass
+    # Sonde sans base : Render l'appelle toutes les quelques secondes.
+    healthCheckPath: /livez/
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DJANGO_BEHIND_PROXY
+        value: "true"

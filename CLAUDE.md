@@ -17,6 +17,8 @@ Le modèle de domaine arrive en Phase 1 (`.claude/skills/domain-model/SKILL.md`)
 - **HTMX 2** pour les interactions serveur sans rechargement (drag & drop, roue du samedi…)
 - **Alpine.js 3, build CSP** (`@alpinejs/csp`) pour l'interactivité légère côté client
 - **django-csp 4**, **WhiteNoise** (statiques), **gunicorn**
+- Hébergement : **Render** gratuit (`render.yaml`, `Dockerfile`), déployé à chaque merge sur
+  `main` si la CI est verte ; sonde `/livez/` sans base (ne jamais sonder `/healthz/` en boucle : Neon)
 - Qualité : **ruff** (lint + format), tests Django (`manage.py test`)
 - Releases : **semantic-release** sur Conventional Commits
 
@@ -82,6 +84,7 @@ une colonne par enfant côte à côte, nav en haut).
 - **Secrets uniquement en variables d'environnement.** Rien de réel dans le code, les
   tests ou `.env.example`. `.env` n'est jamais commité.
 - **`ALLOWED_HOSTS` strict** via `DJANGO_ALLOWED_HOSTS` : pas de défaut, `*` refusé au démarrage.
+  Seul ajout automatique : l'hôte exact fourni par Render (`RENDER_EXTERNAL_HOSTNAME`).
 - **Sécurisé par défaut** : sans `DJANGO_DEBUG=true`, `SECRET_KEY` et `DATABASE_URL` sont
   obligatoires, HTTPS forcé, HSTS actif.
 - **Cookies** session et CSRF : `Secure` (hors DEBUG), `HttpOnly`, `SameSite=Lax`.
