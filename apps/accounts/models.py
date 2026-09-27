@@ -2,9 +2,16 @@ from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
-    """Utilisateur personnalisé, posé dès la Phase 0.
+    """Utilisateur personnalisé.
 
-    Vide pour l'instant : il existe pour que les évolutions de la Phase 1
-    (rôle parent/enfant, rattachement à une famille) ne nécessitent pas de
-    migrer depuis auth.User, opération très coûteuse une fois en production.
+    La connexion se fait par e-mail : à l'inscription, `username` reçoit
+    l'e-mail normalisé (minuscules), ce qui garantit aussi son unicité.
+    Le rattachement à une famille et le rôle vivent dans
+    `families.FamilyMembership` (un compte = une famille).
     """
+
+    @property
+    def family(self):
+        """Famille du compte, ou None s'il n'est rattaché à aucune."""
+        membership = getattr(self, "membership", None)
+        return membership.family if membership else None

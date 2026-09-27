@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "csp",
     "apps.core",
     "apps.accounts",
+    "apps.families",
 ]
 
 MIDDLEWARE = [
