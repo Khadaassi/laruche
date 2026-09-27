@@ -195,3 +195,45 @@
     animation-fill-mode: forwards;
   }
 }
+
+/* --- Journée terminée (étoile du jour) ---------------------------------------
+   Célébration distincte du palier et de la roue : un tampon « validé » (sauge +
+   coche) se pose, l'étoile miel apparaît, puis une rangée d'alvéoles s'allume de
+   gauche à droite (~1,1 s). Une seule fois : le serveur n'envoie ce bloc qu'une
+   fois par journée. En mouvement réduit : l'encart reste, sans mouvement (l'état
+   final est l'état par défaut, les animations ne partent que de `backwards`). */
+@keyframes day-stamp {
+  0% { opacity: 0; transform: scale(1.8) rotate(-12deg); }
+  60% { opacity: 1; transform: scale(0.92) rotate(0deg); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes day-star-in {
+  0% { opacity: 0; transform: scale(0.3); }
+  70% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes day-cell-on {
+  0% { opacity: 0.2; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-motion='reduced']) .day-stamp {
+    animation: day-stamp 450ms cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+  }
+  html:not([data-motion='reduced']) .day-star {
+    animation: day-star-in 350ms ease-out 400ms backwards;
+  }
+  html:not([data-motion='reduced']) .day-cells span {
+    animation: day-cell-on 250ms ease-out backwards;
+  }
+  html:not([data-motion='reduced']) .day-cells span:nth-child(1) { animation-delay: 500ms; }
+  html:not([data-motion='reduced']) .day-cells span:nth-child(2) { animation-delay: 580ms; }
+  html:not([data-motion='reduced']) .day-cells span:nth-child(3) { animation-delay: 660ms; }
+  html:not([data-motion='reduced']) .day-cells span:nth-child(4) { animation-delay: 740ms; }
+  html:not([data-motion='reduced']) .day-cells span:nth-child(5) { animation-delay: 820ms; }
+  html:not([data-motion='reduced']) .day-cells span:nth-child(6) { animation-delay: 900ms; }
+  html:not([data-motion='reduced']) .day-cells span:nth-child(7) { animation-delay: 980ms; }
+}

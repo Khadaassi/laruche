@@ -125,7 +125,9 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
   contour `border-border-strong`, cochée = fond `sage` + coche blanche.
 - **Badge de tâche hexagonal** : doré (`honey`) = à faire ; `sage` + icône coche = fait.
   L'état suit la case en CSS (`group-has-[:checked]:`), donc instantanément.
-- **Étiquette « Fait ! +1 »** sur les tâches cochées (vue enfants) ; « Fait » en vue parent.
+- **Étiquette « Fait »** sur les tâches cochées, vue enfants comme vue parent : une simple
+  validation (sauge + coche + texte), **sans mention d'étoile** (Phase 5 : l'étoile se
+  gagne à la journée complète, pas à la tâche).
 - **En-tête de l'accueil parent** : logomark + salutation selon la période (« Bonjour la
   famille » / « Bon après-midi » / « Bonsoir la famille ») + « Famille · date » en
   sous-titre, et **pastille d'étoiles** de la famille à droite (`bg-honey text-ink`,
@@ -150,6 +152,18 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
   bordé `honey-dark`, « Palier 2 ! Bravo Lina, 20 étoiles gagnées ! ». Distincte de la
   roue pour rester reconnaissable : badge étoilé qui arrive en tournoyant et alvéoles qui
   **montent** (la roue, elle, éclate en confettis). Une seule fois par palier.
+- **Célébration « Journée terminée ! +1 étoile »** (colonne de l'enfant, écran partagé,
+  quand la dernière tâche ou le dernier ménage du jour est coché) : encart `bg-surface-100`
+  bordé **`sage` 2px** (validé), tampon hexagonal `sage` + coche blanche, alvéole `honey` +
+  étoile après le titre, « Bravo Lina, tout est fait aujourd'hui ! », puis une rangée de
+  7 alvéoles `sage`. Distincte du palier (miel, badge qui tournoie, alvéoles qui montent) et
+  de la roue (confettis) : le **tampon se pose**, l'étoile apparaît, puis les alvéoles
+  **s'allument de gauche à droite** (~1,1 s). Une seule fois par journée. Si un palier est
+  franchi en même temps, seul l'encart du palier s'affiche, avec la ligne « Journée
+  terminée : +1 étoile ».
+- **Annonce parent de journée terminée** (`parent/_day_star_note.html`, accueil) : ligne
+  statique bordée `honey-dark`, alvéole `honey` + étoile, « Journée terminée pour Lina :
+  +1 étoile », `role="status"`. Sans animation : la fête est pour les enfants.
 - **Suppression** : page de confirmation (pas de `confirm()`), bouton `bg-terracotta
   text-surface-0`.
 - **Progression en alvéoles** (écran partagé) : une alvéole par tâche de la période,
@@ -260,10 +274,14 @@ les adaptations de largeur passent par les breakpoints Tailwind.
 ## Mouvement & célébration — règles pour toute animation future
 
 Implémenté : la roue du samedi (rotation ~3,6 s, puis révélation du résultat avec
-confettis hexagonaux, une seule fois, jamais en boucle) et le palier d'étoiles (badge qui
-tournoie, alvéoles qui montent, ~1,6 s, une seule fois par palier) — les deux « vraies
-célébrations » de la règle 2. En mouvement réduit, les deux deviennent un état statique
-(résultat / encart « Palier N ! » sans mouvement). L'interrupteur des réglages n'existe
+confettis hexagonaux, une seule fois, jamais en boucle), le palier d'étoiles (badge qui
+tournoie, alvéoles qui montent, ~1,6 s, une seule fois par palier) et la **journée
+terminée** (tampon qui se pose, étoile qui apparaît, alvéoles qui s'allument de gauche à
+droite, ~1,1 s, une seule fois par journée et par enfant) — les « vraies célébrations » de
+la règle 2, chacune reconnaissable. La journée terminée est la plus sobre des trois : elle
+revient chaque jour, le palier reste l'événement rare. En mouvement réduit, toutes
+deviennent un état statique (résultat / encart sans mouvement : l'état final est l'état par
+défaut, les animations partent de `backwards`). L'interrupteur des réglages n'existe
 pas encore dans l'interface : le CSS et le JS honorent déjà `data-motion="reduced"`.
 Aussi : le rebond du badge à la coche (`hex-pop`, 150 ms, `assets/css/app.css`),
 limité au geste de l'utilisateur et désactivé en mouvement réduit (système ou

@@ -3,21 +3,22 @@ import datetime
 from django.test import TestCase
 
 from apps.families.tests.factories import join, make_child_profile, make_family
-from apps.household.models import ChoreCompletion, HouseholdChore
-from apps.stars.models import StarDebit, StarSpend
+from apps.stars.models import DayStar, StarDebit, StarSpend
 from apps.stars.selectors import STAR_TIER, balances, pot
 from apps.stars.services import NotEnoughStars, refund, spend_from_pot, split_cost
-from apps.tasks.models import Task, TaskCompletion
-from apps.tasks.periods import Period
 
 DAY = datetime.date(2026, 9, 28)
 
 
 def earn(person, n, start=DAY):
-    """Donne n étoiles à une personne : n validations de tâche sur n jours."""
-    task = Task.objects.create(person=person, title=f"Tâche {person.name}", period=Period.MORNING)
-    for i in range(n):
-        TaskCompletion.objects.create(task=task, date=start - datetime.timedelta(days=i))
+    """Donne n étoiles à une personne : n journées complètes, jusqu'à `start` inclus.
+
+    Déjà fêtées : elles ne déclenchent pas « Journée terminée ! » à l'affichage.
+    """
+    DayStar.objects.bulk_create(
+        DayStar(person=person, date=start - datetime.timedelta(days=i), celebrated=True)
+        for i in range(n)
+    )
 
 
 class BalanceTests(TestCase):
@@ -27,18 +28,11 @@ class BalanceTests(TestCase):
         self.lina = make_child_profile(self.family, "Lina")
         self.noah = make_child_profile(self.family, "Noah")
 
-    def test_one_star_per_completed_task_and_child_chore(self):
+    def test_one_star_per_completed_day(self):
         earn(self.lina, 3)
-        chore = HouseholdChore.objects.create(
-            family=self.family, title="Table", assignee=self.lina, start_date=DAY
-        )
-        ChoreCompletion.objects.create(chore=chore, date=DAY)
-        self.assertEqual(balances(self.family)[self.lina.pk].earned, 4)
-
-    def test_unticking_removes_the_star(self):
-        earn(self.lina, 2)
-        TaskCompletion.objects.filter(task__person=self.lina).first().delete()
-        self.assertEqual(balances(self.family)[self.lina.pk].balance, 1)
+        earn(self.noah, 1)
+        stars = balances(self.family)
+        self.assertEqual((stars[self.lina.pk].earned, stars[self.noah.pk].earned), (3, 1))
 
     def test_parents_do_not_earn_stars(self):
         earn(self.parent.person, 5)

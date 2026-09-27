@@ -198,10 +198,11 @@ class DrawLifecycleTests(TestCase):
         earn(self.lina, 15)
         activity(self.family, "Cirque", is_free=False, stars=15)
         plan = self.spin(cost=CostFilter.STARS)
-        # Entre le tirage et la validation, une étoile est décochée.
-        from apps.tasks.models import TaskCompletion
+        # Entre le tirage et la validation, une étoile est dépensée ailleurs
+        # (un décochage ne retire plus d'étoile : voir l'étoile du jour).
+        from apps.stars.services import spend_from_pot
 
-        TaskCompletion.objects.filter(task__person=self.lina).first().delete()
+        spend_from_pot(self.family, 1, "Glace")
         with self.assertRaisesMessage(DrawError, "Pas assez d'étoiles"):
             accept(plan)
         plan.refresh_from_db()
