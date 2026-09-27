@@ -1,0 +1,36 @@
+/* La Ruche — feuille source Tailwind (compilée vers static/css/app.css). */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Tokens exposés en variables CSS pour les usages hors classes
+     (SVG inline, styles calculés). Valeurs tirées de tailwind.config.js. */
+  :root {
+    --color-surface-0: theme('colors.surface.0');
+    --color-surface-100: theme('colors.surface.100');
+    --color-ink: theme('colors.ink.DEFAULT');
+    --color-ink-soft: theme('colors.ink.soft');
+    --color-border: theme('colors.border.DEFAULT');
+    --color-border-strong: theme('colors.border.strong');
+    --color-honey: theme('colors.honey.DEFAULT');
+    --color-honey-dark: theme('colors.honey.dark');
+    --color-terracotta: theme('colors.terracotta');
+    --color-sage: theme('colors.sage');
+  }
+
+  html {
+    @apply bg-surface-100 font-sans text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display font-semibold;
+  }
+
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-honey-dark;
+  }
+}
