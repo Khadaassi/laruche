@@ -1,0 +1,10 @@
+{% include "components/_field.html" with field=form.name %}
+{% include "parent/_chip_choices.html" with field=form.season cols="grid-cols-3" %}
+{% include "parent/_chip_choices.html" with field=form.place cols="grid-cols-2" %}
+<label class="flex min-h-11 cursor-pointer items-center gap-space-2">{{ form.is_free }}<span class="font-medium">Gratuite</span></label>
+{% for error in form.is_free.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+<div class="grid grid-cols-2 gap-space-2">
+  {% include "components/_field.html" with field=form.price %}
+  {% include "components/_field.html" with field=form.star_cost %}
+</div>
+{% include "components/_field.html" with field=form.last_done_on %}

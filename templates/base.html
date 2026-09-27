@@ -7,7 +7,8 @@
   <title>{% block title %}La Ruche{% endblock %}</title>
 
   {# HTMX compatible CSP : pas d'eval (hx-on interdit), pas de styles injectés. #}
-  <meta name="htmx-config" content='{"allowEval": false, "allowScriptTags": false, "includeIndicatorStyles": false}'>
+  {# 422 = refus métier (ex. plus de relance) : son fragment explicatif est affiché. #}
+  <meta name="htmx-config" content='{"allowEval": false, "allowScriptTags": false, "includeIndicatorStyles": false, "responseHandling": [{"code": "204", "swap": false}, {"code": "[23]..", "swap": true}, {"code": "422", "swap": true, "error": false}, {"code": "[45]..", "swap": false, "error": true}, {"code": "...", "swap": false}]}'>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

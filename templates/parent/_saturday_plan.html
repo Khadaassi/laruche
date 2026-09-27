@@ -1,0 +1,12 @@
+{# Plan du samedi validé (ou fait) : activité, badges, contributions en étoiles. #}
+<div class="space-y-space-2">
+  <p class="text-ink-soft">Samedi {{ plan.date|date:"j F" }}</p>
+  <p class="font-display text-2xl font-semibold">{{ plan.activity_name }}</p>
+  {% if plan.activity %}{% include "components/_activity_badges.html" with activity=plan.activity %}{% endif %}
+  {% if plan.star_spend %}
+    <p class="text-sm text-ink-soft">
+      Payé avec {{ plan.star_spend.total }} étoiles du pot commun :
+      {% for debit in plan.star_spend.debits.all %}{{ debit.person.name }} {{ debit.amount }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+    </p>
+  {% endif %}
+</div>

@@ -1,0 +1,18 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}{{ activity.name }} — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'saturday:catalog' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Activités</a>
+  {% include "parent/_header.html" with title="Modifier l'activité" %}
+{% endblock %}
+
+{% block content %}
+  <div class="space-y-space-4">
+    <form method="post" class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" novalidate>
+      {% csrf_token %}
+      {% include "parent/_activity_form_fields.html" %}
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
+    </form>
+    <a href="{% url 'saturday:delete_activity' activity.pk %}" class="flex min-h-11 items-center justify-center font-medium text-terracotta underline">Supprimer cette activité</a>
+  </div>
+{% endblock %}

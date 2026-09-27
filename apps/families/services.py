@@ -42,6 +42,10 @@ def create_family(*, user, name: str) -> FamilyMembership:
             continue
     else:
         raise RuntimeError("Impossible de générer un code d'invitation unique.")
+    # Catalogue de départ de la roue du samedi : la roue n'est jamais vide.
+    from apps.saturday.defaults import seed_default_activities
+
+    seed_default_activities(family)
     return _add_member(user, family)
 
 

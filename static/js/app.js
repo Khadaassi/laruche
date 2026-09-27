@@ -16,6 +16,34 @@ document.addEventListener('alpine:init', () => {
       }
     },
   }));
+
+  // Roue du samedi : le serveur a déjà tiré. On anime la rotation vers le
+  // résultat, puis on le révèle (avec confettis, en CSS). En mouvement réduit
+  // (système ou data-motion="reduced"), la roue est posée directement sur le
+  // résultat, sans animation.
+  Alpine.data('wheel', () => ({
+    done: false,
+    init() {
+      const rotor = this.$refs.rotor;
+      const turn = `rotate(${Number(rotor.dataset.rotation) || 0}deg)`;
+      const reduced =
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        document.documentElement.dataset.motion === 'reduced';
+      if (reduced) {
+        rotor.style.transform = turn;
+        this.done = true;
+        return;
+      }
+      rotor.addEventListener('transitionend', () => { this.done = true; }, { once: true });
+      // Deux frames : l'état initial est peint avant de lancer la transition.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        rotor.classList.add('is-spinning');
+        rotor.style.transform = turn;
+      }));
+      // Filet de sécurité si transitionend ne se déclenche pas (onglet masqué…).
+      setTimeout(() => { this.done = true; }, 4500);
+    },
+  }));
 });
 
 // Cases à cocher des tâches : l'état change tout de suite côté client
