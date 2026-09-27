@@ -1,0 +1,37 @@
+{% extends "layouts/shared_display.html" %}
+{% block title %}Roue du samedi — La Ruche{% endblock %}
+
+{% block top_nav %}{% include "shared/_top_nav.html" with tab="saturday" %}{% endblock %}
+{% block main_attrs %}x-data="periodClock" data-reload-in="{{ reload_in }}"{% endblock %}
+
+{% comment %}
+Roue du samedi sur l'écran commun : un parent confirme (mot de passe), puis la
+roue tourne ici, en grand, devant toute la famille. Mêmes règles que sur le
+téléphone (filtres, 3 tours, « On y va ! »).
+{% endcomment %}
+{% block before_columns %}
+  <div class="mx-auto max-w-xl">
+    {% if plan.status == "planned" or plan.status == "done" %}
+      <section class="rounded-md border border-honey-dark bg-surface-0 p-space-6 text-center" aria-labelledby="plan-title">
+        <h1 id="plan-title" class="mb-space-4 text-2xl">{% if plan.status == "done" %}Ce samedi, c'est fait !{% else %}C'est décidé !{% endif %}</h1>
+        {% include "parent/_saturday_plan.html" %}
+      </section>
+    {% elif unlocked %}
+      <h1 class="mb-space-4 text-center text-3xl">Roue du samedi {{ saturday_label }}</h1>
+      {% include "parent/_saturday_draw.html" with wheel_size="max-w-md" %}
+    {% else %}
+      <section class="rounded-md border border-border bg-surface-0 p-space-6" aria-labelledby="unlock-title">
+        <h1 id="unlock-title" class="mb-space-2 text-2xl">Roue du samedi {{ saturday_label }}</h1>
+        <p class="mb-space-4 text-ink-soft">Un parent confirme avec son mot de passe, puis la roue tourne ici, devant tout le monde.</p>
+        <form method="post" action="{% url 'display:saturday_unlock' %}" class="space-y-space-4" novalidate>
+          {% csrf_token %}
+          {% if blocked %}<p class="font-medium text-terracotta" role="alert">{{ blocked }}</p>{% endif %}
+          {% for error in form.non_field_errors %}<p class="font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+          {% include "components/_field.html" with field=form.username %}
+          {% include "components/_field.html" with field=form.password %}
+          <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-display text-xl font-semibold text-ink hover:bg-honey-dark">Lancer la roue</button>
+        </form>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}
