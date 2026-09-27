@@ -6,8 +6,10 @@ samedi…). Projet repris **de zéro** : ne jamais réutiliser de code de l'anci
 
 ## Phase actuelle
 
-**Phase 0 — fondations.** Aucune feature métier, aucun modèle métier, aucun écran.
-Le modèle de domaine arrive en Phase 1 (`.claude/skills/domain-model/SKILL.md`).
+**Phase 1 — fondations métier.** Familles, membres, personnes, tâches du jour minimales,
+inscription par code famille, accueil parent mobile et affichage partagé tablette.
+Modèle et choix documentés dans `.claude/skills/domain-model/SKILL.md`.
+Semaine, Menu et Courses sont des pages « à venir ».
 
 ## Stack
 
@@ -27,14 +29,19 @@ Le modèle de domaine arrive en Phase 1 (`.claude/skills/domain-model/SKILL.md`)
 ```
 config/                 réglages, urls, wsgi/asgi (settings.py unique, piloté par env)
 apps/
-  core/                 transverse : /healthz/, utilitaires, tests des gabarits/sécurité
-  accounts/             accounts.User (custom, vide en Phase 0), authentification
+  core/                 transverse : /healthz/, pages « à venir », tests des gabarits/sécurité
+  accounts/             accounts.User, connexion par e-mail, inscription par code famille
+  families/             Family, FamilyMembership, Person ; access.py (décorateurs d'accès), réglages
+  tasks/                Task, TaskCompletion, périodes, accueil parent, cochage
+  display/              SharedDisplayDevice, écran partagé tablette
 templates/
   base.html             squelette HTML commun (polices, CSS, HTMX, Alpine, CSRF)
   layouts/
     parent_mobile.html  famille « parent » : mobile, nav fixe en bas
     shared_display.html famille « affichage partagé » : tablette, colonnes par enfant, nav en haut
-  parent/  shared/      (à venir) pages de chaque famille de gabarits
+    public.html         connexion, inscription, erreurs (sans navigation)
+  parent/  shared/      pages de chaque famille de gabarits
+  accounts/ components/ pages d'authentification, fragments réutilisables
 assets/css/app.css      source Tailwind (non servie)
 static/js/app.js        composants Alpine (Alpine.data)
 static/css/, static/vendor/   générés par `npm run build` (non versionnés)

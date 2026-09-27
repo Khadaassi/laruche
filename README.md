@@ -4,7 +4,18 @@ Organisation familiale : semainier, tâches des enfants, menu de la semaine.
 Deux usages : une **vue parent** sur mobile, et un **affichage partagé** sur une
 tablette commune où les enfants voient leurs tâches côte à côte.
 
-> Phase 0 : fondations uniquement (config, sécurité, CI, charte). Aucune fonctionnalité métier.
+> Phase 1 : familles et inscription par code, tâches du jour, accueil parent (mobile)
+> et affichage partagé (tablette). Semaine, menu et courses sont encore « à venir ».
+
+## Premiers pas
+
+1. `/inscription/` avec un **nouveau code** (8 caractères minimum) et un nom de famille :
+   la famille est créée et vous en êtes le premier parent.
+2. Les autres membres s'inscrivent avec **le même code** : ils arrivent en « enfant » ;
+   un parent peut les passer en parent depuis **Réglages**.
+3. **Réglages** : ajouter des enfants sans compte, puis **Gérer les tâches du quotidien**.
+4. Sur la tablette commune : se connecter en parent, **Réglages → Affichage partagé →
+   Activer sur cet appareil**. Pour en sortir : bouton « Mode parent » + mot de passe.
 
 ## Stack
 
