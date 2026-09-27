@@ -35,3 +35,16 @@ def make_child_profile(family, name="Lina"):
     return Person.objects.create(
         family=family, name=name, role=Role.CHILD, avatar_color=AvatarColor.TERRACOTTA
     )
+
+
+class SecureClientMixin:
+    """HTTPS est forcé hors DEBUG : toutes les requêtes de test passent en secure."""
+
+    def get(self, url, data=None, **kwargs):
+        return self.client.get(url, data, secure=True, **kwargs)
+
+    def post(self, url, data=None, **kwargs):
+        return self.client.post(url, data or {}, secure=True, **kwargs)
+
+    def htmx_post(self, url, data=None):
+        return self.post(url, data, headers={"HX-Request": "true"})

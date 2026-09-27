@@ -1,0 +1,22 @@
+{% extends "layouts/public.html" %}
+{% block title %}Inscription — La Ruche{% endblock %}
+
+{% block content %}
+  <h1 class="mb-space-2 text-2xl">Créer un compte</h1>
+  <p class="mb-space-4 text-ink-soft">
+    Avec le code d'une famille existante, vous la rejoignez. Avec un nouveau code, vous
+    créez votre famille et en devenez le premier parent.
+  </p>
+  <form method="post" class="space-y-space-4" novalidate>
+    {% csrf_token %}
+    {% for error in form.non_field_errors %}<p class="font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+    {% for field in form %}{% include "components/_field.html" %}{% endfor %}
+    <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Créer mon compte</button>
+  </form>
+{% endblock %}
+
+{% block after_card %}
+  <p class="mt-space-4 text-center text-ink-soft">
+    Déjà inscrit ? <a href="{% url 'accounts:login' %}" class="font-medium text-ink underline">Se connecter</a>
+  </p>
+{% endblock %}
