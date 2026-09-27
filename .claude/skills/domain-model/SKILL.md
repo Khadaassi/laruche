@@ -43,7 +43,7 @@ families.Family ──1:N── celebrations.Celebration (nom, date)
 | `school` | `SchoolDayOverride` | Exception pour une **date** : mêmes champs, remplace la semaine type ce jour-là. Unique `(person, date)`. |
 | `household` | `HouseholdChore` | Tâche de ménage : `title`, `assignee` (toute `Person`, parent compris), `weekdays` (masque), `interval_weeks` (1 ou 2), `start_date`. Porte `family` directement. |
 | `household` | `ChoreCompletion` | « Fait » pour une tâche de ménage à une date. Unique `(chore, date)`. |
-| `celebrations` | `Celebration` | Fête datée (`name`, `date`), pas de récurrence annuelle. |
+| `celebrations` | `Celebration` | Fête datée (`name`, `date`), `recurs_yearly` (chaque année), `previous` (occurrence de l'année d'avant, OneToOne). |
 | `celebrations` | `CelebrationTodo` | Préparatif unique : `title`, `assignee` (facultatif), `done`. |
 | `celebrations` | `GiftItem` | Cadeau : `item`, `recipient` / `recipient_name`, `buyer` / `buyer_name` (personne de la famille ou nom libre), `done` (acheté). |
 | `celebrations` | `RecipeIdea` | Idée de recette : `name`, `notes` libres. |
@@ -133,6 +133,11 @@ Cette section n'existait pas avant la Phase 2 : elle est créée ici.
   règles d'équité (absences, âges, échanges) qui méritent une conception à part ; une
   rotation naïve produirait surtout des corrections manuelles.
 - **Assignation à toute personne**, parents compris (contrairement aux tâches enfants).
+- **Cochage** : un parent coche tout depuis le semainier. Une tâche de ménage **assignée
+  à un enfant** apparaît aussi sur sa colonne de l'écran partagé (« Ménage du jour ») et
+  s'y coche exactement comme ses tâches du jour (même règle de colonne, compte dans
+  « X tâches restantes »). Une tâche de ménage **assignée à un parent** n'apparaît jamais
+  sur l'écran partagé et n'y est pas cochable.
 - **Semainier** (`/semaine/`, remplace la page « à venir ») : un bloc par jour avec fêtes,
   école de chaque enfant et ménage (cochable par un parent). Navigation de semaine en
   semaine (`?semaine=AAAA-MM-JJ`). Même assemblage (`household/week.py`) pour la version
@@ -150,8 +155,21 @@ Cette section n'existait pas avant la Phase 2 : elle est créée ici.
 - **Cadeaux et recettes** : personne de la famille **ou** nom libre (grand-mère, tante…),
   car les invités ne sont pas dans l'app. Les recettes sont du texte libre, sans
   ingrédients structurés.
-- **Pas de récurrence annuelle** : l'Aïd change de date chaque année ; un anniversaire se
-  recrée (voir points ouverts).
+- **Récurrence annuelle (option « Chaque année »)**, pour les cas simples comme les
+  anniversaires. Une fois la date passée, la fête est recréée l'année suivante, même jour
+  et même mois (un 29 février devient le 28 hors année bissextile ; si l'app n'a pas été
+  ouverte depuis plus d'un an, les années manquées sont sautées). Les fêtes dont la date
+  change (Aïd) restent sans récurrence et se créent à la main : aucun calcul de calendrier
+  religieux.
+  - **Ce qui est repris** : nom, récurrence et **idées de recettes** (souvent les mêmes
+    d'une année sur l'autre : un point de départ utile, qu'on supprime facilement).
+  - **Ce qui repart de zéro** : **préparatifs** (liste vierge, comme demandé) et
+    **cadeaux** : les cadeaux sont propres à chaque année (on n'offre pas deux fois le
+    même vélo), les recopier créerait surtout du nettoyage.
+  - **Déclenchement paresseux**, sans tâche planifiée (l'offre gratuite de Render n'en a
+    pas) : `celebrations.services.roll_over_recurring(family, today)` est appelé par les
+    vues qui listent des fêtes (Fêtes, semainier, « à préparer pour demain », écran
+    partagé). Idempotent : `previous` est un OneToOne, une occurrence n'a qu'une suite.
 - Suppression d'une fête : page de confirmation (pas de `confirm()` JS), supprime aussi
   ses préparatifs, cadeaux et recettes.
 
