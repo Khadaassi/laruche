@@ -5,7 +5,8 @@ Nom distinct exprès : un include hérite du contexte de la page, et la page
 Samedi a sa propre variable `stars` (liste des soldes).
 {% endcomment %}
 <div class="mb-space-4 flex items-center gap-space-2">
-  {% include "components/_logo.html" with size="h-10 w-10" %}
+  {# md+ : la marque est déjà en tête de la barre latérale. #}
+  <span class="shrink-0 md:hidden">{% include "components/_logo.html" with size="h-10 w-10" %}</span>
   <div class="min-w-0 flex-1">
     <p class="font-display text-xl font-semibold leading-tight">{{ title|default:"La Ruche" }}</p>
     {% if subtitle %}<p class="text-sm text-ink-soft">{{ subtitle }}</p>{% endif %}

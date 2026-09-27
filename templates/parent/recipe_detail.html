@@ -24,6 +24,7 @@
     {% endif %}
   </form>
 
+  <div class="page-grid">
   {# Ingrédients #}
   <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="ingredients-title">
     <h2 id="ingredients-title" class="mb-space-2 text-lg">Ingrédients</h2>
@@ -71,8 +72,10 @@
     {% endif %}
   </section>
 
+  </div>
+
   {# Modifier / supprimer #}
-  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="edit-title">
+  <section class="rounded-md border border-border bg-surface-0 p-space-4 lg:max-w-2xl" aria-labelledby="edit-title">
     <h2 id="edit-title" class="mb-space-4 text-lg">Modifier la recette</h2>
     <form method="post" action="{% url 'meals:recipe_edit' recipe.pk %}" class="space-y-space-4" novalidate>
       {% csrf_token %}

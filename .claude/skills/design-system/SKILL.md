@@ -186,8 +186,8 @@ Ne pas faire un seul gabarit « responsive » : les usages sont trop différents
 | Gabarit | `templates/layouts/parent_mobile.html` | `templates/layouts/shared_display.html` |
 | Pages | `templates/parent/…` | `templates/shared/…` |
 | Appareil | Téléphone personnel | Tablette / ordinateur commun sur un plan de travail |
-| Structure | 1 colonne qui défile | Colonnes côte à côte, **une par enfant, simultanées** |
-| Navigation | Barre **fixe en bas**, labels toujours visibles | Barre **horizontale en haut** |
+| Structure | 1 colonne qui défile ; à partir de `lg`, pages à sections en 2 colonnes (`.page-grid`) | Colonnes côte à côte, **une par enfant, simultanées** |
+| Navigation | Barre **fixe en bas**, labels toujours visibles ; à partir de `md`, **barre latérale** à gauche (même contenu, logo en tête) | Barre **horizontale en haut** |
 | Accueil | Sélecteur de famille, période du jour ouverte, « 3 tâches restantes » (pas de %) | Avatar hexagonal, progression en alvéoles vers le palier d'étoiles |
 | URL | `/` et pages parent | `/affichage/` |
 | Navigation | Accueil / Semaine / Fêtes / Cuisine / Réglages | Onglets Aujourd'hui / Semaine / Fêtes / Samedi / Menu |
@@ -220,6 +220,23 @@ Le bouton **« Envoyer aux courses »** du menu reste en plus un raccourci conte
 
 Les enfants n'ont pas la liste de courses : l'écran partagé ne gagne qu'un onglet
 **« Menu »** en lecture seule (voir `permissions/SKILL.md`).
+
+### Vue parent sur ordinateur et tablette
+
+La vue parent reste pensée pour le téléphone, mais elle **s'adapte aux grands écrans**
+(un parent l'ouvre aussi sur son ordinateur) : ce n'est pas un troisième gabarit, ce sont
+les breakpoints du même `parent_mobile.html`.
+- `< md` (téléphone) : inchangé — une colonne, nav en bas.
+- `md` (≥ 768 px) : nav en **barre latérale** de 14 rem (logo + « La Ruche » en tête,
+  entrées icône + libellé, entrée active sur `surface-100` avec l'icône sur `honey`) ;
+  contenu élargi jusqu'à `max-w-3xl`, marges `space-8`. Le logo de l'en-tête de page est
+  masqué (déjà dans la barre).
+- `lg` (≥ 1024 px) : contenu jusqu'à `max-w-5xl`. Pages à plusieurs sections :
+  `.page-grid` (2 colonnes alignées en haut). Accueil : tâches du jour à gauche (3/5),
+  cartes (dîner, école, demain, samedi) à droite. Menu : jours en grille de 3.
+- Pages à formulaire seul ou de confirmation : `content_width` étroit (`max-w-xl`), pour
+  ne pas étirer un champ sur 1000 px.
+- Aucune barre de défilement horizontale à aucune largeur (vérifié à 390 et 1280 px).
 
 Les pages publiques (connexion, inscription, erreurs) utilisent un troisième gabarit
 minimal, `layouts/public.html` : une carte centrée, sans navigation.

@@ -1,5 +1,7 @@
 {% extends "layouts/parent_mobile.html" %}
 {% block title %}{{ item.name }} — La Ruche{% endblock %}
+{% block header_width %}max-w-md md:max-w-xl{% endblock %}
+{% block content_width %}max-w-md md:max-w-xl{% endblock %}
 
 {% block header %}
   <a href="{% url 'shopping:index' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Courses</a>

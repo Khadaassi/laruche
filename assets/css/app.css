@@ -36,6 +36,12 @@
 }
 
 @layer components {
+  /* Page parent à sections : une colonne sur téléphone, deux à partir de lg
+     (ordinateur, tablette à l'horizontale). */
+  .page-grid {
+    @apply space-y-space-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-space-6 lg:space-y-0;
+  }
+
   /* Alvéole : hexagone à pointe en haut, sur une boîte carrée. */
   .hex {
     clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);

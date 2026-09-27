@@ -13,7 +13,7 @@
     </p>
   {% endif %}
 
-  <div class="space-y-space-4">
+  <div class="grid gap-space-4 md:grid-cols-2 lg:grid-cols-3">
     {% for day in days %}
       <section class="rounded-md border {% if day.is_today %}border-honey-dark{% else %}border-border{% endif %} bg-surface-0 p-space-4" aria-labelledby="day-{{ forloop.counter }}">
         <h2 id="day-{{ forloop.counter }}" class="mb-space-2 flex items-center gap-space-2 text-lg">
@@ -44,7 +44,7 @@
   </div>
 
   <a href="{% url 'shopping:transfer' %}?semaine={{ monday|date:'Y-m-d' }}"
-     class="mt-space-6 flex min-h-12 w-full items-center justify-center gap-space-2 rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">
+     class="mx-auto mt-space-6 flex min-h-12 w-full md:max-w-md items-center justify-center gap-space-2 rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">
     {% include "components/_icon.html" with name="shopping" icon_size="h-5 w-5" %}Envoyer ce menu aux courses
   </a>
   <p class="mt-space-2 text-center text-sm text-ink-soft">Vous verrez ce qui change avant de confirmer.</p>
