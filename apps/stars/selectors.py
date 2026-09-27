@@ -1,4 +1,4 @@
-"""Soldes d'étoiles : gagnées (une par journée complète) − dépensées.
+"""Soldes d'étoiles : gagnées (une par journée complète + solde de départ) − dépensées.
 
 Voir domain-model/SKILL.md, section « Étoiles ».
 """
@@ -12,7 +12,7 @@ from apps.families.models import Person
 from apps.household.selectors import chores_by_day
 from apps.tasks.selectors import tasks_for_day
 
-from .models import DayStar, StarDebit
+from .models import DayStar, StarDebit, StarOpeningBalance
 
 STAR_TIER = 10  # un palier tous les 10 étoiles gagnées
 
@@ -48,6 +48,10 @@ def balances(family, people=None) -> dict[int, StarBalance]:
     stars = DayStar.objects.filter(person_id__in=ids).values("person_id").annotate(n=Count("pk"))
     for row in stars:
         earned[row["person_id"]] = row["n"]
+    # Solde de départ (reprise d'une autre application) : des étoiles déjà gagnées.
+    opening = StarOpeningBalance.objects.filter(person_id__in=ids)
+    for person_id, amount in opening.values_list("person_id", "amount"):
+        earned[person_id] += amount
     spent = dict.fromkeys(ids, 0)
     for row in (
         StarDebit.objects.filter(person_id__in=ids).values("person_id").annotate(n=Sum("amount"))

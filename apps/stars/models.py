@@ -72,6 +72,34 @@ class DayStar(models.Model):
         return f"{self.person} : {self.date:%d/%m/%Y}"
 
 
+class StarOpeningBalance(models.Model):
+    """Solde de départ : étoiles gagnées avant La Ruche (reprise d'une autre application).
+
+    Au plus un par enfant (OneToOne). Compté dans les étoiles **gagnées** (palier compris),
+    comme des journées complètes déjà acquises ; jamais recalculé. Créé par
+    `services.grant_opening_balance`, pas depuis l'interface.
+    """
+
+    person = models.OneToOneField(
+        "families.Person", on_delete=models.CASCADE, related_name="star_opening_balance"
+    )
+    amount = models.PositiveIntegerField("étoiles")
+    reason = models.CharField("motif", max_length=120)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "solde de départ"
+        verbose_name_plural = "soldes de départ"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="opening_balance_positive"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.person} : {self.amount} ★ ({self.reason})"
+
+
 class TierCelebration(models.Model):
     """Dernier palier d'étoiles déjà fêté pour un enfant (écran partagé).
 

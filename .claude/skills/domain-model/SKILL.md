@@ -33,6 +33,7 @@ families.Family ──1:N── celebrations.Celebration (nom, date)
 
 stars.StarSpend (famille, total, motif) ──1:N── stars.StarDebit (enfant, montant)
 families.Person (enfant) ──1:N── stars.DayStar (date, fêtée)   (une étoile par journée complète)
+                         └─0..1── stars.StarOpeningBalance (étoiles, motif)   (solde de départ)
 
 families.Family ──1:N── saturday.SaturdayActivity (catalogue : saison, lieu, prix, étoiles, dernière fois)
                 └──1:N── saturday.SaturdayPlan (samedi, statut, activité, tirages, dépense d'étoiles)
@@ -62,6 +63,7 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 | `celebrations` | `GiftItem` | Cadeau : `item`, `recipient` / `recipient_name`, `buyer` / `buyer_name` (personne de la famille ou nom libre), `done` (acheté). |
 | `celebrations` | `RecipeIdea` | Idée de recette : `name`, `notes` libres. |
 | `stars` | `DayStar` | Étoile d'une **journée complète** d'un enfant : `person`, `date`, `celebrated` (« Journée terminée ! » déjà montrée). Unique `(person, date)`. Jamais supprimée par un décochage. |
+| `stars` | `StarOpeningBalance` | **Solde de départ** d'un enfant : `amount` (> 0), `reason`. Au plus un par enfant (OneToOne). Étoiles gagnées ailleurs avant La Ruche (reprise de notre-semaine). |
 | `stars` | `StarSpend` / `StarDebit` | Dépense d'étoiles de la famille et part de chaque enfant. |
 | `saturday` | `SaturdayActivity` | Activité du catalogue : `name`, `season` (toutes / 4 saisons), `place` (sortie / maison), `is_free`, `price` indicatif, `star_cost` (0 = pas d'étoiles), `last_done_on`. Catalogue de départ (18 activités) à la création d'une famille. |
 | `saturday` | `SaturdayPlan` | Un samedi d'une famille (unique `(family, date)`) : `status` (tirage en cours / prévu / fait), activité proposée puis validée, `activity_name` (copie pour l'historique), `spins` (≤ 3), `star_spend`. |
@@ -277,7 +279,8 @@ Elle renvoie `True` **seulement pour l'appel qui crée l'étoile**. Garanties :
 - Pas de recalcul rétroactif : une journée devenue complète autrement que par un cochage
   (tâche supprimée le soir même) ne donne son étoile qu'au prochain cochage de ce jour.
 
-**Étoiles gagnées** = nombre de `DayStar` de l'enfant (`balances`, une requête groupée).
+**Étoiles gagnées** = nombre de `DayStar` de l'enfant **+ son solde de départ**
+(`StarOpeningBalance`, s'il existe), calculé par `balances` en requêtes groupées.
 Le palier (`STAR_TIER = 10`), la pastille, la page du samedi et le pot en découlent sans
 autre changement : 10 journées complètes = un palier.
 
@@ -290,6 +293,14 @@ de l'écran partagé ; le parent voit, lui, une simple annonce statique dans la 
 cochage (« Journée terminée pour Lina : +1 étoile »), qui ne consomme pas la fête des
 enfants. Si l'étoile du jour fait aussi franchir un palier, un seul encart (celui du palier,
 avec la ligne « Journée terminée : +1 étoile »).
+
+**Solde de départ** (`services.grant_opening_balance(person, amount, reason)`) : reprend
+tel quel un total d'étoiles gagné dans une autre application (pas recalculé, pas
+approximé). Compte comme des étoiles gagnées : solde, pot, roue et palier. Refusé (rien
+n'écrit) pour un parent, un montant ≤ 0 ou un enfant qui en a déjà un (contrainte
+OneToOne en base, en plus du contrôle). Le palier atteint par ce seul solde est marqué
+comme déjà fêté (`TierCelebration`) : l'écran partagé ne fête que les paliers franchis
+ensuite dans La Ruche. Pas d'interface : saisi par le script de reprise (ou l'admin).
 
 **Reprise des données (migration `stars.0003`)** : aucune étoile n'est recalculée à partir
 des anciennes validations (l'ancienne règle comptait une étoile par tâche). Les soldes
@@ -604,4 +615,3 @@ HTMX envoie l'état voulu (`hx-swap="none"`) et la réponse ne remplace que les 
 
 - Moteur de routines personnalisables (Phase 2) : remplacera ou enrichira `Task`.
 - Menu : portions et mise à l'échelle des quantités ; rayons du magasin pour trier la liste.
-- Solde de départ d'étoiles (reprise des étoiles de l'ancienne application notre-semaine).

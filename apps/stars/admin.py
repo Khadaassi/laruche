@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import DayStar, StarDebit, StarSpend, TierCelebration
+from .models import DayStar, StarDebit, StarOpeningBalance, StarSpend, TierCelebration
 
 
 class DebitInline(admin.TabularInline):
@@ -25,4 +25,10 @@ class TierCelebrationAdmin(admin.ModelAdmin):
 @admin.register(DayStar)
 class DayStarAdmin(admin.ModelAdmin):
     list_display = ["person", "date", "celebrated", "created_at"]
+    raw_id_fields = ["person"]
+
+
+@admin.register(StarOpeningBalance)
+class StarOpeningBalanceAdmin(admin.ModelAdmin):
+    list_display = ["person", "amount", "reason", "created_at"]
     raw_id_fields = ["person"]
