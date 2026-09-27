@@ -12,7 +12,7 @@ from apps.families.models import Person
 from apps.meals.week import dinner_of
 from apps.saturday.draw import close_past_plans, current_plan
 from apps.school.selectors import school_days_for
-from apps.stars.selectors import pot
+from apps.stars.selectors import balances, pot
 from apps.stars.services import award_day_star
 
 from .forms import TaskForm
@@ -116,6 +116,11 @@ def toggle(request, pk):
             "period": Period(task.period),
             "period_remaining": count_remaining(period_tasks),
             "day_star_person": task.person if day_star else None,
+            "day_star_balance": (
+                balances(request.family, people=[task.person])[task.person.pk].balance
+                if day_star
+                else None
+            ),
         },
     )
 

@@ -197,43 +197,118 @@
 }
 
 /* --- Journée terminée (étoile du jour) ---------------------------------------
-   Célébration distincte du palier et de la roue : un tampon « validé » (sauge +
-   coche) se pose, l'étoile miel apparaît, puis une rangée d'alvéoles s'allume de
-   gauche à droite (~1,1 s). Une seule fois : le serveur n'envoie ce bloc qu'une
-   fois par journée. En mouvement réduit : l'encart reste, sans mouvement (l'état
-   final est l'état par défaut, les animations ne partent que de `backwards`). */
-@keyframes day-stamp {
-  0% { opacity: 0; transform: scale(1.8) rotate(-12deg); }
-  60% { opacity: 1; transform: scale(0.92) rotate(0deg); }
-  100% { opacity: 1; transform: scale(1); }
+   Célébration plein écran « style jeu vidéo », distincte de la roue (confettis sur la
+   carte) et du palier (encart, badge qui tournoie, alvéoles qui montent) : fond qui
+   s'assombrit, rayons de lumière qui font UN tour, grosse étoile qui tombe, rebondit
+   et tournoie, « +1 » qui s'envole, titre qui éclate, explosion de confettis
+   hexagonaux (~2,4 s). Jamais en boucle. Mouvement réduit : l'état final est l'état
+   par défaut (animations en `backwards` ou `forwards` seulement sous motion-safe). */
+@layer components {
+  .day-rays {
+    position: absolute;
+    left: 50%;
+    top: 104px;
+    width: 640px;
+    height: 640px;
+    margin: -320px 0 0 -320px;
+    pointer-events: none;
+    opacity: 0.35;
+    background: repeating-conic-gradient(
+      var(--color-honey) 0deg 12deg,
+      transparent 12deg 30deg
+    );
+    -webkit-mask-image: radial-gradient(circle, #000 0, #000 30%, transparent 62%);
+    mask-image: radial-gradient(circle, #000 0, #000 30%, transparent 62%);
+  }
+
+  .day-confetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .day-confetti span {
+    position: absolute;
+    left: 50%;
+    top: 104px;
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+    background: var(--color-honey);
+  }
+  .day-confetti span:nth-child(3n + 1) { background: var(--color-terracotta); }
+  .day-confetti span:nth-child(3n + 2) { background: var(--color-sage); }
+  .day-confetti span:nth-child(4n) { background: var(--color-honey-dark); }
+  .day-confetti span:nth-child(1) { --dx: -170px; --dy: -60px; }
+  .day-confetti span:nth-child(2) { --dx: 170px; --dy: -80px; }
+  .day-confetti span:nth-child(3) { --dx: -120px; --dy: 90px; }
+  .day-confetti span:nth-child(4) { --dx: 130px; --dy: 110px; }
+  .day-confetti span:nth-child(5) { --dx: -40px; --dy: -120px; }
+  .day-confetti span:nth-child(6) { --dx: 60px; --dy: -130px; }
+  .day-confetti span:nth-child(7) { --dx: -190px; --dy: 30px; }
+  .day-confetti span:nth-child(8) { --dx: 190px; --dy: 10px; }
+  .day-confetti span:nth-child(9) { --dx: -80px; --dy: 170px; }
+  .day-confetti span:nth-child(10) { --dx: 90px; --dy: 180px; }
+  .day-confetti span:nth-child(11) { --dx: -150px; --dy: -120px; }
+  .day-confetti span:nth-child(12) { --dx: 150px; --dy: -140px; }
+  .day-confetti span:nth-child(13) { --dx: 0px; --dy: 200px; }
+  .day-confetti span:nth-child(14) { --dx: -200px; --dy: 130px; }
+  .day-confetti span:nth-child(15) { --dx: 200px; --dy: 150px; }
+  .day-confetti span:nth-child(16) { --dx: 10px; --dy: -170px; }
 }
 
-@keyframes day-star-in {
-  0% { opacity: 0; transform: scale(0.3); }
-  70% { opacity: 1; transform: scale(1.25); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes day-fade { from { opacity: 0; } }
+@keyframes day-card-in {
+  0% { opacity: 0; transform: scale(0.6); }
+  70% { opacity: 1; transform: scale(1.04); }
+  100% { transform: scale(1); }
 }
-
-@keyframes day-cell-on {
-  0% { opacity: 0.2; transform: scale(0.5); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes day-rays-turn {
+  from { opacity: 0; transform: rotate(0deg) scale(0.4); }
+  20% { opacity: 0.35; }
+  to { transform: rotate(180deg) scale(1); }
+}
+@keyframes day-star-slam {
+  0% { opacity: 0; transform: translateY(-260px) rotate(-360deg) scale(0.4); }
+  55% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1.25); }
+  70% { transform: translateY(-14px) scale(0.95); }
+  85% { transform: translateY(0) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes day-plus-one {
+  0% { opacity: 0; transform: translateY(20px) scale(0.5); }
+  40% { opacity: 1; transform: translateY(-10px) scale(1.3); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes day-title-pop {
+  0% { opacity: 0; transform: scale(2.2); letter-spacing: 0.3em; }
+  60% { opacity: 1; transform: scale(0.94); letter-spacing: 0; }
+  100% { transform: scale(1); }
+}
+@keyframes day-rise { from { opacity: 0; transform: translateY(16px); } }
+@keyframes day-burst {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(0.4); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(300deg) scale(1.1); }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  html:not([data-motion='reduced']) .day-stamp {
-    animation: day-stamp 450ms cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+  html:not([data-motion='reduced']) .day-overlay { animation: day-fade 250ms ease-out backwards; }
+  html:not([data-motion='reduced']) .day-card {
+    animation: day-card-in 450ms cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
   }
-  html:not([data-motion='reduced']) .day-star {
-    animation: day-star-in 350ms ease-out 400ms backwards;
+  html:not([data-motion='reduced']) .day-rays {
+    animation: day-rays-turn 2.4s ease-out forwards;
   }
-  html:not([data-motion='reduced']) .day-cells span {
-    animation: day-cell-on 250ms ease-out backwards;
+  html:not([data-motion='reduced']) .day-star-big {
+    animation: day-star-slam 900ms cubic-bezier(0.3, 0.8, 0.4, 1) 200ms backwards;
   }
-  html:not([data-motion='reduced']) .day-cells span:nth-child(1) { animation-delay: 500ms; }
-  html:not([data-motion='reduced']) .day-cells span:nth-child(2) { animation-delay: 580ms; }
-  html:not([data-motion='reduced']) .day-cells span:nth-child(3) { animation-delay: 660ms; }
-  html:not([data-motion='reduced']) .day-cells span:nth-child(4) { animation-delay: 740ms; }
-  html:not([data-motion='reduced']) .day-cells span:nth-child(5) { animation-delay: 820ms; }
-  html:not([data-motion='reduced']) .day-cells span:nth-child(6) { animation-delay: 900ms; }
-  html:not([data-motion='reduced']) .day-cells span:nth-child(7) { animation-delay: 980ms; }
+  html:not([data-motion='reduced']) .day-plus-one {
+    animation: day-plus-one 500ms ease-out 1s backwards;
+  }
+  html:not([data-motion='reduced']) .day-title {
+    animation: day-title-pop 550ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 900ms backwards;
+  }
+  html:not([data-motion='reduced']) .day-sub { animation: day-rise 400ms ease-out 1.3s backwards; }
+  html:not([data-motion='reduced']) .day-confetti span {
+    animation: day-burst 1.4s ease-out 750ms forwards;
+  }
 }

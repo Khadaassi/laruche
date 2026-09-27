@@ -1,0 +1,31 @@
+{% comment %}
+Célébration « Journée terminée ! » en plein écran (style jeu vidéo), une seule fois par
+journée et par enfant (le serveur ne l'envoie qu'une fois). Paramètres : person, stars
+(solde affiché, facultatif), tier (palier franchi en même temps, facultatif).
+Rayons, étoile qui tombe et tournoie, « +1 » qui s'envole, confettis : tout en CSS, joué
+une fois (jamais en boucle). Mouvement réduit : la même carte, immobile.
+Fermeture : bouton « Super ! », touche Échap, ou seule après quelques secondes.
+{% endcomment %}
+<div x-data="celebrationOverlay" x-show="open" x-on:keydown.escape.window="close"
+     class="day-overlay fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-space-4"
+     role="dialog" aria-modal="true" aria-labelledby="day-celebration-{{ person.pk }}">
+  <div class="day-card relative w-full max-w-md overflow-hidden rounded-lg border-2 border-honey-dark bg-surface-100 p-space-8 text-center">
+    <div class="day-rays" aria-hidden="true"></div>
+    <div class="day-confetti" aria-hidden="true">{% for _ in "1234567890123456" %}<span class="hex"></span>{% endfor %}</div>
+    <div class="relative">
+      <div class="relative mx-auto h-32 w-32">
+        <span class="day-star-big hex flex h-32 w-32 items-center justify-center bg-honey text-ink" aria-hidden="true">{% include "components/_icon.html" with name="celebration" icon_size="h-16 w-16" %}</span>
+        <span class="day-plus-one absolute -right-space-4 top-0 rounded-sm bg-terracotta px-space-2 py-1 font-display text-2xl font-semibold text-surface-0" aria-hidden="true">+1</span>
+      </div>
+      <p id="day-celebration-{{ person.pk }}" class="day-title mt-space-6 font-display text-4xl font-semibold">Journée terminée !</p>
+      <p class="day-sub mt-space-2 text-xl">Bravo {{ person.name }}, tout est fait aujourd'hui !</p>
+      <p class="day-sub mt-space-4 inline-flex items-center gap-space-2 rounded-sm bg-honey px-space-4 py-2 font-display text-xl font-semibold text-ink">
+        {% include "components/_icon.html" with name="celebration" icon_size="h-5 w-5" %}
+        +1 étoile{% if stars is not None %} · {{ stars }} étoile{{ stars|pluralize }}{% endif %}
+      </p>
+      {% if tier %}<p class="day-sub mt-space-4 font-display text-2xl font-semibold">Palier {{ tier }} atteint !</p>{% endif %}
+      <button type="button" x-ref="close" x-on:click="close"
+              class="day-sub mt-space-6 w-full rounded-lg bg-ink px-space-6 py-3 font-display text-xl font-semibold text-surface-0">Super !</button>
+    </div>
+  </div>
+</div>

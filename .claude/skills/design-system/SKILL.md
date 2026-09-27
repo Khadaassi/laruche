@@ -152,18 +152,23 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
   bordé `honey-dark`, « Palier 2 ! Bravo Lina, 20 étoiles gagnées ! ». Distincte de la
   roue pour rester reconnaissable : badge étoilé qui arrive en tournoyant et alvéoles qui
   **montent** (la roue, elle, éclate en confettis). Une seule fois par palier.
-- **Célébration « Journée terminée ! +1 étoile »** (colonne de l'enfant, écran partagé,
-  quand la dernière tâche ou le dernier ménage du jour est coché) : encart `bg-surface-100`
-  bordé **`sage` 2px** (validé), tampon hexagonal `sage` + coche blanche, alvéole `honey` +
-  étoile après le titre, « Bravo Lina, tout est fait aujourd'hui ! », puis une rangée de
-  7 alvéoles `sage`. Distincte du palier (miel, badge qui tournoie, alvéoles qui montent) et
-  de la roue (confettis) : le **tampon se pose**, l'étoile apparaît, puis les alvéoles
-  **s'allument de gauche à droite** (~1,1 s). Une seule fois par journée. Si un palier est
-  franchi en même temps, seul l'encart du palier s'affiche, avec la ligne « Journée
-  terminée : +1 étoile ».
-- **Annonce parent de journée terminée** (`parent/_day_star_note.html`, accueil) : ligne
-  statique bordée `honey-dark`, alvéole `honey` + étoile, « Journée terminée pour Lina :
-  +1 étoile », `role="status"`. Sans animation : la fête est pour les enfants.
+- **Célébration « Journée terminée ! »** (`components/_day_celebration.html`), quand la
+  dernière tâche ou le dernier ménage du jour d'un enfant est coché : **plein écran, style
+  jeu vidéo** (demande de Khadija, Phase 5). Fond `ink/70`, carte `surface-100` bordée
+  `honey-dark` 2px, `rounded-lg`. Séquence (~2,4 s, jouée une fois) : rayons `honey` qui
+  font un demi-tour, grosse alvéole `honey` + étoile qui **tombe, rebondit et tournoie**,
+  pastille « +1 » `terracotta` (texte blanc) qui s'envole, titre « Journée terminée ! » qui
+  éclate, explosion de 16 confettis hexagonaux, puis « Bravo Lina, tout est fait
+  aujourd'hui ! », pastille miel « +1 étoile · 8 étoiles » et bouton « Super ! » (`ink`).
+  Palier franchi le même jour : ligne « Palier N atteint ! » dans la même carte (pas
+  d'encart de palier en plus). `role="dialog"`, focus sur « Super ! », fermeture au clic,
+  Échap, ou seule après 8 s (un écran partagé ne reste jamais bloqué). Affichée sur l'écran
+  partagé **et** sur l'accueil parent quand c'est le parent qui coche la dernière tâche (le
+  parent ne consomme pas la fête des enfants). Distincte de la roue (confettis sur la
+  carte) et du palier seul (encart dans la colonne, badge qui tournoie).
+- **Annonce parent de journée terminée** (`parent/_day_star_note.html`, accueil) : la
+  célébration plein écran, puis une ligne qui reste, bordée `honey-dark`, alvéole `honey` +
+  étoile, « Journée terminée pour Lina : +1 étoile », `role="status"`.
 - **Suppression** : page de confirmation (pas de `confirm()`), bouton `bg-terracotta
   text-surface-0`.
 - **Progression en alvéoles** (écran partagé) : une alvéole par tâche de la période,
@@ -277,9 +282,11 @@ Implémenté : la roue du samedi (rotation ~3,6 s, puis révélation du résulta
 confettis hexagonaux, une seule fois, jamais en boucle), le palier d'étoiles (badge qui
 tournoie, alvéoles qui montent, ~1,6 s, une seule fois par palier) et la **journée
 terminée** (tampon qui se pose, étoile qui apparaît, alvéoles qui s'allument de gauche à
-droite, ~1,1 s, une seule fois par journée et par enfant) — les « vraies célébrations » de
-la règle 2, chacune reconnaissable. La journée terminée est la plus sobre des trois : elle
-revient chaque jour, le palier reste l'événement rare. En mouvement réduit, toutes
+droite remplacés en Phase 5 par un **plein écran style jeu vidéo** : rayons, étoile qui
+tombe et tournoie, « +1 » qui s'envole, confettis, ~2,4 s, une seule fois par journée et
+par enfant) — les « vraies célébrations » de la règle 2, chacune reconnaissable. Choix
+produit assumé : la journée complète (toutes les micro-tâches du jour) est une vraie
+réussite quotidienne et mérite une vraie fête. En mouvement réduit, toutes
 deviennent un état statique (résultat / encart sans mouvement : l'état final est l'état par
 défaut, les animations partent de `backwards`). L'interrupteur des réglages n'existe
 pas encore dans l'interface : le CSS et le JS honorent déjà `data-motion="reduced"`.

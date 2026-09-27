@@ -1,10 +1,12 @@
 {% comment %}
 Annonce côté parent quand son cochage termine la journée d'un enfant (étoile du
-jour). Sans animation : la célébration est pour les enfants, sur l'écran partagé.
+jour) : la même célébration plein écran que sur l'écran partagé, puis une ligne qui
+reste. Ne consomme pas la fête des enfants (montrée au prochain affichage de leur écran).
 `oob` : réponse HTMX au cochage (vidée au cochage suivant).
 {% endcomment %}
 <div id="day-star-note" {% if oob %}hx-swap-oob="true"{% endif %} role="status">
   {% if day_star_person %}
+    {% include "components/_day_celebration.html" with person=day_star_person stars=day_star_balance %}
     <p class="mt-space-2 flex items-center gap-space-2 rounded-md border border-honey-dark bg-surface-0 p-space-2 font-medium">
       <span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey text-ink" aria-hidden="true">{% include "components/_icon.html" with name="celebration" icon_size="h-4 w-4" %}</span>
       Journée terminée pour {{ day_star_person.name }} : +1 étoile
