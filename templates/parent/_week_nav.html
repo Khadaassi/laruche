@@ -1,0 +1,10 @@
+{# Navigation entre semaines. Paramètre : base_url_name. #}
+{% url base_url_name as base_url %}
+<nav aria-label="Changer de semaine" class="mb-space-4 flex items-center justify-between gap-space-2">
+  <a href="{{ base_url }}?semaine={{ previous_monday|date:'Y-m-d' }}" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong bg-surface-0 px-space-4 font-medium"><span aria-hidden="true">←</span><span class="sr-only">Semaine précédente</span></a>
+  <p class="text-center font-medium">
+    Du {{ monday|date:"j F" }} au {{ sunday|date:"j F" }}
+    {% if not is_current_week %}<br><a href="{{ base_url }}" class="text-sm underline">Revenir à cette semaine</a>{% endif %}
+  </p>
+  <a href="{{ base_url }}?semaine={{ next_monday|date:'Y-m-d' }}" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong bg-surface-0 px-space-4 font-medium"><span aria-hidden="true">→</span><span class="sr-only">Semaine suivante</span></a>
+</nav>

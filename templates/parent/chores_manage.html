@@ -1,0 +1,45 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Ménage — La Ruche{% endblock %}
+
+{% block header %}
+  {% include "parent/_settings_back.html" %}
+  {% include "parent/_header.html" with title="Ménage" %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-space-6">
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="add-title">
+    <h2 id="add-title" class="mb-space-4 text-lg">Nouvelle tâche de ménage</h2>
+    <form method="post" class="space-y-space-4" novalidate>
+      {% csrf_token %}
+      {% include "components/_field.html" with field=form.title %}
+      {% include "components/_field.html" with field=form.assignee %}
+      {% include "parent/_chip_choices.html" with field=form.frequency cols="grid-cols-1" %}
+      {% include "parent/_chip_choices.html" with field=form.weekday_choices cols="grid-cols-4" %}
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Ajouter</button>
+    </form>
+  </section>
+
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="list-title">
+    <h2 id="list-title" class="mb-space-2 text-lg">Toutes les tâches de ménage</h2>
+    <p class="mb-space-2 text-sm text-ink-soft">Chaque tâche reste assignée à la même personne (pas de rotation automatique).</p>
+    <ul class="divide-y divide-border">
+      {% for chore in chores %}
+        <li class="flex items-center gap-space-4 py-space-2">
+          {% include "components/_avatar.html" with person=chore.assignee %}
+          <div class="flex-1">
+            <p class="font-medium">{{ chore.title }}</p>
+            <p class="text-sm text-ink-soft">{{ chore.assignee.name }} · {{ chore.schedule_display }}</p>
+          </div>
+          <form method="post" action="{% url 'household:delete' chore.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="rounded-sm border border-border-strong px-space-2 py-2 text-sm font-medium">Supprimer<span class="sr-only"> « {{ chore.title }} »</span></button>
+          </form>
+        </li>
+      {% empty %}
+        <li class="py-space-2 text-ink-soft">Aucune tâche de ménage pour l'instant.</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Semaine — La Ruche{% endblock %}
+
+{% block header %}
+  {% include "parent/_header.html" with title="Semaine" subtitle=request.family.name %}
+{% endblock %}
+
+{% block content %}
+  {% include "parent/_week_nav.html" with base_url_name="household:week" %}
+
+  <div class="space-y-space-4">
+    {% for day in days %}
+      <section class="rounded-md border {% if day.is_today %}border-honey-dark{% else %}border-border{% endif %} bg-surface-0 p-space-4" aria-labelledby="day-{{ forloop.counter }}">
+        <h2 id="day-{{ forloop.counter }}" class="mb-space-2 flex items-center gap-space-2 text-lg">
+          {{ day.date|date:"l j F"|capfirst }}
+          {% if day.is_today %}<span class="rounded-sm bg-honey px-space-2 py-0.5 text-xs font-semibold text-ink">Aujourd'hui</span>{% endif %}
+        </h2>
+
+        {% for celebration in day.celebrations %}
+          <a href="{% url 'celebrations:detail' celebration.pk %}" class="mb-space-2 flex items-center gap-space-2 font-medium underline">
+            <span class="hex flex h-7 w-7 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="celebration" %}</span>
+            {{ celebration.name }}
+          </a>
+        {% endfor %}
+
+        {% if day.school %}
+          <ul class="mb-space-2 space-y-space-2" aria-label="École">
+            {% for person, school_day in day.school %}
+              <li class="flex flex-wrap items-center gap-space-2">
+                {% include "components/_avatar.html" %}
+                {% include "components/_school_badges.html" %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {% if day.chores %}
+          <h3 class="mt-space-2 flex items-center gap-space-2 font-display text-base">{% include "components/_icon.html" with name="chore" %}Ménage</h3>
+          <ul class="divide-y divide-border">
+            {% for occurrence in day.chores %}{% include "parent/_chore_row.html" %}{% endfor %}
+          </ul>
+        {% elif day.is_empty %}
+          <p class="text-ink-soft">Rien de prévu.</p>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </div>
+
+  <p class="mt-space-4 text-center">
+    <a href="{% url 'household:manage' %}" class="font-medium underline">Gérer les tâches de ménage</a>
+  </p>
+{% endblock %}

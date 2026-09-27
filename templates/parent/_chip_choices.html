@@ -1,0 +1,13 @@
+{# Choix en « puces » (radio ou cases), lisibles au doigt. Paramètres : field, cols. #}
+<fieldset>
+  <legend class="mb-1 font-medium">{{ field.label }}</legend>
+  <div class="grid {{ cols|default:'grid-cols-3' }} gap-space-2">
+    {% for choice in field %}
+      <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">
+        {{ choice.tag }}<span>{{ choice.choice_label }}</span>
+      </label>
+    {% endfor %}
+  </div>
+  {% if field.help_text %}<p class="mt-1 text-sm text-ink-soft">{{ field.help_text }}</p>{% endif %}
+  {% for error in field.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+</fieldset>
