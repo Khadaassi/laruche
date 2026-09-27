@@ -1,0 +1,17 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Modifier {{ task.title }} — La Ruche{% endblock %}
+{% block header_width %}max-w-md md:max-w-xl{% endblock %}
+{% block content_width %}max-w-md md:max-w-xl{% endblock %}
+
+{% block header %}
+  <a href="{% url 'tasks:manage' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Tâches</a>
+  {% include "parent/_header.html" with title="Modifier la tâche" subtitle=task.person.name %}
+{% endblock %}
+
+{% block content %}
+  <form method="post" class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" novalidate>
+    {% csrf_token %}
+    {% include "parent/_task_fields.html" %}
+    <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
+  </form>
+{% endblock %}

@@ -17,7 +17,7 @@ def tasks_for_day(family, day: datetime.date, *, people=None, period=None) -> li
     """
     tasks = (
         Task.objects.for_family(family)
-        .on_weekday(day.weekday())
+        .scheduled_on(day)
         .select_related("person")
         .annotate(is_done=Exists(TaskCompletion.objects.filter(task=OuterRef("pk"), date=day)))
         .order_by("person__created_at", "person__pk", "position", "created_at", "pk")

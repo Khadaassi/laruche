@@ -1,0 +1,27 @@
+{% comment %}
+Planification (ScheduleFieldsMixin) : raccourci de jours, jours choisis, période.
+Les jours choisis et les dates n'apparaissent qu'avec « Personnalisé » /
+« Sur une période » : CSS seul (:has), sans JS, compatible CSP.
+{% endcomment %}
+<fieldset class="group/days">
+  <legend class="mb-1 font-medium">{{ form.days_preset.label }}</legend>
+  <div class="grid grid-cols-2 gap-space-2">
+    {% for radio in form.days_preset %}<label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+  </div>
+  <p class="mt-1 text-sm text-ink-soft">{{ form.days_preset.help_text }}</p>
+  <div class="mt-space-2 hidden grid-cols-4 gap-space-2 group-has-[[value=custom]:checked]/days:grid" role="group" aria-label="{{ form.weekday_choices.label }}">
+    {% for box in form.weekday_choices %}<label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">{{ box.tag }}<span>{{ box.choice_label|slice:":3" }}</span></label>{% endfor %}
+  </div>
+  {% for error in form.weekday_choices.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+</fieldset>
+
+<fieldset class="group/when">
+  <legend class="mb-1 font-medium">{{ form.when.label }}</legend>
+  <div class="grid grid-cols-2 gap-space-2">
+    {% for radio in form.when %}<label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+  </div>
+  <div class="mt-space-2 hidden grid-cols-2 gap-space-2 group-has-[[value=range]:checked]/when:grid">
+    {% include "components/_field.html" with field=form.start_date %}
+    {% include "components/_field.html" with field=form.end_date %}
+  </div>
+</fieldset>

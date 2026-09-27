@@ -1,0 +1,11 @@
+{# Champs d'une tâche (création : plusieurs personnes ; modification : sans). #}
+{% if form.people %}{% include "parent/_person_choices.html" with field=form.people %}{% endif %}
+{% include "components/_field.html" with field=form.title %}
+<fieldset>
+  <legend class="mb-1 font-medium">{{ form.period.label }}</legend>
+  <div class="grid grid-cols-3 gap-space-2">
+    {% for radio in form.period %}<label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+  </div>
+  {% for error in form.period.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+</fieldset>
+{% include "parent/_schedule_fields.html" %}

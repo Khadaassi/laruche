@@ -51,7 +51,7 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 | `families` | `Family` | Foyer. `name`, `invite_code` unique (normalisé : majuscules, sans espaces ni tirets). |
 | `families` | `FamilyMembership` | Rattache **un compte à une seule famille** (OneToOne) avec son `role` (`parent` / `child`). Pilote les permissions. |
 | `families` | `Person` | Membre **tel qu'affiché** (colonne, avatar, tâches). Lié à un `User` s'il a un compte, sinon non (jeune enfant). `role` affiché, `avatar_color`. |
-| `tasks` | `Task` | Tâche récurrente d'une personne : `title`, `period` (matin/midi/soir), `weekdays` (masque de bits), `position`. |
+| `tasks` | `Task` | Tâche récurrente d'une personne : `title`, `period` (matin/midi/soir), `weekdays` (masque de bits), période facultative `start_date` / `end_date`, `position` (ordre choisi par le parent). |
 | `tasks` | `TaskCompletion` | « Fait » pour une tâche **à une date**. Absence de ligne = à faire. Unique `(task, date)`. `completed_by` vide si coché depuis l'affichage partagé. |
 | `school` | `SchoolDaySchedule` | Semaine type d'un enfant : `weekday` (0 = lundi), `lunch` (cantine / sandwich-APC / autre / pas d'école), `lunch_note`, `study`. Unique `(person, weekday)`. Pas de ligne = rien à afficher. |
 | `school` | `SchoolDayOverride` | Exception pour une **date** : mêmes champs, remplace la semaine type ce jour-là. Unique `(person, date)`. |
@@ -119,6 +119,28 @@ civil (`localdate()`). Cas marginal assumé.
   colonne par personne, même sans tâche).
 - `tasks.services.set_done(task, day, done)` **fixe** l'état (idempotent) au lieu de
   l'inverser : un double envoi ne produit pas une double bascule.
+
+## Saisie et tri des tâches (`tasks/forms.py`)
+
+- **Plusieurs personnes d'un coup** : le formulaire de création propose toutes les
+  personnes de la famille en puces ; une `Task` est créée **par personne** (le modèle reste
+  une tâche = une personne : cochage, étoiles et colonnes n'en dépendent pas). La
+  modification porte sur une seule tâche, qui garde sa personne.
+- **Raccourcis de jours** (`ScheduleFieldsMixin`, réutilisable) : *Tous les jours*,
+  *Jours d'école* (**lundi, mardi, jeudi, vendredi** : le mercredi est sans école, comme
+  dans la semaine type), *Week-end*, *Personnalisé* (les puces des 7 jours n'apparaissent
+  qu'alors, en CSS). Le raccourci n'est pas stocké : seul le masque l'est, et un masque
+  connu est réaffiché sous son raccourci.
+- **Dates précises** : *Toujours* ou *Sur une période* (du… au…, bornes incluses ; un seul
+  jour = même date deux fois). Combinée aux jours : « du 12 au 16 octobre, jours d'école ».
+  Contrainte en base `end_date ≥ start_date`. `Task.objects.scheduled_on(jour)` applique
+  jours **et** période ; c'est le seul filtre utilisé pour « tâches du jour » et pour
+  refuser le cochage d'une tâche hors période.
+- **Tri** (parents seulement, Réglages → Tâches) : flèches ↑ / ↓ par tâche, à l'intérieur
+  d'une même personne et d'une même période. Le déplacement renumérote tout le groupe
+  (0, 1, 2…) puis échange deux voisins : pas de trou ni de doublon de `position`. Cet ordre
+  est celui de l'accueil parent et de l'écran partagé. Des boutons plutôt qu'un
+  glisser-déposer : accessibles au clavier et au lecteur d'écran, sans bibliothèque JS.
 
 ## École : cantine, APC, étude (`school/selectors.py`)
 

@@ -174,6 +174,13 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
   primaire « Voir les changements ». Jamais de rouge ni d'animation : c'est une information.
 - **Favori** : icône cœur au trait (`ink`), jamais l'étoile (réservée aux étoiles gagnées),
   toujours avec le texte « Favoris » / « (favori) ».
+- **Planification** (`parent/_schedule_fields.html`) : raccourcis de jours en puces 2×2,
+  puis les 7 jours en puces et les dates « Du / Au » révélés **en CSS** (`:has`) seulement
+  pour « Personnalisé » / « Sur une période ».
+- **Choix de personnes** (`parent/_person_choices.html`) : puces avec avatar, plusieurs
+  sélections possibles, sélection = fond `ink`.
+- **Tri** : deux boutons ↑ / ↓ empilés (44 px de large) à gauche de la ligne, libellés
+  « Monter / Descendre « tâche » » pour les lecteurs d'écran.
 - **Focus** : anneau `honey-dark` 2px décalé de 2px (déjà global via `:focus-visible`).
 - Un état ne repose **jamais** sur la couleur seule : icône et/ou texte en plus.
 

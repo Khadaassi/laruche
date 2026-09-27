@@ -12,49 +12,35 @@
     <h2 id="add-title" class="mb-space-4 text-lg">Nouvelle tâche</h2>
     <form method="post" class="space-y-space-4" novalidate>
       {% csrf_token %}
-      {% include "components/_field.html" with field=form.person %}
-      {% include "components/_field.html" with field=form.title %}
-      <fieldset>
-        <legend class="mb-1 font-medium">{{ form.period.label }}</legend>
-        <div class="grid grid-cols-3 gap-space-2">
-          {% for radio in form.period %}
-            <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">
-              {{ radio.tag }}<span>{{ radio.choice_label }}</span>
-            </label>
-          {% endfor %}
-        </div>
-        {% for error in form.period.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
-      </fieldset>
-      <fieldset>
-        <legend class="mb-1 font-medium">{{ form.weekday_choices.label }}</legend>
-        <div class="grid grid-cols-4 gap-space-2">
-          {% for box in form.weekday_choices %}
-            <label class="flex min-h-11 cursor-pointer items-center justify-center gap-1 rounded-sm border border-border-strong has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">
-              {{ box.tag }}<span>{{ box.choice_label|slice:":3" }}</span>
-            </label>
-          {% endfor %}
-        </div>
-        {% for error in form.weekday_choices.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
-      </fieldset>
+      {% include "parent/_task_fields.html" %}
       <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Ajouter la tâche</button>
     </form>
   </section>
 
   <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="list-title">
     <h2 id="list-title" class="mb-space-2 text-lg">Toutes les tâches</h2>
+    <p class="text-sm text-ink-soft">Les flèches règlent l'ordre d'affichage dans chaque période.</p>
     {% regroup tasks by person as by_person %}
     {% for group in by_person %}
       <h3 class="mt-space-4 flex items-center gap-space-2 font-display text-base">{% include "components/_avatar.html" with person=group.grouper %}{{ group.grouper.name }}</h3>
       <ul class="divide-y divide-border">
         {% for task in group.list %}
-          <li class="flex items-center gap-space-4 py-space-2">
-            <div class="flex-1">
-              <p class="font-medium">{{ task.title }}</p>
-              <p class="text-sm text-ink-soft">{{ task.get_period_display }} · {{ task.weekdays_display }}</p>
+          <li id="task-{{ task.pk }}" class="flex items-center gap-space-2 py-space-2">
+            {# Tri : ordre d'affichage dans la période (accueil et écran partagé). #}
+            <div class="flex shrink-0 flex-col">
+              <form method="post" action="{% url 'tasks:move_up' task.pk %}">{% csrf_token %}<button type="submit" class="inline-flex h-8 w-11 items-center justify-center rounded-sm border border-border-strong" aria-label="Monter « {{ task.title }} »"><span aria-hidden="true">↑</span></button></form>
+              <form method="post" action="{% url 'tasks:move_down' task.pk %}" class="mt-1">{% csrf_token %}<button type="submit" class="inline-flex h-8 w-11 items-center justify-center rounded-sm border border-border-strong" aria-label="Descendre « {{ task.title }} »"><span aria-hidden="true">↓</span></button></form>
             </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-medium">{{ task.title }}</p>
+              <p class="text-sm text-ink-soft">{{ task.get_period_display }} · {{ task.weekdays_display }}{% if task.dates_display %} · {{ task.dates_display }}{% endif %}</p>
+            </div>
+            <a href="{% url 'tasks:edit' task.pk %}" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-border-strong" aria-label="Modifier « {{ task.title }} »">{% include "components/_icon.html" with name="edit" icon_size="h-5 w-5" %}</a>
             <form method="post" action="{% url 'tasks:delete' task.pk %}">
               {% csrf_token %}
-              <button type="submit" class="rounded-sm border border-border-strong px-space-2 py-2 text-sm font-medium">Supprimer<span class="sr-only"> « {{ task.title }} »</span></button>
+              <button type="submit" class="inline-flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong" aria-label="Supprimer « {{ task.title }} »">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
             </form>
           </li>
         {% endfor %}

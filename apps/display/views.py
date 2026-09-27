@@ -179,7 +179,7 @@ def toggle(request, person_pk, task_pk):
     child = get_object_or_404(Person.objects.for_family(request.family).children(), pk=person_pk)
     if not can_tick(request, child):
         raise PermissionDenied("Un enfant ne coche que sa propre colonne.")
-    task = get_object_or_404(child.tasks.on_weekday(today.weekday()), pk=task_pk)
+    task = get_object_or_404(child.tasks.scheduled_on(today), pk=task_pk)
     by = request.user if request.user.is_authenticated else None
     set_done(task, today, request.POST.get("done") == "on", by=by)
     if request.headers.get("HX-Request") != "true":

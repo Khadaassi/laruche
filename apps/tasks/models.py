@@ -11,6 +11,9 @@ from .periods import Period
 WEEKDAY_LABELS = ("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche")
 WEEKDAY_SHORT = ("Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di")
 ALL_WEEKDAYS = 0b1111111
+# Raccourcis de jours proposés dans les formulaires (voir domain-model).
+SCHOOL_DAYS = 0b0011011  # lundi, mardi, jeudi, vendredi (mercredi sans école)
+WEEKEND = 0b1100000
 
 
 def weekdays_to_mask(days) -> int:
@@ -33,6 +36,15 @@ class TaskQuerySet(models.QuerySet):
     def on_weekday(self, weekday: int):
         return self.alias(_day=F("weekdays").bitand(1 << weekday)).filter(_day__gt=0)
 
+    def scheduled_on(self, day: datetime.date):
+        """Tâches prévues ce jour-là : bon jour de la semaine, et dans la période
+        (`start_date` / `end_date`) si elle est bornée."""
+        return (
+            self.on_weekday(day.weekday())
+            .filter(models.Q(start_date__isnull=True) | models.Q(start_date__lte=day))
+            .filter(models.Q(end_date__isnull=True) | models.Q(end_date__gte=day))
+        )
+
 
 class Task(models.Model):
     """Tâche récurrente d'une personne, pour une période et certains jours.
@@ -48,6 +60,10 @@ class Task(models.Model):
     weekdays = models.PositiveSmallIntegerField(
         "jours", default=ALL_WEEKDAYS, help_text="Masque de bits, bit 0 = lundi."
     )
+    start_date = models.DateField(
+        "du", null=True, blank=True, help_text="Vide = sans date de début."
+    )
+    end_date = models.DateField("au", null=True, blank=True, help_text="Vide = sans date de fin.")
     position = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -61,6 +77,12 @@ class Task(models.Model):
                 condition=models.Q(weekdays__gt=0, weekdays__lte=ALL_WEEKDAYS),
                 name="task_weekdays_valid",
             ),
+            models.CheckConstraint(
+                condition=models.Q(start_date__isnull=True)
+                | models.Q(end_date__isnull=True)
+                | models.Q(end_date__gte=models.F("start_date")),
+                name="task_dates_ordered",
+            ),
         ]
 
     def __str__(self):
@@ -69,6 +91,8 @@ class Task(models.Model):
     def clean(self):
         if not 0 < self.weekdays <= ALL_WEEKDAYS:
             raise ValidationError({"weekdays": "Choisissez au moins un jour."})
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValidationError({"end_date": "La fin doit être après le début."})
 
     @property
     def weekday_list(self) -> list[int]:
@@ -80,12 +104,31 @@ class Task(models.Model):
             return "Tous les jours"
         if self.weekdays == 0b0011111:
             return "En semaine"
-        if self.weekdays == 0b1100000:
+        if self.weekdays == SCHOOL_DAYS:
+            return "Jours d'école"
+        if self.weekdays == WEEKEND:
             return "Le week-end"
         return " ".join(WEEKDAY_SHORT[d] for d in self.weekday_list)
 
+    @property
+    def dates_display(self) -> str:
+        """« du 12 oct. au 16 oct. », « à partir du… », « jusqu'au… », ou vide."""
+        fmt = "%d/%m"
+        if self.start_date and self.end_date:
+            if self.start_date == self.end_date:
+                return f"le {self.start_date:{fmt}}"
+            return f"du {self.start_date:{fmt}} au {self.end_date:{fmt}}"
+        if self.start_date:
+            return f"à partir du {self.start_date:{fmt}}"
+        if self.end_date:
+            return f"jusqu'au {self.end_date:{fmt}}"
+        return ""
+
     def is_scheduled_on(self, day: datetime.date) -> bool:
-        return bool(self.weekdays & (1 << day.weekday()))
+        in_range = (not self.start_date or self.start_date <= day) and (
+            not self.end_date or day <= self.end_date
+        )
+        return in_range and bool(self.weekdays & (1 << day.weekday()))
 
 
 class TaskCompletion(models.Model):
