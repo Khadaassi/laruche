@@ -21,6 +21,13 @@ class Period(models.TextChoices):
     EVENING = "evening", "Soir"
 
 
+# Pour les phrases : « Rien de prévu ce matin. »
+PERIOD_PHRASES = {
+    Period.MORNING: "ce matin",
+    Period.NOON: "ce midi",
+    Period.EVENING: "ce soir",
+}
+
 # Heure de début de chaque période, dans l'ordre de la journée.
 PERIOD_STARTS = (
     (datetime.time(4, 0), Period.MORNING),

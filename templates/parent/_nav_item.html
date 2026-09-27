@@ -1,0 +1,16 @@
+<li>
+  <a href="{{ url }}"
+     class="flex h-full flex-col items-center justify-center gap-1 text-xs {% if nav_active == key %}font-semibold text-ink{% else %}font-medium text-ink-soft{% endif %}"
+     {% if nav_active == key %}aria-current="page"{% endif %}>
+    <span class="flex h-8 w-12 items-center justify-center rounded-sm {% if nav_active == key %}bg-honey{% endif %}">
+      <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        {% if icon == "home" %}<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>
+        {% elif icon == "week" %}<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>
+        {% elif icon == "menu" %}<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"/><path d="M17 21V3c-2 1-3 4-3 8h3"/>
+        {% elif icon == "shopping" %}<path d="M5 8h14l-1.5 12h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>
+        {% else %}<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/>{% endif %}
+      </svg>
+    </span>
+    {{ label }}
+  </a>
+</li>

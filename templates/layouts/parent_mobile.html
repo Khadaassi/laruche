@@ -5,19 +5,20 @@ Famille de gabarits « parent » — mobile d'abord, un seul utilisateur connect
 - Barre de navigation FIXE EN BAS, labels toujours visibles (pas d'icône seule).
 - Réserve la zone de sécurité iOS (safe-area) sous la barre.
 Les pages parent étendent ce gabarit : templates/parent/<page>.html
+et renseignent `nav_active` (home, week, menu, shopping, settings).
 {% endcomment %}
 
 {% block body_class %}min-h-dvh pb-[calc(4.5rem+env(safe-area-inset-bottom))]{% endblock %}
 
 {% block layout %}
-  <header>{% block header %}{% endblock %}</header>
+  <header class="mx-auto w-full max-w-md px-space-4 pt-space-6">{% block header %}{% endblock %}</header>
 
-  <main id="main" class="mx-auto w-full max-w-md px-space-4">
+  <main id="main" class="mx-auto w-full max-w-md px-space-4 pb-space-6">
     {% block content %}{% endblock %}
   </main>
 
   <nav aria-label="Navigation principale"
        class="fixed inset-x-0 bottom-0 border-t border-border bg-surface-0 pb-[env(safe-area-inset-bottom)]">
-    {% block bottom_nav %}{% endblock %}
+    {% block bottom_nav %}{% include "parent/_bottom_nav.html" %}{% endblock %}
   </nav>
 {% endblock %}
