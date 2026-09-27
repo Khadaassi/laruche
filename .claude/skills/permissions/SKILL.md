@@ -57,6 +57,20 @@ sur ces domaines ; toutes les pages et endpoints parent de ces domaines sont
 formulaires (assigné, pour qui, apporté par, enfant d'une exception) sont filtrées par
 famille, et chaque modèle revérifie dans `clean()` que la personne est de la famille.
 
+### Roue du samedi et étoiles (Phase 3)
+
+| Donnée / action | Parent | Enfant (compte) / appareil partagé |
+|---|---|---|
+| Catalogue d'activités | Lecture + écriture (Réglages → Activités du samedi) | Aucun accès |
+| Tirage, relances, « On y va ! », « C'est fait », annulation | Oui (`/samedi/…`) | **Non** : le parent lance, tout le monde regarde (403 compte enfant, connexion demandée pour l'appareil) |
+| Plan validé du samedi | Accueil parent | Bandeau en lecture seule sur l'écran partagé |
+| Étoiles | Soldes de chaque enfant et pot commun (page du samedi) | Son solde et son palier sur sa colonne (lecture) |
+
+La dépense d'étoiles n'a lieu qu'à la validation par un parent, sous verrou de la famille ;
+le serveur refuse une activité que le pot ne peut pas payer. La limite de 3 tirages par
+samedi est comptée côté serveur et ne se contourne pas en changeant de filtres ; un
+tirage en cours ne peut pas être annulé (seul un plan validé l'est, étoiles remboursées).
+
 ### Un seul chemin d'accès enfant : l'écran partagé
 
 Usage réel : les enfants n'ont pas d'appareil individuel. Ils partagent **un même écran**
@@ -125,7 +139,9 @@ un compte enfant y accède aussi, avec sa seule colonne cochable (voir §2).
   - points d'entrée par famille des nouveaux domaines : `SchoolDaySchedule.objects.for_family`,
     `SchoolDayOverride.objects.for_family`, `HouseholdChore.objects.for_family`,
     `Celebration.objects.for_family`, et `CelebrationTodo / GiftItem / RecipeIdea
-    .objects.for_family` (filtrés via la fête) ;
+    .objects.for_family` (filtrés via la fête), `SaturdayActivity.objects.for_family`,
+    `SaturdayPlan.objects.for_family` ; les étoiles sont toujours calculées pour les
+    enfants de la famille de la requête (`stars.selectors.balances(family)`) ;
   - `apps.display.access.can_tick(request, person)` : la colonne de cette personne
     est-elle cochable par ce visiteur (vérifié dans `display:toggle`, 403 sinon).
 - Les vues parent (`/`, réglages, tâches, pages « à venir », `tasks:toggle`) sont

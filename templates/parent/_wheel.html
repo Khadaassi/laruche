@@ -1,0 +1,19 @@
+{% comment %}
+Roue SVG. Le serveur a déjà tiré : `wheel.rotation` amène le secteur choisi sous
+le pointeur. Le composant Alpine `wheel` (static/js/app.js) anime la rotation,
+puis révèle le résultat ; en mouvement réduit, il saute directement à la fin.
+{% endcomment %}
+<div class="relative mx-auto aspect-square w-full max-w-xs" aria-hidden="true">
+  <svg viewBox="-100 -100 200 200" class="h-full w-full">
+    <g class="wheel-rotor" x-ref="rotor" data-rotation="{{ wheel.rotation }}">
+      {% for segment in wheel.segments %}
+        <path d="{{ segment.path }}" class="{{ segment.fill }} stroke-border-strong" stroke-width="0.8"/>
+        <text transform="{{ segment.label_transform }}" class="fill-ink font-sans" font-size="8.5" font-weight="500" text-anchor="middle" dominant-baseline="middle">{{ segment.label }}</text>
+      {% endfor %}
+      <circle r="95" class="fill-transparent stroke-ink" stroke-width="1.5"/>
+    </g>
+    <polygon points="0,-12 10.4,-6 10.4,6 0,12 -10.4,6 -10.4,-6" class="fill-honey stroke-ink" stroke-width="1.5"/>
+    {# Pointeur fixe, en haut. #}
+    <polygon points="-8,-100 8,-100 0,-84" class="fill-terracotta stroke-surface-0" stroke-width="1.5"/>
+  </svg>
+</div>

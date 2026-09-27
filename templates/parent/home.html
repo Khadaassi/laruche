@@ -30,6 +30,8 @@
     {% include "components/_remaining.html" %}
   </section>
 
+  {% if is_saturday %}<div class="mb-space-4">{% include "parent/_saturday_card.html" with prominent=True %}</div>{% endif %}
+
   {% if school_today or tomorrow %}
     <div class="mb-space-4 space-y-space-4">
       {% if school_today %}
@@ -92,4 +94,5 @@
       </details>
     {% endfor %}
   </div>
+  {% if not is_saturday %}<div class="mt-space-4">{% include "parent/_saturday_card.html" %}</div>{% endif %}
 {% endblock %}

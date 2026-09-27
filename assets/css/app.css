@@ -57,3 +57,69 @@
     animation: hex-pop 150ms ease-out;
   }
 }
+
+/* --- Roue du samedi ---------------------------------------------------------
+   La rotation finale est fixée par le serveur (data-rotation) et appliquée par
+   le composant Alpine `wheel` via le CSSOM (compatible CSP, pas d'attribut
+   style). Célébration à l'arrêt de la roue : c'est une vraie réussite
+   (design-system, règle 2). Aucune boucle infinie. */
+@layer components {
+  .wheel-rotor {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+  }
+
+  .confetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .confetti span {
+    position: absolute;
+    left: 50%;
+    top: 20%;
+    width: 12px;
+    height: 12px;
+    opacity: 0;
+    background: var(--color-honey);
+  }
+  .confetti span:nth-child(3n + 1) { background: var(--color-terracotta); }
+  .confetti span:nth-child(3n + 2) { background: var(--color-sage); }
+  .confetti span:nth-child(4n) { background: var(--color-honey-dark); }
+  .confetti span:nth-child(1) { --dx: -140px; --dy: -30px; }
+  .confetti span:nth-child(2) { --dx: 130px; --dy: -50px; }
+  .confetti span:nth-child(3) { --dx: -90px; --dy: 60px; }
+  .confetti span:nth-child(4) { --dx: 100px; --dy: 70px; }
+  .confetti span:nth-child(5) { --dx: -40px; --dy: -80px; }
+  .confetti span:nth-child(6) { --dx: 50px; --dy: -90px; }
+  .confetti span:nth-child(7) { --dx: -150px; --dy: 40px; }
+  .confetti span:nth-child(8) { --dx: 150px; --dy: 20px; }
+  .confetti span:nth-child(9) { --dx: -60px; --dy: 110px; }
+  .confetti span:nth-child(10) { --dx: 70px; --dy: 120px; }
+  .confetti span:nth-child(11) { --dx: -110px; --dy: -70px; }
+  .confetti span:nth-child(12) { --dx: 110px; --dy: -100px; }
+}
+
+@keyframes reveal-pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes confetti-burst {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(0.6); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(240deg) scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-motion='reduced']) .wheel-rotor.is-spinning {
+    transition: transform 3.6s cubic-bezier(0.15, 0.85, 0.25, 1);
+  }
+  html:not([data-motion='reduced']) .draw-reveal {
+    animation: reveal-pop 450ms ease-out;
+  }
+  html:not([data-motion='reduced']) .confetti span {
+    animation: confetti-burst 1.2s ease-out forwards;
+  }
+}

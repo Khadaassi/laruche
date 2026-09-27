@@ -6,9 +6,9 @@ samedi…). Projet repris **de zéro** : ne jamais réutiliser de code de l'anci
 
 ## Phase actuelle
 
-**Phase 2 — école, ménage, fêtes.** En plus de la Phase 1 (familles, tâches du jour,
-accueil parent, écran partagé) : cantine/APC/étude par enfant avec exceptions datées,
-« à préparer pour demain », ménage et semainier, fêtes (préparatifs, cadeaux, recettes).
+**Phase 3 — étoiles et roue du samedi.** Après la Phase 1 (familles, tâches du jour,
+accueil parent, écran partagé) et la Phase 2 (école, ménage/semainier, fêtes) : étoiles
+gagnées par les enfants (pot commun) et roue des activités du samedi.
 Modèle et choix documentés dans `.claude/skills/domain-model/SKILL.md`.
 Menu est encore une page « à venir ».
 
@@ -39,6 +39,8 @@ apps/
   school/               SchoolDaySchedule, SchoolDayOverride (cantine, APC, étude)
   household/            HouseholdChore, ChoreCompletion, semainier
   celebrations/         Celebration, CelebrationTodo, GiftItem, RecipeIdea
+  stars/                StarSpend, StarDebit (étoiles gagnées déduites des validations)
+  saturday/             SaturdayActivity, SaturdayPlan, tirage et roue
 templates/
   base.html             squelette HTML commun (polices, CSS, HTMX, Alpine, CSRF)
   layouts/

@@ -5,7 +5,7 @@ description: Modèle de domaine de La Ruche (familles, membres, personnes, tâch
 
 # Modèle de domaine — La Ruche
 
-État à la fin de la **Phase 2** (école, ménage, fêtes). Les règles d'accès qui
+État à la fin de la **Phase 3** (étoiles, roue du samedi). Les règles d'accès qui
 s'appliquent à ces modèles sont dans `permissions/SKILL.md`.
 
 ## Vue d'ensemble
@@ -29,6 +29,12 @@ families.Family ──1:N── celebrations.Celebration (nom, date)
                               ├──1:N── CelebrationTodo (titre, qui, fait)
                               ├──1:N── GiftItem (cadeau, pour qui, apporté par, acheté)
                               └──1:N── RecipeIdea (nom, notes)
+
+stars.StarSpend (famille, total, motif) ──1:N── stars.StarDebit (enfant, montant)
+   (étoiles gagnées : déduites des TaskCompletion / ChoreCompletion des enfants)
+
+families.Family ──1:N── saturday.SaturdayActivity (catalogue : saison, lieu, prix, étoiles, dernière fois)
+                └──1:N── saturday.SaturdayPlan (samedi, statut, activité, tirages, dépense d'étoiles)
 ```
 
 | App | Modèle | Rôle |
@@ -47,6 +53,9 @@ families.Family ──1:N── celebrations.Celebration (nom, date)
 | `celebrations` | `CelebrationTodo` | Préparatif unique : `title`, `assignee` (facultatif), `done`. |
 | `celebrations` | `GiftItem` | Cadeau : `item`, `recipient` / `recipient_name`, `buyer` / `buyer_name` (personne de la famille ou nom libre), `done` (acheté). |
 | `celebrations` | `RecipeIdea` | Idée de recette : `name`, `notes` libres. |
+| `stars` | `StarSpend` / `StarDebit` | Dépense d'étoiles de la famille et part de chaque enfant. Les étoiles gagnées ne sont pas stockées. |
+| `saturday` | `SaturdayActivity` | Activité du catalogue : `name`, `season` (toutes / 4 saisons), `place` (sortie / maison), `is_free`, `price` indicatif, `star_cost` (0 = pas d'étoiles), `last_done_on`. Catalogue de départ (18 activités) à la création d'une famille. |
+| `saturday` | `SaturdayPlan` | Un samedi d'une famille (unique `(family, date)`) : `status` (tirage en cours / prévu / fait), activité proposée puis validée, `activity_name` (copie pour l'historique), `spins` (≤ 3), `star_spend`. |
 | `display` | `SharedDisplayDevice` | Tablette commune autorisée par un parent. Stocke l'empreinte SHA-256 du jeton, `last_used_at`, `revoked_at`. |
 
 ## Règles métier
@@ -172,6 +181,96 @@ Cette section n'existait pas avant la Phase 2 : elle est créée ici.
     partagé). Idempotent : `previous` est un OneToOne, une occurrence n'a qu'une suite.
 - Suppression d'une fête : page de confirmation (pas de `confirm()` JS), supprime aussi
   ses préparatifs, cadeaux et recettes.
+
+## Étoiles (`stars/`) — socle posé en Phase 3
+
+Le brief de la Phase 3 supposait un système d'étoiles existant ; il n'y avait que
+l'affichage « Fait ! +1 » et la progression **du jour** en alvéoles. Le socle est posé
+ici, au plus simple et fidèle à ce que l'interface promettait déjà :
+
+- **Gain** : +1 étoile par tâche du jour cochée **par/pour un enfant** (`TaskCompletion`
+  d'une tâche d'une `Person` enfant) et +1 par tâche de ménage d'un enfant cochée
+  (`ChoreCompletion`). Les étoiles **gagnées ne sont pas stockées** : elles se déduisent
+  des validations existantes. Décocher retire l'étoile, sans double comptabilité.
+- **Dépense** : un registre (`StarSpend` + une ligne `StarDebit` par enfant). Solde d'un
+  enfant = gagnées − dépensées. Un décochage après une dépense peut rendre un solde
+  négatif (cas marginal) : le pot ne compte que les soldes positifs.
+- **Palier** : tous les 10 étoiles **gagnées** (`STAR_TIER`). Le palier mesure l'effort
+  cumulé et ne recule jamais quand on dépense : dépenser pour la famille ne fait pas
+  « perdre » un palier (aucune mécanique culpabilisante).
+
+## Roue du samedi (`saturday/`)
+
+### Financement d'une activité familiale en étoiles — choix retenu
+
+**Pot commun, contribution proportionnelle au solde de chacun.**
+
+- Le **pot** = somme des soldes positifs des enfants de la famille. Une activité qui coûte
+  N étoiles est **possible si le pot ≥ N**, sinon elle est exclue du tirage et refusée à la
+  validation.
+- À la validation (« On y va ! »), N est réparti entre les enfants **au prorata de leur
+  solde** (méthode du plus fort reste, arrondi équitable, jamais plus que le solde d'un
+  enfant). Exemple : soldes 10 / 5 / 0, coût 6 → 4 / 2 / 0.
+- Chaque contribution est enregistrée (qui a donné combien), visible par les parents et
+  affichée sur le plan (« Lina 4 ★, Noah 2 ★ »).
+
+**Pourquoi** :
+- Une activité familiale concerne tout le monde : un pot commun la rend accessible dès que
+  la famille a, ensemble, assez d'étoiles.
+- Une part **égale** exigée de chaque enfant bloquerait toute la fratrie à cause d'un seul
+  (et le désignerait) : contraire à la règle « jamais d'animation ni de mécanique
+  culpabilisante ». Au prorata, un enfant à 0 étoile ne bloque rien et ne « doit » rien.
+- Pas de saisie de contributions volontaires : ce serait une négociation à chaque samedi.
+  Le calcul est automatique, prévisible et explicable aux enfants.
+- Le solde de chacun reste individuel (ses étoiles, son palier) : rien ne change pour
+  l'existant.
+- **Annuler** un plan (avant le samedi) **rembourse** exactement les contributions.
+
+### Tirage
+
+- **Samedi visé** : aujourd'hui si on est samedi, sinon le prochain samedi.
+- **Saison** du samedi visé (hémisphère nord, saisons météorologiques) : printemps
+  mars–mai, été juin–août, automne septembre–novembre, hiver décembre–février. Les
+  activités « toutes saisons » sont toujours éligibles.
+- **Filtres** : coût (gratuit / peu importe / j'ai des étoiles à dépenser) et lieu
+  (sortie / maison / peu importe). « Gratuit » = ni prix ni coût en étoiles. Une activité
+  en étoiles n'est éligible que si le pot peut la payer.
+- **Pondération contre les répétitions** : fenêtre de **8 semaines**. Poids = 1 si jamais
+  faite ou faite il y a 8 semaines et plus, sinon proportionnel au temps écoulé, avec un
+  plancher de 0,1 (faite la semaine dernière ≈ 10 fois moins probable, jamais impossible :
+  si c'est la seule éligible, elle sort quand même).
+- **Relances** : 3 tirages maximum par samedi (le premier + **2 relances**), comptés
+  côté serveur quel que soit le changement de filtres. La 4e tentative est refusée avec un
+  message clair. Annuler un plan validé rouvre le tirage (décision explicite d'un parent).
+- Le serveur tire ; le navigateur ne fait qu'animer la roue vers le résultat déjà choisi
+  (aucune triche possible en rechargeant). Pas d'IA : tirage pondéré classique.
+
+### Catalogue de départ
+
+18 activités génériques (pas d'adresse), pensées pour la région lilloise : musée,
+médiathèque, jeux de société, ciné maison, pâtisserie, chasse au trésor, piscine,
+pique-nique, ferme pédagogique, fête foraine, vélo sur voie verte, parc d'attractions,
+forêt, match de foot, cirque, marché de Noël, patinoire, cabane en couvertures. Chaque
+saison a au moins une activité « maison » (le tirage n'est jamais vide par mauvais temps).
+Ajouté à la création de chaque famille, et par migration de données aux familles
+existantes (sans doublon : seulement si la famille n'a encore aucune activité).
+
+### Animation
+
+La roue est dessinée en SVG côté serveur (secteurs, libellés, rotation finale) : pas de
+style inline, CSP intacte. Le composant Alpine `wheel` applique la rotation via le CSSOM,
+puis révèle le résultat avec une célébration (confettis hexagonaux en CSS, une seule fois).
+En mouvement réduit (système ou `data-motion="reduced"`), la roue est posée directement sur
+le résultat, sans rotation ni confettis. Quand peu d'activités sont éligibles, la roue est
+garnie d'autres activités de la saison, pour le décor seulement.
+
+### Plan du samedi
+
+- « On y va ! » → plan validé (et étoiles déduites), affiché sur l'accueil parent et sur
+  l'écran partagé (lecture seule pour les enfants).
+- Une fois le samedi passé, ou sur « C'est fait », le plan passe dans l'historique et la
+  date de dernière réalisation de l'activité est mise à jour (report paresseux, comme les
+  fêtes annuelles). Un tirage non validé est abandonné une fois le samedi passé.
 
 ## Choix techniques documentés
 

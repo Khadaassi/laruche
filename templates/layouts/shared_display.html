@@ -19,6 +19,7 @@ Les pages partagées étendent ce gabarit : templates/shared/<page>.html
   </nav>
 
   <main id="main" class="flex-1 p-space-6" {% block main_attrs %}{% endblock %}>
+    {% block before_columns %}{% endblock %}
     <div class="grid snap-x snap-mandatory auto-cols-[minmax(17rem,1fr)] grid-flow-col gap-space-6 overflow-x-auto md:snap-none">
       {% block columns %}{% endblock %}
     </div>
