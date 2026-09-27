@@ -26,7 +26,7 @@ from apps.saturday.views import draw_context, perform_spin
 from apps.school.models import Lunch
 from apps.school.selectors import school_days_for
 from apps.stars.selectors import balances
-from apps.stars.services import claim_tier_celebration
+from apps.stars.services import award_day_star, claim_day_celebration, claim_tier_celebration
 from apps.tasks.periods import PERIOD_PHRASES, current_period, seconds_until_next_period
 from apps.tasks.selectors import group_by_person, tasks_for_day
 from apps.tasks.services import set_done
@@ -69,6 +69,8 @@ def child_columns(request, person=None):
         column.stars = stars.get(column.person.pk)
         # Nouveau palier atteint : fêté une seule fois, sur cet écran.
         column.celebrate_tier = claim_tier_celebration(column.stars) if column.stars else None
+        # Journée complète (étoile du jour) : fêtée une seule fois, sur cet écran.
+        column.celebrate_day = claim_day_celebration(column.person, today)
         # Ménage du jour de l'enfant (toutes périodes), coché comme ses tâches.
         column.chores = [o for o in chores_today if o.chore.assignee_id == column.person.pk]
         column.tickable = can_tick(request, column.person)
@@ -188,7 +190,10 @@ def toggle(request, person_pk, task_pk):
     if absences_on(request.family, today).is_absent(child.pk):
         raise Http404  # tâche suspendue (vacances, malade)
     by = request.user if request.user.is_authenticated else None
-    set_done(task, today, request.POST.get("done") == "on", by=by)
+    done = request.POST.get("done") == "on"
+    set_done(task, today, done, by=by)
+    if done:
+        award_day_star(child, today)
     if request.headers.get("HX-Request") != "true":
         return redirect("display:board")
     return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})
@@ -213,7 +218,10 @@ def toggle_chore(request, person_pk, chore_pk):
     )
     if not chore.occurs_on(today) or absences_on(request.family, today).is_absent(child.pk):
         raise Http404
-    set_chore_done(chore, today, request.POST.get("done") == "on")
+    done = request.POST.get("done") == "on"
+    set_chore_done(chore, today, done)
+    if done:
+        award_day_star(child, today)
     if request.headers.get("HX-Request") != "true":
         return redirect("display:board")
     return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})

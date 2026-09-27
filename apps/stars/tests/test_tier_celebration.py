@@ -7,7 +7,7 @@ from django.urls import reverse
 from apps.families.tests.factories import SecureClientMixin, join, make_child_profile, make_family
 from apps.stars.models import TierCelebration
 from apps.stars.selectors import balances
-from apps.stars.services import claim_tier_celebration
+from apps.stars.services import award_day_star, claim_tier_celebration
 from apps.tasks.models import Task, TaskCompletion
 from apps.tasks.periods import Period
 
@@ -33,16 +33,6 @@ class ClaimTierTests(TestCase):
         earn(self.lina, 10)
         self.assertEqual(self.claim(), 1)
         self.assertIsNone(self.claim())
-        self.assertIsNone(self.claim())
-
-    def test_untick_then_retick_does_not_celebrate_again(self):
-        earn(self.lina, 10)
-        self.claim()
-        completion = TaskCompletion.objects.filter(task__person=self.lina).first()
-        task, date = completion.task, completion.date
-        completion.delete()
-        self.assertIsNone(self.claim())
-        TaskCompletion.objects.create(task=task, date=date)
         self.assertIsNone(self.claim())
 
     def test_next_tier_is_celebrated(self):
@@ -84,6 +74,7 @@ class SharedScreenTierTests(SecureClientMixin, TestCase):
 
     def test_tier_reached_elsewhere_is_celebrated_on_next_board_load(self, _now):
         TaskCompletion.objects.create(task=self.task, date=MONDAY)  # coché par un parent
+        award_day_star(self.lina, MONDAY)
         self.assertContains(self.get(reverse("display:board")), "Palier 1 !")
         self.assertNotContains(self.get(reverse("display:board")), "Palier 1 !")
 

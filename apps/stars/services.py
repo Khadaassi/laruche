@@ -1,11 +1,43 @@
-"""Dépense d'étoiles depuis le pot commun, au prorata des soldes."""
+"""Étoiles : gain d'une journée complète, dépense depuis le pot commun."""
+
+import datetime
 
 from django.db import transaction
+from django.utils import timezone
 
 from apps.families.models import Family
 
-from .models import StarDebit, StarSpend, TierCelebration
-from .selectors import balances
+from .models import DayStar, StarDebit, StarSpend, TierCelebration
+from .selectors import balances, day_progress
+
+
+def award_day_star(person, day: datetime.date) -> bool:
+    """Donne l'étoile du jour si toute la journée de l'enfant est cochée.
+
+    À appeler après chaque cochage d'une tâche ou d'un ménage. Renvoie True
+    seulement pour l'appel qui crée l'étoile. Idempotent : une journée déjà
+    récompensée ne donne jamais une deuxième étoile (contrainte unique en
+    base, y compris entre deux requêtes simultanées), même après un
+    décochage puis un recochage. Rien pour un parent, une journée future ou
+    une journée sans rien de prévu (absence).
+    """
+    if not person.is_child or day > timezone.localdate():
+        return False
+    done, due = day_progress(person, day)
+    if due == 0 or done < due:
+        return False
+    _, created = DayStar.objects.get_or_create(person=person, date=day)
+    return created
+
+
+def claim_day_celebration(person, day: datetime.date) -> bool:
+    """« Journée terminée ! » à montrer maintenant pour cet enfant ?
+
+    Vrai une seule fois par étoile du jour : `celebrated` n'avance que par un
+    UPDATE conditionnel atomique, comme pour les paliers.
+    """
+    pending = DayStar.objects.filter(person=person, date=day, celebrated=False)
+    return bool(pending.update(celebrated=True))
 
 
 class NotEnoughStars(Exception):

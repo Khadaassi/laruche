@@ -32,7 +32,7 @@ families.Family ──1:N── celebrations.Celebration (nom, date)
                               └──1:N── RecipeIdea (nom, notes)
 
 stars.StarSpend (famille, total, motif) ──1:N── stars.StarDebit (enfant, montant)
-   (étoiles gagnées : déduites des TaskCompletion / ChoreCompletion des enfants)
+families.Person (enfant) ──1:N── stars.DayStar (date, fêtée)   (une étoile par journée complète)
 
 families.Family ──1:N── saturday.SaturdayActivity (catalogue : saison, lieu, prix, étoiles, dernière fois)
                 └──1:N── saturday.SaturdayPlan (samedi, statut, activité, tirages, dépense d'étoiles)
@@ -61,7 +61,8 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 | `celebrations` | `CelebrationTodo` | Préparatif unique : `title`, `assignee` (facultatif), `done`. |
 | `celebrations` | `GiftItem` | Cadeau : `item`, `recipient` / `recipient_name`, `buyer` / `buyer_name` (personne de la famille ou nom libre), `done` (acheté). |
 | `celebrations` | `RecipeIdea` | Idée de recette : `name`, `notes` libres. |
-| `stars` | `StarSpend` / `StarDebit` | Dépense d'étoiles de la famille et part de chaque enfant. Les étoiles gagnées ne sont pas stockées. |
+| `stars` | `DayStar` | Étoile d'une **journée complète** d'un enfant : `person`, `date`, `celebrated` (« Journée terminée ! » déjà montrée). Unique `(person, date)`. Jamais supprimée par un décochage. |
+| `stars` | `StarSpend` / `StarDebit` | Dépense d'étoiles de la famille et part de chaque enfant. |
 | `saturday` | `SaturdayActivity` | Activité du catalogue : `name`, `season` (toutes / 4 saisons), `place` (sortie / maison), `is_free`, `price` indicatif, `star_cost` (0 = pas d'étoiles), `last_done_on`. Catalogue de départ (18 activités) à la création d'une famille. |
 | `saturday` | `SaturdayPlan` | Un samedi d'une famille (unique `(family, date)`) : `status` (tirage en cours / prévu / fait), activité proposée puis validée, `activity_name` (copie pour l'historique), `spins` (≤ 3), `star_spend`. |
 | `meals` | `Recipe` | Recette de la famille : `name`, `prep_minutes` (facultatif), `is_favorite`. Tri : favoris d'abord, puis par nom. |
@@ -226,13 +227,13 @@ Le brief de la Phase 3 supposait un système d'étoiles existant ; il n'y avait 
 l'affichage « Fait ! +1 » et la progression **du jour** en alvéoles. Le socle est posé
 ici, au plus simple et fidèle à ce que l'interface promettait déjà :
 
-- **Gain** : +1 étoile par tâche du jour cochée **par/pour un enfant** (`TaskCompletion`
-  d'une tâche d'une `Person` enfant) et +1 par tâche de ménage d'un enfant cochée
-  (`ChoreCompletion`). Les étoiles **gagnées ne sont pas stockées** : elles se déduisent
-  des validations existantes. Décocher retire l'étoile, sans double comptabilité.
+- **Gain (Phase 5) : +1 étoile par journée complète**, pas par tâche. La routine reste
+  détaillée (beaucoup de micro-tâches) : une étoile par tâche aurait rendu les étoiles
+  quasi gratuites. Voir « Étoile du jour » ci-dessous.
 - **Dépense** : un registre (`StarSpend` + une ligne `StarDebit` par enfant). Solde d'un
-  enfant = gagnées − dépensées. Un décochage après une dépense peut rendre un solde
-  négatif (cas marginal) : le pot ne compte que les soldes positifs.
+  enfant = gagnées − dépensées. Les étoiles gagnées ne reculent jamais (un décochage ne
+  retire rien), donc un solde ne devient pas négatif par décochage ; le pot ne compte de
+  toute façon que les soldes positifs.
 - **Palier** : tous les 10 étoiles **gagnées** (`STAR_TIER`). Le palier mesure l'effort
   cumulé et ne recule jamais quand on dépense : dépenser pour la famille ne fait pas
   « perdre » un palier (aucune mécanique culpabilisante).
@@ -244,6 +245,55 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
   écrans, pas de nouvelle fête après un décochage/recochage, une seule célébration (la
   plus haute) si plusieurs paliers sont franchis d'un coup. Un palier atteint ailleurs
   (parent qui coche sur son téléphone) est fêté au prochain affichage de l'écran partagé.
+
+### Étoile du jour (`stars/services.py`, Phase 5)
+
+**`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée
+**entière** de la personne, quelle que soit la période affichée :
+- ses tâches du jour, **matin + midi + soir** (`tasks_for_day(family, day, people=[person])`,
+  donc mêmes règles que l'affichage : jours de la semaine, période de dates `start_date` /
+  `end_date`, absence de la personne ou de toute la famille) ;
+- **plus** le ménage qui lui est assigné ce jour-là (`chores_by_day`, même filtre
+  d'absence, récurrence une semaine sur deux comprise). Le ménage d'un frère ou d'une
+  sœur ne compte pas.
+
+**`stars.services.award_day_star(person, day) -> bool`**, appelée après **chaque cochage**
+(`done=True`) d'une tâche ou d'un ménage, par les quatre points d'écriture :
+`display:toggle`, `display:toggle_chore` (écran partagé), `tasks:toggle` (accueil parent)
+et `household:toggle` (semainier). Elle crée `DayStar(person, day)` si et seulement si :
+1. la personne est un **enfant** (un parent ne gagne jamais d'étoile) ;
+2. `day` n'est **pas dans le futur** (le semainier permet de cocher un ménage à venir :
+   une journée n'est pas « terminée » avant d'avoir eu lieu) ;
+3. `prévues > 0` (absent, malade ou rien de prévu : pas d'étoile, et rien de perdu) ;
+4. `cochées == prévues`.
+
+Elle renvoie `True` **seulement pour l'appel qui crée l'étoile**. Garanties :
+- **Une étoile par jour et par enfant, jamais plus** : `get_or_create` sur une contrainte
+  unique `(person, date)` ; deux cochages simultanés (deux écrans) n'en créent qu'une.
+- **Idempotente** : tout cocher, décocher puis recocher une tâche ne redonne rien.
+- **Jamais retirée** : décocher après coup ne touche pas `DayStar` (même esprit que « la
+  dépense ne fait pas reculer le palier »). Modifier ou supprimer une tâche non plus.
+- Décocher ne fait qu'arrêter le calcul : aucune étoile n'est attribuée au décochage.
+- Pas de recalcul rétroactif : une journée devenue complète autrement que par un cochage
+  (tâche supprimée le soir même) ne donne son étoile qu'au prochain cochage de ce jour.
+
+**Étoiles gagnées** = nombre de `DayStar` de l'enfant (`balances`, une requête groupée).
+Le palier (`STAR_TIER = 10`), la pastille, la page du samedi et le pot en découlent sans
+autre changement : 10 journées complètes = un palier.
+
+**Célébration « Journée terminée ! »** : `claim_day_celebration(person, today)` passe
+`celebrated` à vrai par un UPDATE conditionnel atomique, appelé par l'écran partagé à
+l'affichage de chaque colonne (chargement ou réponse au cochage). Seul l'appel qui le fait
+avancer montre l'encart : une seule fois par journée, même entre deux écrans ou après un
+recochage. Un jour complété depuis le téléphone d'un parent est fêté au prochain affichage
+de l'écran partagé ; le parent voit, lui, une simple annonce statique dans la réponse de son
+cochage (« Journée terminée pour Lina : +1 étoile »), qui ne consomme pas la fête des
+enfants. Si l'étoile du jour fait aussi franchir un palier, un seul encart (celui du palier,
+avec la ligne « Journée terminée : +1 étoile »).
+
+**Reprise des données (migration `stars.0003`)** : aucune étoile n'est recalculée à partir
+des anciennes validations (l'ancienne règle comptait une étoile par tâche). Les soldes
+repartent de zéro sur les données de test existantes.
 
 ## Roue du samedi (`saturday/`)
 
@@ -554,4 +604,4 @@ HTMX envoie l'état voulu (`hx-swap="none"`) et la réponse ne remplace que les 
 
 - Moteur de routines personnalisables (Phase 2) : remplacera ou enrichira `Task`.
 - Menu : portions et mise à l'échelle des quantités ; rayons du magasin pour trier la liste.
-- Paliers d'étoiles : s'appuieront sur l'historique `TaskCompletion`.
+- Solde de départ d'étoiles (reprise des étoiles de l'ancienne application notre-semaine).

@@ -13,6 +13,7 @@ from apps.meals.week import dinner_of
 from apps.saturday.draw import close_past_plans, current_plan
 from apps.school.selectors import school_days_for
 from apps.stars.selectors import pot
+from apps.stars.services import award_day_star
 
 from .forms import TaskForm
 from .models import Task
@@ -95,7 +96,9 @@ def toggle(request, pk):
     task = get_object_or_404(Task.objects.for_family(request.family).scheduled_on(today), pk=pk)
     if absences_on(request.family, today).is_absent(task.person_id):
         raise Http404  # tâche suspendue (vacances, malade)
-    set_done(task, today, request.POST.get("done") == "on", by=request.user)
+    done = request.POST.get("done") == "on"
+    set_done(task, today, done, by=request.user)
+    day_star = done and award_day_star(task.person, today)
 
     # Le filtre ne sert qu'à recalculer les compteurs affichés ; il reste
     # borné à la famille par selected_person().
@@ -112,6 +115,7 @@ def toggle(request, pk):
             "remaining": count_remaining(tasks),
             "period": Period(task.period),
             "period_remaining": count_remaining(period_tasks),
+            "day_star_person": task.person if day_star else None,
         },
     )
 

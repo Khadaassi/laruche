@@ -8,6 +8,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.absences.selectors import absences_on
 from apps.families.access import parent_required
+from apps.stars.services import award_day_star
 
 from .forms import ChoreForm
 from .models import HouseholdChore, monday_of
@@ -56,7 +57,10 @@ def toggle(request, pk, day):
     chore = get_object_or_404(HouseholdChore.objects.for_family(request.family), pk=pk)
     if not chore.occurs_on(date) or absences_on(request.family, date).is_absent(chore.assignee_id):
         raise Http404
-    set_chore_done(chore, date, request.POST.get("done") == "on")
+    done = request.POST.get("done") == "on"
+    set_chore_done(chore, date, done)
+    if done:
+        award_day_star(chore.assignee, date)
     if request.headers.get("HX-Request") == "true":
         return HttpResponse(status=204)
     return redirect(f"{reverse('household:week')}?{WEEK_PARAM}={monday_of(date).isoformat()}")

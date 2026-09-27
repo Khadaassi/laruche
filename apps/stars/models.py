@@ -44,6 +44,34 @@ class StarDebit(models.Model):
         return f"{self.person} : {self.amount} ★"
 
 
+class DayStar(models.Model):
+    """Étoile d'une journée complète : au plus une ligne par enfant et par jour.
+
+    Créée quand toutes les tâches et tout le ménage du jour de l'enfant sont
+    cochés (`services.award_day_star`). Jamais supprimée par un décochage :
+    une étoile gagnée reste gagnée. `celebrated` passe à vrai quand l'écran
+    partagé a montré « Journée terminée ! » (une seule fois).
+    """
+
+    person = models.ForeignKey(
+        "families.Person", on_delete=models.CASCADE, related_name="day_stars"
+    )
+    date = models.DateField()
+    celebrated = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "étoile du jour"
+        verbose_name_plural = "étoiles du jour"
+        ordering = ["-date", "-pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["person", "date"], name="unique_day_star_per_person"),
+        ]
+
+    def __str__(self):
+        return f"{self.person} : {self.date:%d/%m/%Y}"
+
+
 class TierCelebration(models.Model):
     """Dernier palier d'étoiles déjà fêté pour un enfant (écran partagé).
 
