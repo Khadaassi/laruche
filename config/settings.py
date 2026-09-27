@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     "apps.stars",
     "apps.saturday",
     "apps.meals",
+    "apps.shopping",
 ]
 
 MIDDLEWARE = [
