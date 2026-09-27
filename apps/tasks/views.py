@@ -4,6 +4,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from apps.absences.models import Absence
+from apps.absences.selectors import absences_on
 from apps.core.preparation import tomorrow_items
 from apps.families.access import family_member_required, parent_required
 from apps.families.models import Person
@@ -75,6 +77,9 @@ def home(request):
             "saturday_plan": saturday_plan,
             "is_saturday": now.date().weekday() == SATURDAY,
             "dinner": dinner_of(request.family, now.date()),
+            "absences_today": Absence.objects.for_family(request.family)
+            .overlapping(now.date(), now.date())
+            .select_related("person"),
         },
     )
 
@@ -88,6 +93,8 @@ def toggle(request, pk):
     """
     today = timezone.localdate()
     task = get_object_or_404(Task.objects.for_family(request.family).scheduled_on(today), pk=pk)
+    if absences_on(request.family, today).is_absent(task.person_id):
+        raise Http404  # tâche suspendue (vacances, malade)
     set_done(task, today, request.POST.get("done") == "on", by=request.user)
 
     # Le filtre ne sert qu'à recalculer les compteurs affichés ; il reste

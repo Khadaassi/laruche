@@ -6,7 +6,7 @@ Paramètre optionnel : large (écran partagé).
 {% with day=school_day %}
 <ul class="flex flex-wrap gap-space-2" aria-label="École">
   <li class="inline-flex items-center gap-space-2 rounded-sm border border-border-strong bg-surface-0 py-1 pl-1 pr-space-2 font-medium {% if large %}text-base{% else %}text-sm{% endif %}">
-    <span class="hex flex {% if large %}h-8 w-8{% else %}h-6 w-6{% endif %} items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name=day.lunch %}</span>
+    <span class="hex flex {% if large %}h-8 w-8{% else %}h-6 w-6{% endif %} items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name=day.icon %}</span>
     {{ day.lunch_label }}
   </li>
   {% if day.study and day.has_school %}

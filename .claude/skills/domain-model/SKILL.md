@@ -70,6 +70,7 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 | `meals` | `MealSlot` | Un repas du menu : `date`, `meal` (déjeuner / dîner), `kind` (recette / restes / extérieur / autre), `recipe` (si et seulement si `kind = recette`, contrainte en base), `note` libre. Unique `(family, date, meal)`. Pas de ligne = rien de prévu. |
 | `shopping` | `ShoppingItem` | Article de **la** liste de la famille : `name`, `quantity`, `unit`, `origin` (menu / ajouté à la main), `status` (à acheter / acheté / déjà à la maison), `recurring` (produit habituel, ajouts manuels seulement), `merge_key` et `recipes` (articles du menu). |
 | `shopping` | `ShoppingTransfer` | Dernier transfert menu → courses d'une famille (OneToOne) : `week` (lundi), `transferred_at`. |
+| `absences` | `Absence` | Période d'absence : `person` (vide = **toute la famille**), `kind` (vacances / malade / absent), `note`, `start_date` ≤ `end_date` (bornes incluses). |
 | `display` | `SharedDisplayDevice` | Tablette commune autorisée par un parent. Stocke l'empreinte SHA-256 du jeton, `last_used_at`, `revoked_at`. |
 
 ## Règles métier
@@ -417,6 +418,30 @@ Liste fermée : pièce(s), g, kg, ml, cl, l, c. à soupe, c. à café, paquet(s)
   supprimé revient au transfert suivant s'il est toujours au menu (« À la maison » est
   fait pour le mettre de côté).
 - Le cochage d'un article est optimiste (HTMX, 204), comme les préparatifs de fêtes.
+
+## Vacances et absences (`absences/`)
+
+« Changer une journée » (vacances, enfant malade) = une **absence datée**, pas une
+modification des tâches : les tâches restent telles quelles et reprennent seules à la fin.
+
+- **Qui** : toute la famille (`person` vide, typiquement les vacances) ou une ou plusieurs
+  personnes (une ligne par personne). Motif : Vacances, Malade, Absent, + précision libre.
+- **Effets ces jours-là, pour la personne** (ou tout le monde) :
+  - tâches du quotidien **suspendues** : absentes de l'accueil, de l'écran partagé et des
+    compteurs, et **non cochables** (404 sur `tasks:toggle` / `display:toggle`) ;
+  - ménage qui lui est assigné suspendu (semainier, colonne de l'enfant, cochage refusé) ;
+  - école : l'absence remplace la journée (`SchoolDay.absence`, badge « Malade · gastro ») ;
+    pas de rappel « sandwich » ni « pas d'école » pour demain ;
+  - colonne de l'écran partagé : « Malade : pas de tâches aujourd'hui », sans alerte ni
+    couleur d'erreur (règle « jamais culpabilisant »).
+- **Étoiles : rien n'est perdu.** Les validations passées restent ; une tâche suspendue
+  n'est simplement pas due. Pas de rattrapage automatique.
+- Résolution en une requête sur une période (`absences_range`), une absence personnelle
+  primant sur celle de la famille pour l'affichage du motif.
+- Accès : Réglages → Vacances et absences, et carte « Absences aujourd'hui » de l'accueil
+  (lien « Vacances, malade ? Changer une journée »).
+- Pas de calendrier des vacances scolaires importé : les dates se saisissent (une fois par
+  période de vacances).
 
 ## Choix techniques documentés
 

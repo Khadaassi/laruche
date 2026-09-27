@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from apps.absences.selectors import absences_on
 from apps.families.access import parent_required
 
 from .forms import ChoreForm
@@ -48,7 +49,7 @@ def toggle(request, pk, day):
     except ValueError as error:
         raise Http404 from error
     chore = get_object_or_404(HouseholdChore.objects.for_family(request.family), pk=pk)
-    if not chore.occurs_on(date):
+    if not chore.occurs_on(date) or absences_on(request.family, date).is_absent(chore.assignee_id):
         raise Http404
     set_chore_done(chore, date, request.POST.get("done") == "on")
     if request.headers.get("HX-Request") == "true":
