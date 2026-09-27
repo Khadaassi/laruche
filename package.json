@@ -15,7 +15,9 @@
   },
   "devDependencies": {
     "@alpinejs/csp": "3.17.4",
+    "conventional-changelog-conventionalcommits": "10.4.0",
     "htmx.org": "2.0.11",
+    "semantic-release": "25.0.9",
     "tailwindcss": "3.4.19"
   }
 }

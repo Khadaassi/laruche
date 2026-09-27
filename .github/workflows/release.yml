@@ -1,0 +1,37 @@
+name: Release
+
+# À chaque merge sur main : calcule la version depuis les Conventional Commits,
+# crée le tag vX.Y.Z et publie la GitHub Release avec le changelog généré.
+# Le changelog vit dans les GitHub Releases (pas de CHANGELOG.md commité) :
+# main étant protégée (PR obligatoire), le bot ne peut pas y pousser de commit.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: semantic-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
