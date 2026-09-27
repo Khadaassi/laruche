@@ -201,6 +201,14 @@ class ImportNotreSemaineTests(TestCase):
         with self.assertRaisesMessage(CommandError, "Compte parent introuvable"):
             self.commit()
 
+    def test_missing_opening_balance_table_blocks(self):
+        with mock.patch(
+            "django.db.backends.base.introspection.BaseDatabaseIntrospection.table_names",
+            return_value=[],
+        ):
+            out = self.run_command()
+        self.assertIn("Table du solde de départ absente", out)
+
     def test_papa_without_email_has_no_account(self):
         self.commit()
         papa = Person.objects.get(name="Papa")

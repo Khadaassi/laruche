@@ -120,7 +120,12 @@ def check_database(plan: Plan) -> None:
         plan.blockers.append(
             f"Une famille « {plan.family_name} » existe déjà : reprise déjà faite ?"
         )
-    if StarOpeningBalance.objects.filter(reason=OPENING_REASON).exists():
+    if StarOpeningBalance._meta.db_table not in connection.introspection.table_names():
+        plan.blockers.append(
+            "Table du solde de départ absente : fusionner et déployer la PR « starting star "
+            "balance » (migration stars.0004) avant l'écriture."
+        )
+    elif StarOpeningBalance.objects.filter(reason=OPENING_REASON).exists():
         plan.blockers.append(
             "Un solde de départ « notre-semaine » existe déjà : reprise déjà faite."
         )
