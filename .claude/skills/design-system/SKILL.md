@@ -5,7 +5,13 @@ description: Charte visuelle de La Ruche — tokens de couleur, typographie, ray
 
 # Design system — La Ruche
 
-**Symbole** : une alvéole hexagonale contenant un toit simplifié (la ruche + le foyer).
+**Symbole** : une alvéole hexagonale dorée contenant un toit stylisé en trait encre et un
+trait de sol (la ruche + le foyer) — pas une icône « maison » générique.
+**Source unique** : `templates/components/_logo.html` (géométrie exacte de la marque,
+viewBox 120 : hexagone `60,14 99.8,37 99.8,83 60,106 20.2,83 20.2,37`, toit
+`M36 60 L60 38 L84 60`, sol de (44,78) à (76,78), traits de 7). Toute page l'inclut ;
+ne jamais recopier le SVG (un test échoue si c'est le cas). `static/favicon.svg` reprend la
+même géométrie avec les hex de la charte (fichier statique).
 L'hexagone est le motif récurrent : avatars, badges de tâche, barre de progression en alvéoles.
 
 La config ci-dessous est **déjà en place** dans `tailwind.config.js`. Elle est vérifiée
@@ -120,6 +126,13 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
 - **Badge de tâche hexagonal** : doré (`honey`) = à faire ; `sage` + icône coche = fait.
   L'état suit la case en CSS (`group-has-[:checked]:`), donc instantanément.
 - **Étiquette « Fait ! +1 »** sur les tâches cochées (vue enfants) ; « Fait » en vue parent.
+- **En-tête de l'accueil parent** : logomark + salutation selon la période (« Bonjour la
+  famille » / « Bon après-midi » / « Bonsoir la famille ») + « Famille · date » en
+  sous-titre, et **pastille d'étoiles** de la famille à droite (`bg-honey text-ink`,
+  `rounded-sm`, icône étoile + nombre). « X tâches restantes » juste en dessous.
+- **Tâche en mini-carte** (accueil parent comme écran partagé) : `rounded-md border
+  border-border`, fond `bg-surface-100` dans une carte `surface-0` (mobile), espacées de
+  `space-2` ; bordure `sage` quand la tâche est faite.
 - **Badges d'information** (école) : `components/_school_badges.html`. Puce
   `border-border-strong` + alvéole `honey` avec icône `ink` + texte (« Cantine »,
   « Sandwich (APC) », « Étude ce soir »). Même famille que les badges de tâche, mais
