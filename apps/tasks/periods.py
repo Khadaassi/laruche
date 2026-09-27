@@ -28,6 +28,13 @@ PERIOD_PHRASES = {
     Period.EVENING: "ce soir",
 }
 
+# Salutation de l'accueil parent, selon la période en cours.
+GREETINGS = {
+    Period.MORNING: "Bonjour la famille",
+    Period.NOON: "Bon après-midi",
+    Period.EVENING: "Bonsoir la famille",
+}
+
 # Heure de début de chaque période, dans l'ordre de la journée.
 PERIOD_STARTS = (
     (datetime.time(4, 0), Period.MORNING),
