@@ -1,0 +1,71 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}École — La Ruche{% endblock %}
+
+{% block header %}
+  {% include "parent/_settings_back.html" %}
+  {% include "parent/_header.html" with title="Cantine et étude" %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-space-6">
+  <p class="text-ink-soft">La semaine type se répète chaque semaine. Pour un jour particulier (sortie, grève, rendez-vous), ajoutez une exception : elle remplace la semaine type ce jour-là.</p>
+
+  {% for form in week_forms %}
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="child-{{ form.person.pk }}-title">
+      <h2 id="child-{{ form.person.pk }}-title" class="mb-space-4 flex items-center gap-space-2 text-lg">
+        {% include "components/_avatar.html" with person=form.person %}Semaine type de {{ form.person.name }}
+      </h2>
+      <form method="post" action="{% url 'school:save_week' form.person.pk %}" class="space-y-space-4" novalidate>
+        {% csrf_token %}
+        {% for label, lunch, note, study in form.days %}
+          <fieldset class="space-y-space-2 border-t border-border pt-space-2 first:border-0 first:pt-0">
+            <legend class="font-medium">{{ label }}</legend>
+            <label for="{{ lunch.id_for_label }}" class="sr-only">{{ lunch.label }}</label>
+            {{ lunch }}
+            <label for="{{ note.id_for_label }}" class="sr-only">{{ note.label }}</label>
+            {{ note }}
+            <label class="flex min-h-11 cursor-pointer items-center gap-space-2">
+              {{ study }}<span>Étude le soir</span>
+            </label>
+          </fieldset>
+        {% endfor %}
+        <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer la semaine de {{ form.person.name }}</button>
+      </form>
+    </section>
+  {% empty %}
+    <p class="rounded-md border border-border bg-surface-0 p-space-4 text-ink-soft">Aucun enfant dans la famille pour l'instant.</p>
+  {% endfor %}
+
+  {% if week_forms %}
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="override-title">
+      <h2 id="override-title" class="mb-space-4 text-lg">Exception pour une date</h2>
+      <form method="post" action="{% url 'school:add_override' %}" class="space-y-space-4" novalidate>
+        {% csrf_token %}
+        {% include "components/_field.html" with field=override_form.person %}
+        {% include "components/_field.html" with field=override_form.date %}
+        {% include "components/_field.html" with field=override_form.lunch %}
+        {% include "components/_field.html" with field=override_form.lunch_note %}
+        <label class="flex min-h-11 cursor-pointer items-center gap-space-2">{{ override_form.study }}<span>Étude le soir</span></label>
+        <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Ajouter l'exception</button>
+      </form>
+      {% if overrides %}
+        <h3 class="mb-space-2 mt-space-6 font-display text-base">Exceptions à venir</h3>
+        <ul class="divide-y divide-border">
+          {% for override in overrides %}
+            <li class="flex items-center gap-space-4 py-space-2">
+              <div class="flex-1">
+                <p class="font-medium">{{ override.person.name }} · {{ override.date|date:"l j F"|capfirst }}</p>
+                <p class="text-sm text-ink-soft">{% if override.lunch == "other" and override.lunch_note %}{{ override.lunch_note }}{% else %}{{ override.get_lunch_display }}{% endif %}{% if override.study %} · étude{% endif %}</p>
+              </div>
+              <form method="post" action="{% url 'school:delete_override' override.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="rounded-sm border border-border-strong px-space-2 py-2 text-sm font-medium">Supprimer</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
