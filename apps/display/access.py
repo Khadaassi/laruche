@@ -2,6 +2,7 @@
 
 Voir .claude/skills/permissions/SKILL.md §3. L'appareil porte seulement la
 famille et un privilège « enfant » : il ne donne jamais accès aux vues parent.
+Un compte enfant passe par le même écran (seul chemin d'accès enfant).
 """
 
 import datetime
@@ -13,6 +14,7 @@ from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 
 from apps.families.access import get_membership
+from apps.families.models import Person
 
 from .models import SharedDisplayDevice, hash_token
 
@@ -56,11 +58,14 @@ def delete_device_cookie(response) -> None:
 
 
 def shared_display_required(view):
-    """Appareil partagé valide, ou parent connecté (aperçu depuis son compte).
+    """Seul chemin d'accès « enfant » : l'écran partagé, toutes les colonnes.
 
-    Pose `request.family` et `request.display_device` (None en aperçu parent).
-    Sinon : redirection vers la connexion. Un compte enfant n'y a pas accès
-    (il agirait sur les tâches de ses frères et sœurs).
+    Accès : appareil partagé valide, parent connecté (aperçu) ou compte
+    enfant connecté. Pose `request.family`, `request.display_device` (None
+    hors appareil) et `request.tickable_person_id` :
+    - None → toutes les colonnes sont cochables (appareil, parent) ;
+    - pk de sa personne → un compte enfant ne coche que sa propre colonne.
+    Anonyme : redirection vers la connexion.
     """
 
     @wraps(view)
@@ -69,14 +74,26 @@ def shared_display_required(view):
         if device is not None:
             request.display_device = device
             request.family = device.family
+            request.tickable_person_id = None
             return view(request, *args, **kwargs)
         membership = get_membership(request.user)
-        if membership is not None and membership.is_parent:
-            request.display_device = None
-            request.family = membership.family
-            return view(request, *args, **kwargs)
-        if request.user.is_authenticated:
-            raise PermissionDenied("Réservé aux parents ou à un appareil partagé.")
-        return redirect_to_login(request.get_full_path())
+        if membership is None:
+            if request.user.is_authenticated:
+                raise PermissionDenied("Ce compte n'est rattaché à aucune famille.")
+            return redirect_to_login(request.get_full_path())
+        request.display_device = None
+        request.family = membership.family
+        if membership.is_parent:
+            request.tickable_person_id = None
+        else:
+            own = Person.objects.for_family(membership.family).filter(user=request.user).first()
+            # Sans personne liée (cas anormal), aucune colonne n'est cochable.
+            request.tickable_person_id = own.pk if own else 0
+        return view(request, *args, **kwargs)
 
     return wrapper
+
+
+def can_tick(request, person) -> bool:
+    """La colonne de `person` est-elle cochable par ce visiteur ?"""
+    return request.tickable_person_id is None or request.tickable_person_id == person.pk

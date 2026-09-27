@@ -21,12 +21,9 @@ class SettingsTests(SecureClientMixin, TestCase):
         self.client.force_login(self.parent)
         self.assertContains(self.get(reverse("families:settings")), "RUCHECODE1")
 
-    def test_child_sees_only_account_section(self):
+    def test_child_has_no_access_to_settings(self):
         self.client.force_login(self.kid)
-        response = self.get(reverse("families:settings"))
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "RUCHECODE1")
-        self.assertContains(response, "Se déconnecter")
+        self.assertEqual(self.get(reverse("families:settings")).status_code, 403)
 
     def test_parent_promotes_child_account(self):
         self.client.force_login(self.parent)

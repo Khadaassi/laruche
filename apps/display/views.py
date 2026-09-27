@@ -1,4 +1,5 @@
 from django.contrib.auth import login, logout
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.debug import sensitive_post_parameters
@@ -11,19 +12,32 @@ from apps.tasks.periods import PERIOD_PHRASES, current_period, seconds_until_nex
 from apps.tasks.selectors import group_by_person, tasks_for_day
 from apps.tasks.services import set_done
 
-from .access import delete_device_cookie, get_device, set_device_cookie, shared_display_required
+from .access import (
+    can_tick,
+    delete_device_cookie,
+    get_device,
+    set_device_cookie,
+    shared_display_required,
+)
 from .forms import DeviceForm
 from .models import SharedDisplayDevice
 
 
-def child_columns(family, person=None):
-    """Colonnes de la période en cours : une par enfant (ou une seule)."""
+def child_columns(request, person=None):
+    """Colonnes de la période en cours : une par enfant de la famille (ou une seule).
+
+    Toujours tous les enfants, quel que soit le visiteur ; seule la
+    possibilité de cocher (`column.tickable`) dépend de lui.
+    """
     today, period = timezone.localdate(), current_period()
-    children = Person.objects.for_family(family).children()
+    children = Person.objects.for_family(request.family).children()
     if person is not None:
         children = children.filter(pk=person.pk)
-    tasks = tasks_for_day(family, today, people=children, period=period)
-    return group_by_person(children, tasks)
+    tasks = tasks_for_day(request.family, today, people=children, period=period)
+    columns = group_by_person(children, tasks)
+    for column in columns:
+        column.tickable = can_tick(request, column.person)
+    return columns
 
 
 @require_GET
@@ -35,7 +49,7 @@ def board(request):
         request,
         "shared/board.html",
         {
-            "columns": child_columns(request.family),
+            "columns": child_columns(request),
             "period": period,
             "period_phrase": PERIOD_PHRASES[period],
             "today": timezone.localdate(),
@@ -49,19 +63,20 @@ def board(request):
 def toggle(request, person_pk, task_pk):
     """Coche la tâche d'un enfant depuis sa colonne.
 
-    L'enfant ciblé doit être un enfant de la famille de l'appareil, et la
-    tâche doit être la sienne : une colonne ne touche jamais une autre.
+    L'enfant ciblé doit être un enfant de la famille, et la tâche doit être
+    la sienne : une colonne ne touche jamais une autre. Un compte enfant ne
+    coche que sa propre colonne (403 sinon).
     """
     today = timezone.localdate()
     child = get_object_or_404(Person.objects.for_family(request.family).children(), pk=person_pk)
+    if not can_tick(request, child):
+        raise PermissionDenied("Un enfant ne coche que sa propre colonne.")
     task = get_object_or_404(child.tasks.on_weekday(today.weekday()), pk=task_pk)
     by = request.user if request.user.is_authenticated else None
     set_done(task, today, request.POST.get("done") == "on", by=by)
     if request.headers.get("HX-Request") != "true":
         return redirect("display:board")
-    return render(
-        request, "shared/_column_oob.html", {"column": child_columns(request.family, child)[0]}
-    )
+    return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})
 
 
 @require_POST

@@ -6,7 +6,7 @@ from apps.accounts.forms import FIELD_CLASSES
 from apps.display.forms import DeviceForm
 from apps.display.models import SharedDisplayDevice
 
-from .access import family_member_required, parent_required
+from .access import parent_required
 from .models import Person, Role, next_avatar_color
 from .services import promote_to_parent, regenerate_invite_code
 
@@ -18,17 +18,16 @@ class ChildProfileForm(forms.Form):
 
 
 @require_GET
-@family_member_required
+@parent_required
 def settings_page(request):
-    """Réglages. Un enfant n'y voit que son compte (déconnexion)."""
-    context = {"nav_active": "settings"}
-    if request.membership.is_parent:
-        context.update(
-            people=Person.objects.for_family(request.family).select_related("user__membership"),
-            child_form=ChildProfileForm(),
-            device_form=DeviceForm(),
-            devices=SharedDisplayDevice.objects.for_family(request.family).active(),
-        )
+    """Réglages (parents uniquement)."""
+    context = {
+        "nav_active": "settings",
+        "people": Person.objects.for_family(request.family).select_related("user__membership"),
+        "child_form": ChildProfileForm(),
+        "device_form": DeviceForm(),
+        "devices": SharedDisplayDevice.objects.for_family(request.family).active(),
+    }
     return render(request, "parent/settings.html", context)
 
 

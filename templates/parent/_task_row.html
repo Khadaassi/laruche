@@ -5,20 +5,19 @@ que les compteurs (hx-swap-oob). En cas de refus, app.js recoche la case.
 {% endcomment %}
 <li>
   <form method="post" action="{% url 'tasks:toggle' task.pk %}" data-task-form
-        {% if task.can_toggle %}hx-post="{% url 'tasks:toggle' task.pk %}" hx-trigger="change" hx-swap="none"{% endif %}
+        hx-post="{% url 'tasks:toggle' task.pk %}" hx-trigger="change" hx-swap="none"
         class="task-row group flex min-h-14 items-center gap-space-4 py-3">
     {% csrf_token %}
     {% if selected %}<input type="hidden" name="personne" value="{{ selected.pk }}">{% endif %}
     <span class="relative flex shrink-0">
       <input type="checkbox" name="done" id="task-{{ task.pk }}"
-             class="h-7 w-7 shrink-0 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage disabled:cursor-not-allowed"
-             {% if task.is_done %}checked{% endif %} {% if not task.can_toggle %}disabled{% endif %}>
+             class="h-7 w-7 shrink-0 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage"
+             {% if task.is_done %}checked{% endif %}>
       <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
     </span>
-    <label for="task-{{ task.pk }}" class="flex-1 {% if task.can_toggle %}cursor-pointer{% endif %}">
+    <label for="task-{{ task.pk }}" class="flex-1 cursor-pointer">
       <span class="block group-has-[:checked]:text-ink-soft group-has-[:checked]:line-through">{{ task.title }}</span>
       {% if not selected %}<span class="text-sm text-ink-soft">{{ task.person.name }}</span>{% endif %}
-      {% if not task.can_toggle %}<span class="sr-only">(lecture seule)</span>{% endif %}
     </label>
     <span class="hidden text-sm font-medium text-sage group-has-[:checked]:inline">Fait</span>
     {# Badge hexagonal : miel = à faire, sauge + coche = fait. #}

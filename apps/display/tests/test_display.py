@@ -35,8 +35,27 @@ class BoardAccessTests(SecureClientMixin, TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("accounts:login"), response["Location"])
 
-    def test_child_account_is_refused(self, _now):
+    def test_child_account_sees_every_child_column(self, _now):
+        # Un accès enfant n'est jamais une vue mono-enfant : toutes les colonnes,
+        # seule la sienne est cochable.
         self.client.force_login(self.kid)
+        response = self.get(reverse("display:board"))
+        self.assertEqual(response.status_code, 200)
+        columns = response.context["columns"]
+        self.assertEqual([c.person.name for c in columns], ["Lina", "Noah", "Zoé"])
+        self.assertEqual([c.tickable for c in columns], [True, False, False])
+        self.assertContains(response, "Se déconnecter")
+        self.assertNotContains(response, "Retour à mon compte")
+
+    def test_parent_preview_can_tick_every_column(self, _now):
+        self.client.force_login(self.parent)
+        columns = self.get(reverse("display:board")).context["columns"]
+        self.assertTrue(all(c.tickable for c in columns))
+
+    def test_account_without_family_is_refused(self, _now):
+        from apps.families.tests.factories import make_user
+
+        self.client.force_login(make_user())
         self.assertEqual(self.get(reverse("display:board")).status_code, 403)
 
     def test_parent_preview_shows_one_column_per_child(self, _now):
@@ -154,6 +173,11 @@ class DeviceTests(SecureClientMixin, TestCase):
         device.refresh_from_db()
         self.assertTrue(device.is_active)
 
+    def test_device_can_tick_every_column(self, _now):
+        self.activate()
+        columns = self.get(reverse("display:board")).context["columns"]
+        self.assertEqual([c.tickable for c in columns], [True, True])
+
     def test_child_account_cannot_activate(self, _now):
         kid = join(self.family, "Léo")
         self.client.force_login(kid)
@@ -179,3 +203,53 @@ class DeviceTests(SecureClientMixin, TestCase):
         self.assertFalse(SharedDisplayDevice.objects.get().is_active)
         self.assertEqual(response.cookies[DEVICE_COOKIE].value, "")
         self.assertEqual(int(self.client.session["_auth_user_id"]), self.parent.pk)
+
+
+@mock.patch("django.utils.timezone.now", return_value=MONDAY_8AM)
+class ChildAccountToggleTests(SecureClientMixin, TestCase):
+    """Compte enfant sur l'écran partagé : coche sa colonne, pas celle des autres."""
+
+    def setUp(self):
+        self.family = make_family()
+        join(self.family, "Sam")
+        self.kid = join(self.family, "Lina")
+        self.noah = make_child_profile(self.family, "Noah")
+        self.own_task = Task.objects.create(
+            person=self.kid.person, title="Dents", period=Period.MORNING
+        )
+        self.sibling_task = Task.objects.create(
+            person=self.noah, title="Lit", period=Period.MORNING
+        )
+        stranger = make_child_profile(make_family(name="Voisins"), "Tom")
+        self.stranger_task = Task.objects.create(
+            person=stranger, title="Intrus", period=Period.MORNING
+        )
+        self.client.force_login(self.kid)
+
+    def toggle(self, task):
+        return self.htmx_post(
+            reverse("display:toggle", args=[task.person.pk, task.pk]), {"done": "on"}
+        )
+
+    def test_child_ticks_own_column(self, _now):
+        self.assertEqual(self.toggle(self.own_task).status_code, 200)
+        self.assertEqual(TaskCompletion.objects.get().completed_by, self.kid)
+
+    def test_child_cannot_tick_sibling_column(self, _now):
+        self.assertEqual(self.toggle(self.sibling_task).status_code, 403)
+        self.assertFalse(TaskCompletion.objects.exists())
+
+    def test_child_cannot_tick_other_family(self, _now):
+        self.assertEqual(self.toggle(self.stranger_task).status_code, 404)
+        self.assertFalse(TaskCompletion.objects.exists())
+
+    def test_sibling_column_rendered_read_only(self, _now):
+        html = self.get(reverse("display:board")).content.decode()
+        self.assertIn(
+            f'hx-post="{reverse("display:toggle", args=[self.kid.person.pk, self.own_task.pk])}"',
+            html,
+        )
+        self.assertNotIn(
+            f'hx-post="{reverse("display:toggle", args=[self.noah.pk, self.sibling_task.pk])}"',
+            html,
+        )

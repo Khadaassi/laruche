@@ -30,14 +30,12 @@
     {% include "components/_remaining.html" %}
   </section>
 
-  {% if request.membership.is_parent %}
-    {# Détection par la largeur d'écran (breakpoint md), jamais par user-agent. #}
+  {# Détection par la largeur d'écran (breakpoint md), jamais par user-agent. #}
     <a href="{% url 'display:board' %}"
        class="mb-space-4 hidden items-center justify-between rounded-md border border-border-strong bg-surface-0 p-space-4 font-medium md:flex">
       Sur une tablette ? Ouvrir l'affichage partagé des enfants
       <span aria-hidden="true">→</span>
     </a>
-  {% endif %}
 
   {# Période en cours ouverte, les autres repliées (sans JS : <details>). #}
   <div class="space-y-space-4">

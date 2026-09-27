@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
-from apps.families.access import family_member_required
+from apps.families.access import parent_required
 
 
 @require_GET
@@ -25,7 +25,7 @@ COMING_SOON = {
 
 
 @require_GET
-@family_member_required
+@parent_required
 def coming_soon(request, section):
     if section not in COMING_SOON:
         raise Http404

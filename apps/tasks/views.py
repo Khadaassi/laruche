@@ -1,4 +1,3 @@
-from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -11,7 +10,6 @@ from apps.families.models import Person
 from .forms import TaskForm
 from .models import Task
 from .periods import Period, period_at
-from .permissions import can_toggle
 from .selectors import count_remaining, group_by_period, tasks_for_day
 from .services import set_done
 
@@ -34,12 +32,16 @@ def is_htmx(request) -> bool:
 @require_GET
 @family_member_required
 def home(request):
-    """Accueil parent (mobile) : tâches du jour par période."""
+    """Accueil parent (mobile) : tâches du jour par période.
+
+    Un compte enfant n'a pas de vue individuelle : il est envoyé sur
+    l'écran partagé, seul chemin d'accès enfant (toutes les colonnes).
+    """
+    if not request.membership.is_parent:
+        return redirect("display:board")
     person = selected_person(request, request.GET.get(PERSON_PARAM))
     now = timezone.localtime()
     tasks = tasks_for_day(request.family, now.date(), people=[person] if person else None)
-    for task in tasks:
-        task.can_toggle = can_toggle(request.membership, request.person, task)
     return render(
         request,
         "parent/home.html",
@@ -55,15 +57,16 @@ def home(request):
 
 
 @require_POST
-@family_member_required
+@parent_required
 def toggle(request, pk):
-    """Coche / décoche une tâche du jour (endpoint HTMX, vérifié côté serveur)."""
+    """Coche / décoche une tâche du jour depuis l'accueil parent (endpoint HTMX).
+
+    Les enfants cochent depuis l'écran partagé (display:toggle).
+    """
     today = timezone.localdate()
     task = get_object_or_404(
         Task.objects.for_family(request.family).on_weekday(today.weekday()), pk=pk
     )
-    if not can_toggle(request.membership, request.person, task):
-        raise PermissionDenied("Un enfant ne coche que ses propres tâches.")
     set_done(task, today, request.POST.get("done") == "on", by=request.user)
 
     # Le filtre ne sert qu'à recalculer les compteurs affichés ; il reste

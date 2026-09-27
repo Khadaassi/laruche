@@ -109,20 +109,11 @@ class ToggleTests(SecureClientMixin, TestCase):
         self.assertEqual(self.toggle(self.other_task).status_code, 404)
         self.assertFalse(TaskCompletion.objects.exists())
 
-    def test_child_can_toggle_own_task(self, _now):
+    def test_child_account_cannot_use_parent_toggle(self, _now):
+        # Un enfant coche depuis l'écran partagé, jamais par l'accueil parent.
         self.client.force_login(self.kid)
-        self.assertEqual(self.toggle(self.own_task).status_code, 200)
-        completion = TaskCompletion.objects.get(task=self.own_task)
-        self.assertEqual(completion.completed_by, self.kid)
-
-    def test_child_cannot_toggle_sibling_task(self, _now):
-        self.client.force_login(self.kid)
-        self.assertEqual(self.toggle(self.sibling_task).status_code, 403)
+        self.assertEqual(self.toggle(self.own_task).status_code, 403)
         self.assertFalse(TaskCompletion.objects.exists())
-
-    def test_child_cannot_toggle_other_family_task(self, _now):
-        self.client.force_login(self.kid)
-        self.assertEqual(self.toggle(self.other_task).status_code, 404)
 
     def test_task_not_scheduled_today_is_404(self, _now):
         weekend = Task.objects.create(
@@ -131,7 +122,7 @@ class ToggleTests(SecureClientMixin, TestCase):
             period=Period.MORNING,
             weekdays=weekdays_to_mask([5, 6]),
         )
-        self.client.force_login(self.kid)
+        self.client.force_login(self.parent)
         self.assertEqual(self.toggle(weekend).status_code, 404)
 
     def test_anonymous_redirected_to_login(self, _now):
@@ -150,10 +141,10 @@ class ToggleTests(SecureClientMixin, TestCase):
         stranger = self.other_task.person
         self.assertEqual(self.toggle(self.own_task, personne=stranger.pk).status_code, 404)
 
-    def test_home_marks_sibling_tasks_read_only_for_child(self, _now):
+    def test_child_account_home_redirects_to_shared_display(self, _now):
         self.client.force_login(self.kid)
-        tasks = {t.title: t.can_toggle for g in self.get("/").context["groups"] for t in g.tasks}
-        self.assertEqual(tasks, {"Dents": True, "Lit": False})
+        response = self.get(reverse("tasks:home"))
+        self.assertRedirects(response, reverse("display:board"), fetch_redirect_response=False)
 
 
 class ManageTasksTests(SecureClientMixin, TestCase):
@@ -228,6 +219,12 @@ class ComingSoonTests(SecureClientMixin, TestCase):
                 response = self.get(reverse(name))
                 self.assertContains(response, "arrive bientôt")
                 self.assertContains(response, 'aria-current="page"')
+
+    def test_stub_pages_refused_to_child_accounts(self):
+        family = make_family()
+        join(family)
+        self.client.force_login(join(family, "Lina"))
+        self.assertEqual(self.get(reverse("core:menu")).status_code, 403)
 
     def test_stub_pages_require_login(self):
         self.assertEqual(self.get(reverse("core:menu")).status_code, 302)
