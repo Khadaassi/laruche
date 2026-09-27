@@ -198,6 +198,14 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
 - **Palier** : tous les 10 étoiles **gagnées** (`STAR_TIER`). Le palier mesure l'effort
   cumulé et ne recule jamais quand on dépense : dépenser pour la famille ne fait pas
   « perdre » un palier (aucune mécanique culpabilisante).
+- **Célébration de palier** (`TierCelebration`, une ligne par enfant : dernier palier
+  fêté). Quand l'écran partagé affiche une colonne (chargement ou réponse au cochage) et
+  que le palier atteint dépasse le dernier fêté, `claim_tier_celebration` avance le
+  compteur par un UPDATE conditionnel atomique : seule la requête qui l'avance montre la
+  célébration. D'où : une seule fois par palier, pas de doublon au re-render ni entre deux
+  écrans, pas de nouvelle fête après un décochage/recochage, une seule célébration (la
+  plus haute) si plusieurs paliers sont franchis d'un coup. Un palier atteint ailleurs
+  (parent qui coche sur son téléphone) est fêté au prochain affichage de l'écran partagé.
 
 ## Roue du samedi (`saturday/`)
 
@@ -242,6 +250,14 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
 - **Relances** : 3 tirages maximum par samedi (le premier + **2 relances**), comptés
   côté serveur quel que soit le changement de filtres. La 4e tentative est refusée avec un
   message clair. Annuler un plan validé rouvre le tirage (décision explicite d'un parent).
+- **Deux points d'entrée, un seul flux** : le téléphone du parent (`/samedi/`) et
+  l'écran partagé (`/affichage/samedi/`, onglet « Samedi »). Sur l'écran partagé, un parent
+  confirme avec son mot de passe (même mécanisme et même rate-limit que la sortie du mode
+  tablette, `display/parent_check.py`) ; la session de l'écran reçoit pour **10 minutes**
+  le droit de lancer la roue au nom de ce parent (`display/wheel_unlock.py`), sans autre
+  privilège parent et sans connecter le parent. Le droit est consommé par « On y va ! ».
+  Tirage, 3 tours et validation passent par les mêmes fonctions (`draw_context`,
+  `perform_spin`, `accept`). Un parent connecté en aperçu n'a pas à confirmer.
 - Le serveur tire ; le navigateur ne fait qu'animer la roue vers le résultat déjà choisi
   (aucune triche possible en rechargeant). Pas d'IA : tirage pondéré classique.
 
