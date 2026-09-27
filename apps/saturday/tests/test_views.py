@@ -32,6 +32,13 @@ class SaturdayViewsTests(SecureClientMixin, TestCase):
     def spin(self, cost="any", place="any"):
         return self.htmx_post(reverse("saturday:spin"), {"cost": cost, "place": place})
 
+    def test_page_header_has_no_stray_star_badge(self, _now):
+        # Régression : l'en-tête affichait la liste brute des soldes (`stars`).
+        self.client.force_login(self.parent)
+        response = self.get(reverse("saturday:page"))
+        self.assertNotContains(response, "StarBalance")
+        self.assertNotContains(response, "étoiles dans la famille")
+
     def test_spin_returns_wheel_and_result(self, _now):
         self.client.force_login(self.parent)
         response = self.spin()
