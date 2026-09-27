@@ -1,24 +1,27 @@
 {% extends "base.html" %}
 {% comment %}
 Famille de gabarits « parent » — mobile d'abord, un seul utilisateur connecté.
-- Contenu à une colonne, qui défile.
-- Barre de navigation FIXE EN BAS, labels toujours visibles (pas d'icône seule).
-- Réserve la zone de sécurité iOS (safe-area) sous la barre.
+- Téléphone : contenu à une colonne qui défile, barre de navigation FIXE EN BAS,
+  labels toujours visibles (pas d'icône seule), zone de sécurité iOS réservée.
+- À partir de md (tablette, ordinateur) : la même navigation devient une barre
+  LATÉRALE à gauche, et le contenu s'élargit (pages à sections en 2 colonnes à
+  partir de lg, classe .page-grid). Bloc `content_width` : pages de formulaire
+  seul ou de confirmation, gardées étroites.
 Les pages parent étendent ce gabarit : templates/parent/<page>.html
 et renseignent `nav_active` (home, week, celebrations, kitchen, settings).
 {% endcomment %}
 
-{% block body_class %}min-h-dvh pb-[calc(4.5rem+env(safe-area-inset-bottom))]{% endblock %}
+{% block body_class %}min-h-dvh pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0 md:pl-56{% endblock %}
 
 {% block layout %}
-  <header class="mx-auto w-full max-w-md px-space-4 pt-space-6">{% block header %}{% endblock %}</header>
+  <header class="mx-auto w-full {% block header_width %}max-w-md md:max-w-3xl lg:max-w-5xl{% endblock %} px-space-4 pt-space-6 md:px-space-8 md:pt-space-8">{% block header %}{% endblock %}</header>
 
-  <main id="main" class="mx-auto w-full max-w-md px-space-4 pb-space-6">
+  <main id="main" class="mx-auto w-full {% block content_width %}max-w-md md:max-w-3xl lg:max-w-5xl{% endblock %} px-space-4 pb-space-6 md:px-space-8 md:pb-space-8">
     {% block content %}{% endblock %}
   </main>
 
   <nav aria-label="Navigation principale"
-       class="fixed inset-x-0 bottom-0 border-t border-border bg-surface-0 pb-[env(safe-area-inset-bottom)]">
+       class="fixed inset-x-0 bottom-0 border-t border-border bg-surface-0 pb-[env(safe-area-inset-bottom)] md:inset-y-0 md:right-auto md:w-56 md:border-r md:border-t-0 md:pb-0">
     {% block bottom_nav %}{% include "parent/_bottom_nav.html" %}{% endblock %}
   </nav>
 {% endblock %}

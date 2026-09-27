@@ -8,7 +8,7 @@
 {% block content %}
   {% include "parent/_week_nav.html" with base_url_name="household:week" %}
 
-  <div class="space-y-space-4">
+  <div class="grid gap-space-4 md:grid-cols-2 lg:grid-cols-3">
     {% for day in days %}
       <section class="rounded-md border {% if day.is_today %}border-honey-dark{% else %}border-border{% endif %} bg-surface-0 p-space-4" aria-labelledby="day-{{ forloop.counter }}">
         <h2 id="day-{{ forloop.counter }}" class="mb-space-2 flex items-center gap-space-2 text-lg">

@@ -32,6 +32,9 @@
     {% include "components/_remaining.html" %}
   </section>
 
+  {# lg : tâches du jour à gauche, cartes (samedi, dîner, école, demain) à droite. #}
+  <div class="lg:grid lg:grid-cols-[3fr_2fr] lg:items-start lg:gap-space-6">
+  <aside class="lg:col-start-2 lg:row-start-1" aria-label="En bref">
   {% if is_saturday %}<div class="mb-space-4">{% include "parent/_saturday_card.html" with prominent=True %}</div>{% endif %}
 
   <div class="mb-space-4">{% include "parent/_dinner_card.html" %}</div>
@@ -78,8 +81,11 @@
       <span aria-hidden="true">→</span>
     </a>
 
+  {% if not is_saturday %}<div class="mb-space-4 hidden lg:block">{% include "parent/_saturday_card.html" %}</div>{% endif %}
+  </aside>
+
   {# Période en cours ouverte, les autres repliées (sans JS : <details>). #}
-  <div class="space-y-space-4">
+  <div class="space-y-space-4 lg:col-start-1 lg:row-start-1">
     {% for group in groups %}
       <details class="group/period rounded-md border border-border bg-surface-0" {% if group.is_current %}open{% endif %}>
         <summary class="flex min-h-14 cursor-pointer list-none items-center gap-space-2 px-space-4 py-3 [&::-webkit-details-marker]:hidden">
@@ -99,5 +105,6 @@
       </details>
     {% endfor %}
   </div>
-  {% if not is_saturday %}<div class="mt-space-4">{% include "parent/_saturday_card.html" %}</div>{% endif %}
+  </div>
+  {% if not is_saturday %}<div class="mt-space-4 lg:hidden">{% include "parent/_saturday_card.html" %}</div>{% endif %}
 {% endblock %}
