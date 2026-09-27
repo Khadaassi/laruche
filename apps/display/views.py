@@ -11,18 +11,20 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.accounts.forms import LoginForm
 from apps.celebrations.models import Celebration
 from apps.celebrations.services import roll_over_recurring
-from apps.core.ratelimit import BLOCKED_MESSAGE, EXIT_DISPLAY
-from apps.families.access import get_membership, parent_required
+from apps.core.ratelimit import BLOCKED_MESSAGE
+from apps.families.access import parent_required
 from apps.families.models import Person
 from apps.household.models import HouseholdChore
 from apps.household.selectors import chores_by_day, set_chore_done
 from apps.household.views import requested_monday
 from apps.household.week import build_week
-from apps.saturday.draw import close_past_plans, current_plan
-from apps.saturday.models import PlanStatus
+from apps.saturday.draw import DrawError, accept, close_past_plans, current_plan
+from apps.saturday.models import PlanStatus, SaturdayPlan
+from apps.saturday.views import draw_context, perform_spin
 from apps.school.models import Lunch
 from apps.school.selectors import school_days_for
 from apps.stars.selectors import balances
+from apps.stars.services import claim_tier_celebration
 from apps.tasks.periods import PERIOD_PHRASES, current_period, seconds_until_next_period
 from apps.tasks.selectors import group_by_person, tasks_for_day
 from apps.tasks.services import set_done
@@ -36,6 +38,10 @@ from .access import (
 )
 from .forms import DeviceForm
 from .models import SharedDisplayDevice
+from .parent_check import check_parent_password
+from .wheel_unlock import grant as grant_wheel
+from .wheel_unlock import revoke as revoke_wheel
+from .wheel_unlock import wheel_parent
 
 
 def child_columns(request, person=None):
@@ -58,6 +64,8 @@ def child_columns(request, person=None):
     columns = group_by_person(children, tasks)
     for column in columns:
         column.stars = stars.get(column.person.pk)
+        # Nouveau palier atteint : fêté une seule fois, sur cet écran.
+        column.celebrate_tier = claim_tier_celebration(column.stars) if column.stars else None
         # Ménage du jour de l'enfant (toutes périodes), coché comme ses tâches.
         column.chores = [o for o in chores_today if o.chore.assignee_id == column.person.pk]
         column.tickable = can_tick(request, column.person)
@@ -185,6 +193,92 @@ def toggle_chore(request, person_pk, chore_pk):
     return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})
 
 
+# --- Roue du samedi sur l'écran partagé ---------------------------------------
+
+
+def _saturday_context(request, **extra):
+    return draw_context(
+        request.family,
+        today=timezone.localdate(),
+        reload_in=seconds_until_next_period(),
+        spin_url_name="display:saturday_spin",
+        validate_url_name="display:saturday_validate",
+        **extra,
+    )
+
+
+@require_GET
+@shared_display_required
+def saturday(request):
+    """Roue du samedi en grand, pour que toute la famille la regarde tourner.
+
+    Lancement réservé à un parent : confirmation par mot de passe si l'écran
+    n'est pas déjà ouvert par un parent.
+    """
+    parent = wheel_parent(request)
+    context = _saturday_context(request, unlocked=parent is not None)
+    if parent is None:
+        context["form"] = LoginForm(request)
+    return render(request, "shared/saturday.html", context)
+
+
+@sensitive_post_parameters("password")
+@require_POST
+@shared_display_required
+def saturday_unlock(request):
+    """Un parent confirme son mot de passe : la roue est lançable 10 minutes."""
+    check = check_parent_password(request, request.family)
+    if check.user is not None:
+        grant_wheel(request, request.family, check.user)
+        return redirect("display:saturday")
+    context = _saturday_context(
+        request,
+        unlocked=False,
+        form=check.form,
+        blocked=BLOCKED_MESSAGE if check.blocked else "",
+    )
+    return render(request, "shared/saturday.html", context, status=429 if check.blocked else 400)
+
+
+@require_POST
+@shared_display_required
+def saturday_spin(request):
+    """Un tour de roue depuis l'écran partagé : mêmes règles que sur le téléphone."""
+    parent = wheel_parent(request)
+    if parent is None:
+        raise PermissionDenied("Un parent doit confirmer avant de lancer la roue.")
+    context, status = perform_spin(
+        request.family,
+        parent,
+        request.POST,
+        spin_url_name="display:saturday_spin",
+        validate_url_name="display:saturday_validate",
+    )
+    context.update(today=timezone.localdate(), unlocked=True, wheel_size="max-w-md")
+    template = (
+        "parent/_saturday_draw.html"
+        if request.headers.get("HX-Request") == "true"
+        else "shared/saturday.html"
+    )
+    return render(request, template, context, status=status)
+
+
+@require_POST
+@shared_display_required
+def saturday_validate(request, pk):
+    """« On y va ! » depuis l'écran partagé : validé au nom du parent qui a confirmé."""
+    if wheel_parent(request) is None:
+        raise PermissionDenied("Un parent doit confirmer avant de valider.")
+    plan = get_object_or_404(SaturdayPlan.objects.for_family(request.family), pk=pk)
+    try:
+        accept(plan)
+    except DrawError as error:
+        context = _saturday_context(request, unlocked=True, draw_error=str(error))
+        return render(request, "shared/saturday.html", context, status=422)
+    revoke_wheel(request)
+    return redirect("display:board")
+
+
 @require_POST
 @parent_required
 def activate(request):
@@ -217,34 +311,13 @@ def exit_display(request):
     device = get_device(request)
     if device is None:
         return redirect("display:board")
-    form = LoginForm(request, data=request.POST or None)
-    # Limite par appareil (le jeton, pas l'IP) : on ne teste pas les mots de
-    # passe des parents en boucle depuis la tablette.
-    target = str(device.pk)
-    if request.method == "POST":
-        if EXIT_DISPLAY.is_blocked(request, target=target):
-            # Formulaire vierge : le mot de passe n'est même pas vérifié.
-            return render(
-                request,
-                "shared/exit.html",
-                {"form": LoginForm(request), "blocked": BLOCKED_MESSAGE},
-                status=429,
-            )
-        if form.is_valid():
-            user = form.get_user()
-            membership = get_membership(user)
-            if (
-                membership is not None
-                and membership.is_parent
-                and membership.family == device.family
-            ):
-                device.revoke()
-                login(request, user)
-                response = redirect("tasks:home")
-                delete_device_cookie(response)
-                return response
-            form.add_error(
-                None, "Seul un parent de cette famille peut quitter l'affichage partagé."
-            )
-        EXIT_DISPLAY.record_failure(request, target=target)
-    return render(request, "shared/exit.html", {"form": form})
+    request.display_device = device
+    check = check_parent_password(request, device.family)
+    if check.user is not None:
+        device.revoke()
+        login(request, check.user)
+        response = redirect("tasks:home")
+        delete_device_cookie(response)
+        return response
+    context = {"form": check.form, "blocked": BLOCKED_MESSAGE if check.blocked else ""}
+    return render(request, "shared/exit.html", context, status=429 if check.blocked else 200)

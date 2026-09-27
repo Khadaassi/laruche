@@ -4,7 +4,7 @@ from django.db import transaction
 
 from apps.families.models import Family
 
-from .models import StarDebit, StarSpend
+from .models import StarDebit, StarSpend, TierCelebration
 from .selectors import balances
 
 
@@ -58,3 +58,22 @@ def refund(spend: StarSpend | None) -> None:
     """Annule une dépense : chaque enfant récupère exactement sa part."""
     if spend is not None:
         spend.delete()
+
+
+def claim_tier_celebration(balance) -> int | None:
+    """Palier à fêter maintenant pour cet enfant, ou None.
+
+    Renvoie le nouveau palier une seule fois : la ligne n'avance que si le
+    palier atteint dépasse le dernier fêté (UPDATE conditionnel atomique, donc
+    pas de doublon même si deux écrans affichent la page en même temps). Un
+    décochage puis recochage ne refête pas un palier déjà fêté ; plusieurs
+    paliers franchis d'un coup donnent une seule célébration (le plus haut).
+    """
+    tier = balance.tier
+    if tier < 1:
+        return None
+    TierCelebration.objects.get_or_create(person=balance.person)
+    advanced = TierCelebration.objects.filter(person=balance.person, tier__lt=tier).update(
+        tier=tier
+    )
+    return tier if advanced else None
