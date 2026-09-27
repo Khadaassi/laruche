@@ -5,12 +5,16 @@ from dataclasses import dataclass, field
 
 from django.db.models import Exists, OuterRef
 
+from apps.absences.selectors import absences_on
+
 from .models import Task, TaskCompletion
 from .periods import Period
 
 
 def tasks_for_day(family, day: datetime.date, *, people=None, period=None) -> list[Task]:
     """Tâches prévues ce jour-là pour la famille, annotées `is_done`.
+
+    Les tâches d'une personne absente ce jour-là (vacances, malade) sont exclues.
 
     `people` restreint à certaines personnes (déjà filtrées par famille par
     l'appelant) ; `period` à une période.
@@ -26,6 +30,12 @@ def tasks_for_day(family, day: datetime.date, *, people=None, period=None) -> li
         tasks = tasks.filter(person__in=people)
     if period is not None:
         tasks = tasks.filter(period=period)
+    # Vacances / absence : les tâches de la personne sont suspendues ce jour-là.
+    absent = absences_on(family, day)
+    if absent.family_wide:
+        return []
+    if absent.people:
+        tasks = tasks.exclude(person_id__in=absent.people.keys())
     return list(tasks)
 
 

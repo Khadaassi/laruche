@@ -3,6 +3,8 @@
 import datetime
 from dataclasses import dataclass
 
+from apps.absences.selectors import absences_range
+
 from .models import ChoreCompletion, HouseholdChore
 
 
@@ -16,7 +18,8 @@ class ChoreOccurrence:
 def chores_by_day(family, start: datetime.date, days: int = 7) -> dict:
     """{date: [ChoreOccurrence]} pour chaque jour de [start, start + days[.
 
-    Deux requêtes, quel que soit le nombre de jours.
+    Trois requêtes, quel que soit le nombre de jours. Sans les jours où la
+    personne assignée est absente.
     """
     end = start + datetime.timedelta(days=days)
     chores = list(
@@ -29,13 +32,15 @@ def chores_by_day(family, start: datetime.date, days: int = 7) -> dict:
             chore__family=family, date__gte=start, date__lt=end
         ).values_list("chore_id", "date")
     )
+    absences = absences_range(family, start, days)
     result = {}
     for offset in range(days):
         day = start + datetime.timedelta(days=offset)
+        # Ménage d'une personne absente (vacances, malade) : suspendu ce jour-là.
         result[day] = [
             ChoreOccurrence(chore, day, (chore.pk, day) in done)
             for chore in chores
-            if chore.occurs_on(day)
+            if chore.occurs_on(day) and not absences[day].is_absent(chore.assignee_id)
         ]
     return result
 

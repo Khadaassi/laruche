@@ -94,6 +94,15 @@ le formulaire d'un créneau sont filtrées par famille (recette d'une autre fami
 invalide), et `MealSlot.clean()` revérifie la famille de la recette. Le transfert ne lit que
 le menu et les articles de la famille de la requête (`for_family`).
 
+### Absences
+
+| Donnée / action | Parent | Enfant (compte) / appareil partagé |
+|---|---|---|
+| Vacances et absences | Lecture + écriture (Réglages → Vacances et absences) | Lecture de l'effet seulement : bandeau « Malade : pas de tâches aujourd'hui » sur sa colonne ; cochage des tâches suspendues refusé (404) |
+
+Toutes les vues `absences` sont `parent_required` ; les personnes proposées sont filtrées par
+famille et `Absence.clean()` revérifie la famille. Point d'entrée : `Absence.objects.for_family`.
+
 ### Un seul chemin d'accès enfant : l'écran partagé
 
 Usage réel : les enfants n'ont pas d'appareil individuel. Ils partagent **un même écran**

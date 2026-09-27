@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from apps.absences.selectors import absences_on
 from apps.accounts.forms import LoginForm
 from apps.celebrations.models import Celebration
 from apps.celebrations.services import roll_over_recurring
@@ -62,6 +63,7 @@ def child_columns(request, person=None):
     school_tomorrow = school_days_for(request.family, tomorrow, people=children)
     chores_today = chores_by_day(request.family, today, 1)[today]
     stars = balances(request.family, people=children)
+    absent = absences_on(request.family, today)
     columns = group_by_person(children, tasks)
     for column in columns:
         column.stars = stars.get(column.person.pk)
@@ -70,6 +72,7 @@ def child_columns(request, person=None):
         # Ménage du jour de l'enfant (toutes périodes), coché comme ses tâches.
         column.chores = [o for o in chores_today if o.chore.assignee_id == column.person.pk]
         column.tickable = can_tick(request, column.person)
+        column.absence = absent.for_person(column.person.pk)
         column.school = school_today.get(column.person.pk)
         column.tomorrow = tomorrow_hint(school_tomorrow.get(column.person.pk))
     return columns
@@ -79,6 +82,8 @@ def tomorrow_hint(day) -> str:
     """Rappel court pour la colonne d'un enfant (sandwich, pas d'école)."""
     if day is None:
         return ""
+    if day.absence:
+        return f"Demain : {day.absence.lower()}"
     if day.lunch == Lunch.PACKED:
         return "Demain : sandwich"
     if day.lunch == Lunch.NONE and day.is_override:
@@ -180,6 +185,8 @@ def toggle(request, person_pk, task_pk):
     if not can_tick(request, child):
         raise PermissionDenied("Un enfant ne coche que sa propre colonne.")
     task = get_object_or_404(child.tasks.scheduled_on(today), pk=task_pk)
+    if absences_on(request.family, today).is_absent(child.pk):
+        raise Http404  # tâche suspendue (vacances, malade)
     by = request.user if request.user.is_authenticated else None
     set_done(task, today, request.POST.get("done") == "on", by=by)
     if request.headers.get("HX-Request") != "true":
@@ -204,7 +211,7 @@ def toggle_chore(request, person_pk, chore_pk):
     chore = get_object_or_404(
         HouseholdChore.objects.for_family(request.family).filter(assignee=child), pk=chore_pk
     )
-    if not chore.occurs_on(today):
+    if not chore.occurs_on(today) or absences_on(request.family, today).is_absent(child.pk):
         raise Http404
     set_chore_done(chore, today, request.POST.get("done") == "on")
     if request.headers.get("HX-Request") != "true":

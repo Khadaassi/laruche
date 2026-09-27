@@ -35,7 +35,7 @@ def tomorrow_items(family, today: datetime.date, people=None) -> list[PrepItem]:
     items = []
     for child in children:
         day = days.get(child.pk)
-        if day is None:
+        if day is None or day.absence:
             continue
         if day.lunch == Lunch.PACKED:
             items.append(PrepItem("packed", f"Préparer le sandwich de {child.name} (APC)", child))

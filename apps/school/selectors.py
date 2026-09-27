@@ -3,6 +3,8 @@
 import datetime
 from dataclasses import dataclass
 
+from apps.absences.selectors import absences_range
+
 from .models import Lunch, SchoolDayOverride, SchoolDaySchedule
 
 
@@ -12,13 +14,21 @@ class SchoolDay:
     lunch_note: str
     study: bool
     is_override: bool
+    absence: str = ""  # libellé de l'absence (« Malade »), prioritaire sur l'école
+    absence_kind: str = ""
 
     @property
     def has_school(self) -> bool:
-        return self.lunch != Lunch.NONE
+        return self.lunch != Lunch.NONE and not self.absence
+
+    @property
+    def icon(self) -> str:
+        return f"absence_{self.absence_kind}" if self.absence else self.lunch
 
     @property
     def lunch_label(self) -> str:
+        if self.absence:
+            return self.absence
         if self.lunch == Lunch.OTHER and self.lunch_note:
             return self.lunch_note
         return Lunch(self.lunch).label
@@ -36,7 +46,8 @@ def school_days_range(family, start: datetime.date, days: int, people=None) -> d
     """{date: {person_id: SchoolDay}} sur [start, start + days[, en deux requêtes.
 
     Un enfant absent du dictionnaire d'un jour n'a ni semaine type ni
-    exception ce jour-là (rien à afficher).
+    exception ce jour-là (rien à afficher). Une absence (vacances, malade)
+    remplace l'école ce jour-là (`SchoolDay.absence`).
     """
     end = start + datetime.timedelta(days=days)
     weekly = SchoolDaySchedule.objects.for_family(family)
@@ -53,6 +64,19 @@ def school_days_range(family, start: datetime.date, days: int, people=None) -> d
         result[day] = dict(by_weekday.get(day.weekday(), {}))
     for row in overrides:
         result[row.date][row.person_id] = _from(row, True)
+    # Absence (vacances, malade) : remplace l'école de la personne ce jour-là.
+    absences = absences_range(family, start, days)
+    ids = None if people is None else {getattr(p, "pk", p) for p in people}
+    for day, absent in absences.items():
+        if not absent.any:
+            continue
+        targets = ids if ids is not None else set(result[day]) | set(absent.people)
+        for person_id in targets:
+            absence = absent.for_person(person_id)
+            if absence:
+                result[day][person_id] = SchoolDay(
+                    Lunch.NONE, "", False, True, absence.label, absence.kind
+                )
     return result
 
 
