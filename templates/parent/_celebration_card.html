@@ -2,7 +2,7 @@
   <span class="hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="celebration" icon_size="h-5 w-5" %}</span>
   <span class="flex-1">
     <span class="block font-medium">{{ celebration.name }}</span>
-    <span class="text-sm text-ink-soft">{{ celebration.date|date:"l j F Y"|capfirst }}</span>
+    <span class="text-sm text-ink-soft">{{ celebration.date|date:"l j F Y"|capfirst }}{% if celebration.recurs_yearly %} · chaque année{% endif %}</span>
   </span>
   <span aria-hidden="true">→</span>
 </a>

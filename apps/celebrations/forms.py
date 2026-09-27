@@ -24,9 +24,10 @@ class FamilyScopedForm(forms.ModelForm):
 class CelebrationForm(FamilyScopedForm):
     class Meta:
         model = Celebration
-        fields = ["name", "date"]
+        fields = ["name", "date", "recurs_yearly"]
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "recurs_yearly": forms.CheckboxInput(attrs={"class": "h-6 w-6 shrink-0 accent-sage"}),
             "name": forms.TextInput(attrs={"placeholder": "Aïd, anniversaire de Lina…"}),
         }
 

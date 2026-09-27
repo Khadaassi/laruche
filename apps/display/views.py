@@ -2,6 +2,7 @@ import datetime
 
 from django.contrib.auth import login, logout
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.debug import sensitive_post_parameters
@@ -9,9 +10,12 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.accounts.forms import LoginForm
 from apps.celebrations.models import Celebration
+from apps.celebrations.services import roll_over_recurring
 from apps.core.ratelimit import BLOCKED_MESSAGE, EXIT_DISPLAY
 from apps.families.access import get_membership, parent_required
 from apps.families.models import Person
+from apps.household.models import HouseholdChore
+from apps.household.selectors import chores_by_day, set_chore_done
 from apps.household.views import requested_monday
 from apps.household.week import build_week
 from apps.school.models import Lunch
@@ -46,8 +50,11 @@ def child_columns(request, person=None):
     tasks = tasks_for_day(request.family, today, people=children, period=period)
     school_today = school_days_for(request.family, today, people=children)
     school_tomorrow = school_days_for(request.family, tomorrow, people=children)
+    chores_today = chores_by_day(request.family, today, 1)[today]
     columns = group_by_person(children, tasks)
     for column in columns:
+        # Ménage du jour de l'enfant (toutes périodes), coché comme ses tâches.
+        column.chores = [o for o in chores_today if o.chore.assignee_id == column.person.pk]
         column.tickable = can_tick(request, column.person)
         column.school = school_today.get(column.person.pk)
         column.tomorrow = tomorrow_hint(school_tomorrow.get(column.person.pk))
@@ -106,6 +113,7 @@ def celebrations(request):
     La liste de cadeaux n'est jamais montrée sur l'écran partagé : les
     enfants la verraient, surprise gâchée.
     """
+    roll_over_recurring(request.family, timezone.localdate())
     upcoming = (
         Celebration.objects.for_family(request.family)
         .filter(date__gte=timezone.localdate())
@@ -138,6 +146,31 @@ def toggle(request, person_pk, task_pk):
     task = get_object_or_404(child.tasks.on_weekday(today.weekday()), pk=task_pk)
     by = request.user if request.user.is_authenticated else None
     set_done(task, today, request.POST.get("done") == "on", by=by)
+    if request.headers.get("HX-Request") != "true":
+        return redirect("display:board")
+    return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})
+
+
+@require_POST
+@shared_display_required
+def toggle_chore(request, person_pk, chore_pk):
+    """Coche une tâche de ménage d'un enfant depuis sa colonne.
+
+    Mêmes règles que les tâches : l'enfant ciblé est un enfant de la
+    famille, la tâche de ménage lui est assignée et prévue aujourd'hui, et
+    un compte enfant ne coche que sa propre colonne. Une tâche de ménage
+    assignée à un parent n'est jamais atteignable ici (404).
+    """
+    today = timezone.localdate()
+    child = get_object_or_404(Person.objects.for_family(request.family).children(), pk=person_pk)
+    if not can_tick(request, child):
+        raise PermissionDenied("Un enfant ne coche que sa propre colonne.")
+    chore = get_object_or_404(
+        HouseholdChore.objects.for_family(request.family).filter(assignee=child), pk=chore_pk
+    )
+    if not chore.occurs_on(today):
+        raise Http404
+    set_chore_done(chore, today, request.POST.get("done") == "on")
     if request.headers.get("HX-Request") != "true":
         return redirect("display:board")
     return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})

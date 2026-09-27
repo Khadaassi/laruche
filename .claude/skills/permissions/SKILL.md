@@ -42,9 +42,13 @@ tâches ni à l'activation d'un appareil partagé.
 | Donnée | Parent | Enfant (compte) / appareil partagé |
 |---|---|---|
 | École : semaine type, exceptions | Lecture + écriture (Réglages → Cantine, APC et étude) | Lecture : badges du jour et rappel du lendemain sur sa colonne |
-| Ménage | Lecture + écriture (Réglages → Ménage), cochage sur le semainier | Lecture seule (`/affichage/semaine/`), aucun cochage |
+| Ménage | Lecture + écriture (Réglages → Ménage), cochage de toute tâche sur le semainier | Lecture du semainier (`/affichage/semaine/`) ; **cochage des tâches de ménage assignées à un enfant, sur sa colonne** (même règle que ses tâches : un compte enfant ne coche que la sienne). Ménage d'un parent : jamais visible ni cochable sur l'écran partagé (404) |
 | Fêtes : préparatifs, recettes | Lecture + écriture | Lecture seule (`/affichage/fetes/`, fêtes à venir) |
 | Fêtes : **cadeaux** | Lecture + écriture | **Jamais affichés** sur l'écran partagé : les enfants y verraient leurs surprises |
+
+Endpoint : `display:toggle_chore` (`/affichage/enfants/<enfant>/menage/<tâche>/fait/`) :
+enfant de la famille, `can_tick` (403 sinon), tâche de ménage **assignée à cet enfant** et
+prévue aujourd'hui (404 sinon).
 
 Choix : les enfants voient les préparatifs et les idées de recettes (esprit familial :
 tout le monde sait ce qui se prépare), mais pas la liste de cadeaux. Aucune écriture enfant

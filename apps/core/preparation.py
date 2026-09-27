@@ -8,6 +8,7 @@ import datetime
 from dataclasses import dataclass
 
 from apps.celebrations.models import Celebration
+from apps.celebrations.services import roll_over_recurring
 from apps.families.models import Person
 from apps.school.models import Lunch
 from apps.school.selectors import school_days_for
@@ -46,6 +47,7 @@ def tomorrow_items(family, today: datetime.date, people=None) -> list[PrepItem]:
                 PrepItem("lunch_elsewhere", f"Midi de {child.name} : {day.lunch_note}", child)
             )
 
+    roll_over_recurring(family, today)
     for celebration in Celebration.objects.for_family(family).filter(date=tomorrow):
         remaining = celebration.todos.filter(done=False).count()
         suffix = (

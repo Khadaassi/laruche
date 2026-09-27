@@ -20,30 +20,24 @@
   {% if column.tasks %}
     <ul class="space-y-space-2">
       {% for task in column.tasks %}
-        <li>
-          {# Colonne non cochable (compte enfant, colonne d'un frère ou d'une sœur) : lecture seule. #}
-          <form method="post" action="{% url 'display:toggle' person.pk task.pk %}" data-task-form
-                {% if column.tickable %}hx-post="{% url 'display:toggle' person.pk task.pk %}" hx-trigger="change" hx-swap="none"{% endif %}
-                class="task-row group flex min-h-16 items-center gap-space-4 rounded-md border border-border px-space-4 has-[:checked]:border-sage">
-            {% csrf_token %}
-            <span class="relative flex shrink-0">
-              <input type="checkbox" name="done" id="shared-task-{{ task.pk }}"
-                     class="h-9 w-9 shrink-0 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage disabled:cursor-not-allowed"
-                     {% if task.is_done %}checked{% endif %} {% if not column.tickable %}disabled{% endif %}>
-              <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
-            </span>
-            <label for="shared-task-{{ task.pk }}" class="min-w-0 flex-1 py-space-2 text-xl {% if column.tickable %}cursor-pointer{% endif %}">{{ task.title }}{% if not column.tickable %}<span class="sr-only"> (lecture seule)</span>{% endif %}</label>
-            <span class="hidden whitespace-nowrap rounded-sm bg-sage px-space-2 py-1 text-sm font-semibold text-surface-0 group-has-[:checked]:inline">Fait ! +1</span>
-            <span class="task-badge hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-surface-0 group-has-[:checked]:bg-sage" aria-hidden="true">
-              <span class="hidden group-has-[:checked]:block">{% include "components/_check.html" with check_size="h-5 w-5" %}</span>
-            </span>
-            {% if column.tickable %}<noscript><button type="submit" class="rounded-sm border border-border-strong px-space-2">OK</button></noscript>{% endif %}
-          </form>
-        </li>
+        {% url 'display:toggle' person.pk task.pk as toggle_url %}
+        {% include "shared/_tick_row.html" with url=toggle_url input_prefix="shared-task-" item_pk=task.pk title=task.title is_done=task.is_done %}
       {% endfor %}
     </ul>
-  {% else %}
+  {% elif not column.chores %}
     <p class="text-lg text-ink-soft">Rien de prévu {{ period_phrase }}.</p>
+  {% endif %}
+
+  {% if column.chores %}
+    <div>
+      <h3 class="mb-space-2 flex items-center gap-space-2 font-display text-lg">{% include "components/_icon.html" with name="chore" icon_size="h-5 w-5" %}Ménage du jour</h3>
+      <ul class="space-y-space-2">
+        {% for occurrence in column.chores %}
+          {% url 'display:toggle_chore' person.pk occurrence.chore.pk as toggle_url %}
+          {% include "shared/_tick_row.html" with url=toggle_url input_prefix="shared-chore-" item_pk=occurrence.chore.pk title=occurrence.chore.title is_done=occurrence.is_done %}
+        {% endfor %}
+      </ul>
+    </div>
   {% endif %}
 </section>
 {% endwith %}

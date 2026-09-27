@@ -1,0 +1,24 @@
+{% comment %}
+Ligne cochable d'une colonne enfant (tâche du jour ou ménage du jour).
+Paramètres : url, input_prefix + item_pk (id de la case), title, is_done ; `column.tickable` décide si la
+colonne est cochable par ce visiteur (sinon lecture seule, refusée côté serveur).
+{% endcomment %}
+<li>
+  <form method="post" action="{{ url }}" data-task-form
+        {% if column.tickable %}hx-post="{{ url }}" hx-trigger="change" hx-swap="none"{% endif %}
+        class="task-row group flex min-h-16 items-center gap-space-4 rounded-md border border-border px-space-4 has-[:checked]:border-sage">
+    {% csrf_token %}
+    <span class="relative flex shrink-0">
+      <input type="checkbox" name="done" id="{{ input_prefix }}{{ item_pk }}"
+             class="h-9 w-9 shrink-0 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage disabled:cursor-not-allowed"
+             {% if is_done %}checked{% endif %} {% if not column.tickable %}disabled{% endif %}>
+      <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
+    </span>
+    <label for="{{ input_prefix }}{{ item_pk }}" class="min-w-0 flex-1 py-space-2 text-xl {% if column.tickable %}cursor-pointer{% endif %}">{{ title }}{% if not column.tickable %}<span class="sr-only"> (lecture seule)</span>{% endif %}</label>
+    <span class="hidden whitespace-nowrap rounded-sm bg-sage px-space-2 py-1 text-sm font-semibold text-surface-0 group-has-[:checked]:inline">Fait ! +1</span>
+    <span class="task-badge hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-surface-0 group-has-[:checked]:bg-sage" aria-hidden="true">
+      <span class="hidden group-has-[:checked]:block">{% include "components/_check.html" with check_size="h-5 w-5" %}</span>
+    </span>
+    {% if column.tickable %}<noscript><button type="submit" class="rounded-sm border border-border-strong px-space-2">OK</button></noscript>{% endif %}
+  </form>
+</li>
