@@ -17,6 +17,8 @@ Le modèle de domaine arrive en Phase 1 (`.claude/skills/domain-model/SKILL.md`)
 - **HTMX 2** pour les interactions serveur sans rechargement (drag & drop, roue du samedi…)
 - **Alpine.js 3, build CSP** (`@alpinejs/csp`) pour l'interactivité légère côté client
 - **django-csp 4**, **WhiteNoise** (statiques), **gunicorn**
+- Hébergement : **Google Cloud Run** (`Dockerfile`), déployé à chaque merge sur `main`
+  (`.github/workflows/deploy.yml`, installation : `scripts/gcp-setup.sh`)
 - Qualité : **ruff** (lint + format), tests Django (`manage.py test`)
 - Releases : **semantic-release** sur Conventional Commits
 

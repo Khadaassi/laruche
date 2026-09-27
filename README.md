@@ -49,25 +49,36 @@ uv run python manage.py makemigrations --check --dry-run
 uv run python manage.py test
 ```
 
-## Déployer
+## Déployer (Google Cloud Run + Neon)
 
-N'importe quel PaaS Python (Render, Fly.io, Railway…) + Neon :
+La production tourne sur **Cloud Run** (0 à 1 instance, redémarrage en quelques
+secondes après une période sans visite) et la base sur **Neon** (branche principale).
+Chaque merge sur `main` déclenche `.github/workflows/deploy.yml` :
 
-1. **Base** : projet Neon, base `laruche`, récupérer l'URL de connexion *pooled* (`?sslmode=require`).
-2. **Variables d'environnement** sur l'hébergeur (voir `.env.example`) :
-   `DJANGO_SECRET_KEY` (nouvelle, jamais celle de dev), `DJANGO_ALLOWED_HOSTS=ton-domaine`,
-   `DJANGO_CSRF_TRUSTED_ORIGINS=https://ton-domaine`, `DATABASE_URL`, et
-   `DJANGO_BEHIND_PROXY=true` si l'hébergeur termine TLS (cas de Render/Fly/Railway).
-   Ne pas définir `DJANGO_DEBUG`.
-3. **Build** :
+1. construction de l'image (`Dockerfile`) et envoi dans Artifact Registry ;
+2. migrations via le job Cloud Run `laruche-migrate` ;
+3. déploiement du service `laruche`, puis appel de `/healthz/`.
+
+Les secrets (`DJANGO_SECRET_KEY`, `DATABASE_URL`) vivent dans **Secret Manager**.
+GitHub s'authentifie auprès de Google par **Workload Identity Federation** (limitée
+à `main`) : aucune clé de compte de service n'existe.
+
+### Installation (une seule fois)
+
+1. Créer un projet sur [console.cloud.google.com](https://console.cloud.google.com)
+   et lui lier un compte de facturation (carte demandée, l'usage reste dans l'offre gratuite).
+2. **Budget** : Facturation → Budgets et alertes → budget de 1 € sur ce projet, alertes
+   à 50 % et 100 %.
+3. Depuis le dépôt, avec `gcloud` et `gh` connectés au bon compte :
    ```bash
-   pip install uv && uv sync --locked --no-dev
-   npm ci && npm run build
-   uv run python manage.py collectstatic --noinput
+   gcloud auth login
+   scripts/gcp-setup.sh <PROJECT_ID>            # région par défaut : europe-west1
    ```
-4. **Release** (avant chaque démarrage de version) : `uv run python manage.py migrate --noinput`
-5. **Démarrage** : `uv run gunicorn config.wsgi --bind 0.0.0.0:$PORT`
-6. **Sonde de santé** : `/healthz/` (exemptée de la redirection HTTPS).
+   Le script demande l'URL Neon **de production** (saisie masquée), génère la
+   `SECRET_KEY`, et renseigne les variables GitHub (`GCP_*`, `DJANGO_ALLOWED_HOSTS`).
+4. Premier déploiement : `gh workflow run deploy.yml`, ou merger une PR.
+
+L'app est alors servie sur `https://laruche-<numéro-de-projet>.europe-west1.run.app/`.
 
 ## Workflow Git
 
