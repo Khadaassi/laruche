@@ -3,7 +3,7 @@
 
 {% block header %}
   {% with day=today|date:"l j F"|capfirst %}
-    {% include "parent/_header.html" with title=greeting subtitle=request.family.name|add:" · "|add:day stars=family_stars %}
+    {% include "parent/_header.html" with title=greeting subtitle=request.family.name|add:" · "|add:day header_stars=family_stars %}
   {% endwith %}
 {% endblock %}
 
