@@ -120,6 +120,16 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
 - **Badge de tâche hexagonal** : doré (`honey`) = à faire ; `sage` + icône coche = fait.
   L'état suit la case en CSS (`group-has-[:checked]:`), donc instantanément.
 - **Étiquette « Fait ! +1 »** sur les tâches cochées (vue enfants) ; « Fait » en vue parent.
+- **Badges d'information** (école) : `components/_school_badges.html`. Puce
+  `border-border-strong` + alvéole `honey` avec icône `ink` + texte (« Cantine »,
+  « Sandwich (APC) », « Étude ce soir »). Même famille que les badges de tâche, mais
+  sans état « fait » : jamais `sage`.
+- **Icônes** : `components/_icon.html` (trait `currentColor`, décoratives, toujours
+  accompagnées de texte).
+- **Choix en puces** (radio / cases) : `parent/_chip_choices.html`, sélection = fond `ink`
+  + texte `surface-0`, focus visible sur la puce.
+- **Suppression** : page de confirmation (pas de `confirm()`), bouton `bg-terracotta
+  text-surface-0`.
 - **Progression en alvéoles** (écran partagé) : une alvéole par tâche de la période,
   `sage` si faite, `border` sinon, avec `aria-label` « X sur Y faites ».
 - **Focus** : anneau `honey-dark` 2px décalé de 2px (déjà global via `:focus-visible`).
@@ -138,6 +148,7 @@ Ne pas faire un seul gabarit « responsive » : les usages sont trop différents
 | Navigation | Barre **fixe en bas**, labels toujours visibles | Barre **horizontale en haut** |
 | Accueil | Sélecteur de famille, période du jour ouverte, « 3 tâches restantes » (pas de %) | Avatar hexagonal, progression en alvéoles vers le palier d'étoiles |
 | URL | `/` et pages parent | `/affichage/` |
+| Navigation | Accueil / Semaine / Fêtes / Menu / Réglages | Onglets Aujourd'hui / Semaine / Fêtes |
 
 Les pages publiques (connexion, inscription, erreurs) utilisent un troisième gabarit
 minimal, `layouts/public.html` : une carte centrée, sans navigation.

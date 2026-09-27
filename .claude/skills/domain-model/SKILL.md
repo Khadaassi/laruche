@@ -5,7 +5,7 @@ description: Modèle de domaine de La Ruche (familles, membres, personnes, tâch
 
 # Modèle de domaine — La Ruche
 
-État à la fin de la **Phase 1** (fondations métier). Les règles d'accès qui
+État à la fin de la **Phase 2** (école, ménage, fêtes). Les règles d'accès qui
 s'appliquent à ces modèles sont dans `permissions/SKILL.md`.
 
 ## Vue d'ensemble
@@ -18,6 +18,17 @@ accounts.User ──1:1── families.FamilyMembership ──N:1── families
                         └──1:N── tasks.Task ──1:N── tasks.TaskCompletion (task, date)
 
 display.SharedDisplayDevice ──N:1── families.Family   (jeton d'appareil, révocable)
+
+families.Person (enfant) ──1:N── school.SchoolDaySchedule   (jour de semaine, midi, étude)
+                         └─1:N── school.SchoolDayOverride   (date précise, remplace la semaine type)
+
+families.Family ──1:N── household.HouseholdChore ──N:1── families.Person (assigné, parent ou enfant)
+                              └──1:N── household.ChoreCompletion (chore, date)
+
+families.Family ──1:N── celebrations.Celebration (nom, date)
+                              ├──1:N── CelebrationTodo (titre, qui, fait)
+                              ├──1:N── GiftItem (cadeau, pour qui, apporté par, acheté)
+                              └──1:N── RecipeIdea (nom, notes)
 ```
 
 | App | Modèle | Rôle |
@@ -28,6 +39,14 @@ display.SharedDisplayDevice ──N:1── families.Family   (jeton d'appareil,
 | `families` | `Person` | Membre **tel qu'affiché** (colonne, avatar, tâches). Lié à un `User` s'il a un compte, sinon non (jeune enfant). `role` affiché, `avatar_color`. |
 | `tasks` | `Task` | Tâche récurrente d'une personne : `title`, `period` (matin/midi/soir), `weekdays` (masque de bits), `position`. |
 | `tasks` | `TaskCompletion` | « Fait » pour une tâche **à une date**. Absence de ligne = à faire. Unique `(task, date)`. `completed_by` vide si coché depuis l'affichage partagé. |
+| `school` | `SchoolDaySchedule` | Semaine type d'un enfant : `weekday` (0 = lundi), `lunch` (cantine / sandwich-APC / autre / pas d'école), `lunch_note`, `study`. Unique `(person, weekday)`. Pas de ligne = rien à afficher. |
+| `school` | `SchoolDayOverride` | Exception pour une **date** : mêmes champs, remplace la semaine type ce jour-là. Unique `(person, date)`. |
+| `household` | `HouseholdChore` | Tâche de ménage : `title`, `assignee` (toute `Person`, parent compris), `weekdays` (masque), `interval_weeks` (1 ou 2), `start_date`. Porte `family` directement. |
+| `household` | `ChoreCompletion` | « Fait » pour une tâche de ménage à une date. Unique `(chore, date)`. |
+| `celebrations` | `Celebration` | Fête datée (`name`, `date`), pas de récurrence annuelle. |
+| `celebrations` | `CelebrationTodo` | Préparatif unique : `title`, `assignee` (facultatif), `done`. |
+| `celebrations` | `GiftItem` | Cadeau : `item`, `recipient` / `recipient_name`, `buyer` / `buyer_name` (personne de la famille ou nom libre), `done` (acheté). |
+| `celebrations` | `RecipeIdea` | Idée de recette : `name`, `notes` libres. |
 | `display` | `SharedDisplayDevice` | Tablette commune autorisée par un parent. Stocke l'empreinte SHA-256 du jeton, `last_used_at`, `revoked_at`. |
 
 ## Règles métier
@@ -77,6 +96,64 @@ civil (`localdate()`). Cas marginal assumé.
   colonne par personne, même sans tâche).
 - `tasks.services.set_done(task, day, done)` **fixe** l'état (idempotent) au lieu de
   l'inverser : un double envoi ne produit pas une double bascule.
+
+## École : cantine, APC, étude (`school/selectors.py`)
+
+- **Résolution d'une journée** : exception datée si elle existe, sinon semaine type,
+  sinon rien. `school_days_range(family, start, days)` calcule toute une période en deux
+  requêtes (utilisé par l'accueil, l'écran partagé et le semainier).
+- **Semaine type** saisie du lundi au vendredi (« — » = rien ce jour-là, « Pas d'école »
+  = affiché explicitement, ex. le mercredi). Une exception peut viser n'importe quelle date,
+  week-end compris ; en saisir une pour un jour qui en a déjà une la **remplace**.
+- **Pattern d'exception** : le brief évoquait un `TaskException` existant ; il n'existait
+  pas. Le mécanisme est donc créé ici (ligne datée prioritaire sur la règle
+  hebdomadaire) et pourra être repris pour les tâches si besoin.
+- **Badges** : sur la colonne de chaque enfant (écran partagé) et dans « Aujourd'hui à
+  l'école » (accueil parent) : midi (cantine, sandwich, précision libre, pas d'école) et
+  « Étude ce soir ». Alvéole miel + icône + texte, jamais la couleur seule.
+
+## « À préparer pour demain » (`core/preparation.py`)
+
+Rappels **calculés**, jamais saisis, affichés sur l'accueil parent (filtrés par le
+sélecteur de personne) :
+- sandwich à préparer (midi « Sandwich (APC) » demain) ;
+- « Pas d'école » demain, **seulement si c'est une exception** (un mercredi habituel n'est
+  pas une nouvelle) ;
+- midi ailleurs avec précision (« Midi de Lina : chez mamie ») ;
+- fête demain, avec le nombre de préparatifs restants.
+Sur l'écran partagé, chaque colonne affiche un rappel court (« Demain : sandwich »).
+Cette section n'existait pas avant la Phase 2 : elle est créée ici.
+
+## Ménage et semainier (`household/`)
+
+- **Récurrence simple** : « tous les jours », « chaque semaine » (jours choisis) ou
+  « une semaine sur deux » (jours choisis, compté à partir de la semaine de création).
+  Stockée comme les tâches enfants (masque de jours) + `interval_weeks`.
+- **Pas de rotation automatique** : assignation fixe par tâche. Une rotation demande des
+  règles d'équité (absences, âges, échanges) qui méritent une conception à part ; une
+  rotation naïve produirait surtout des corrections manuelles.
+- **Assignation à toute personne**, parents compris (contrairement aux tâches enfants).
+- **Semainier** (`/semaine/`, remplace la page « à venir ») : un bloc par jour avec fêtes,
+  école de chaque enfant et ménage (cochable par un parent). Navigation de semaine en
+  semaine (`?semaine=AAAA-MM-JJ`). Même assemblage (`household/week.py`) pour la version
+  tablette en lecture seule (`/affichage/semaine/`, une colonne par jour).
+
+## Fêtes (`celebrations/`)
+
+- **Onglet dédié « Fêtes »** dans la nav parent, à la place de « Courses » (qui n'était
+  qu'une page « à venir ») : la barre reste à 5 entrées lisibles sur téléphone. La liste
+  de cadeaux couvre une partie du besoin « courses » pour les fêtes ; une vraie liste de
+  courses pourra reprendre une place plus tard.
+- **Préparatifs : modèle dédié**, pas `tasks.Task` : une tâche enfant est récurrente
+  (jours, période) avec une validation par jour, un préparatif est unique et coché une
+  fois pour toutes.
+- **Cadeaux et recettes** : personne de la famille **ou** nom libre (grand-mère, tante…),
+  car les invités ne sont pas dans l'app. Les recettes sont du texte libre, sans
+  ingrédients structurés.
+- **Pas de récurrence annuelle** : l'Aïd change de date chaque année ; un anniversaire se
+  recrée (voir points ouverts).
+- Suppression d'une fête : page de confirmation (pas de `confirm()` JS), supprime aussi
+  ses préparatifs, cadeaux et recettes.
 
 ## Choix techniques documentés
 
@@ -159,7 +236,7 @@ HTMX envoie l'état voulu (`hx-swap="none"`) et la réponse ne remplace que les 
 **URL en français** pour ce que voit l'utilisateur (`/connexion/`, `/reglages/`,
 `/affichage/`) ; noms d'URL, code et modèles en anglais (`tasks:toggle`).
 
-## Évolutions prévues (hors Phase 1)
+## Évolutions prévues
 
 - Moteur de routines personnalisables (Phase 2) : remplacera ou enrichira `Task`.
 - Semainier, menu, courses : pages « à venir » dans la nav parent.

@@ -29,13 +29,29 @@ l'appartenance (`FamilyMembership.role`) vaut `child`.
 
 | Rôle | Lecture | Écriture |
 |---|---|---|
-| **Parent** (compte connecté) | Toutes les données de sa famille | Toutes les données de sa famille (semainier, menu, tâches, enfants, réglages) |
+| **Parent** (compte connecté) | Toutes les données de sa famille | Toutes les données de sa famille (semainier, ménage, école, fêtes, menu, tâches, enfants, réglages) |
 | **Enfant** (compte connecté) | **L'écran partagé** : toutes les colonnes de tous les enfants de la famille, + semainier/menu en **lecture seule** | **Uniquement sa propre colonne** (cocher/décocher ses tâches) |
 | **Affichage partagé** (appareil) | Profils enfants de la famille + semainier/menu en lecture | Actions « enfant » pour un enfant de la famille, rien d'autre |
 
 Un compte enfant ne peut jamais : modifier le semainier ou le menu, créer/supprimer une
 tâche, cocher la colonne d'un frère ou d'une sœur, accéder aux réglages, à la gestion des
 tâches ni à l'activation d'un appareil partagé.
+
+### Domaines de la Phase 2 (école, ménage, fêtes)
+
+| Donnée | Parent | Enfant (compte) / appareil partagé |
+|---|---|---|
+| École : semaine type, exceptions | Lecture + écriture (Réglages → Cantine, APC et étude) | Lecture : badges du jour et rappel du lendemain sur sa colonne |
+| Ménage | Lecture + écriture (Réglages → Ménage), cochage sur le semainier | Lecture seule (`/affichage/semaine/`), aucun cochage |
+| Fêtes : préparatifs, recettes | Lecture + écriture | Lecture seule (`/affichage/fetes/`, fêtes à venir) |
+| Fêtes : **cadeaux** | Lecture + écriture | **Jamais affichés** sur l'écran partagé : les enfants y verraient leurs surprises |
+
+Choix : les enfants voient les préparatifs et les idées de recettes (esprit familial :
+tout le monde sait ce qui se prépare), mais pas la liste de cadeaux. Aucune écriture enfant
+sur ces domaines ; toutes les pages et endpoints parent de ces domaines sont
+`parent_required` (403 pour un compte enfant). Les listes de personnes proposées dans les
+formulaires (assigné, pour qui, apporté par, enfant d'une exception) sont filtrées par
+famille, et chaque modèle revérifie dans `clean()` que la personne est de la famille.
 
 ### Un seul chemin d'accès enfant : l'écran partagé
 
@@ -46,7 +62,7 @@ colonnes de **tous** les enfants de la famille.
 
 | Accès | Ce qui s'affiche | Colonnes cochables |
 |---|---|---|
-| Appareil partagé (jeton) | Écran partagé | Toutes (les enfants se partagent l'écran) |
+| Appareil partagé (jeton) | Écran partagé (Aujourd'hui, Semaine, Fêtes) | Toutes (les enfants se partagent l'écran) |
 | Compte enfant connecté | Le même écran partagé | **Uniquement la sienne** (les autres en lecture seule, refusées côté serveur en 403) |
 | Parent connecté | Vue parent ; écran partagé en aperçu | Toutes |
 
@@ -102,6 +118,10 @@ un compte enfant y accède aussi, avec sa seule colonne cochable (voir §2).
   - `apps.families.access.parent_required` : idem + rôle parent (403 sinon) ;
   - `apps.display.access.shared_display_required` : appareil partagé valide, parent ou
     compte enfant ; pose `request.tickable_person_id` (None = toutes les colonnes) ;
+  - points d'entrée par famille des nouveaux domaines : `SchoolDaySchedule.objects.for_family`,
+    `SchoolDayOverride.objects.for_family`, `HouseholdChore.objects.for_family`,
+    `Celebration.objects.for_family`, et `CelebrationTodo / GiftItem / RecipeIdea
+    .objects.for_family` (filtrés via la fête) ;
   - `apps.display.access.can_tick(request, person)` : la colonne de cette personne
     est-elle cochable par ce visiteur (vérifié dans `display:toggle`, 403 sinon).
 - Les vues parent (`/`, réglages, tâches, pages « à venir », `tasks:toggle`) sont
