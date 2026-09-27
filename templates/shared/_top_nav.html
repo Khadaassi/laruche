@@ -1,7 +1,7 @@
 {# Barre du haut de l'écran partagé. Paramètre : tab (board, week, celebrations, saturday). #}
   <div class="flex min-h-16 flex-wrap items-center gap-x-space-6 gap-y-space-2 py-space-2">
     <div class="flex items-center gap-space-2">
-      {% include "components/_logo.html" with size="h-10 w-10" %}
+      {% include "components/_logo.html" with size="h-12 w-12" %}
       <span class="font-display text-2xl font-semibold">{{ request.family.name }}</span>
     </div>
     <p class="text-lg text-ink-soft">{{ today|date:"l j F"|capfirst }}</p>
