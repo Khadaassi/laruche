@@ -49,36 +49,39 @@ uv run python manage.py makemigrations --check --dry-run
 uv run python manage.py test
 ```
 
-## Déployer (Google Cloud Run + Neon)
+## Déployer (Render + Neon)
 
-La production tourne sur **Cloud Run** (0 à 1 instance, redémarrage en quelques
-secondes après une période sans visite) et la base sur **Neon** (branche principale).
-Chaque merge sur `main` déclenche `.github/workflows/deploy.yml` :
+La production tourne sur **Render** (offre gratuite, Docker, Francfort) et la base
+sur **Neon** (branche principale). Tout est décrit dans `render.yaml` :
 
-1. construction de l'image (`Dockerfile`) et envoi dans Artifact Registry ;
-2. migrations via le job Cloud Run `laruche-migrate` ;
-3. déploiement du service `laruche`, puis appel de `/healthz/`.
+- image construite depuis le `Dockerfile` ; au démarrage, `scripts/start.sh`
+  applique les migrations puis lance gunicorn ;
+- déploiement automatique à chaque merge sur `main`, **uniquement si la CI est verte** ;
+- `DJANGO_SECRET_KEY` générée par Render, `DATABASE_URL` saisie à la création ;
+- `ALLOWED_HOSTS` reçoit automatiquement l'hôte `xxx.onrender.com` fourni par Render
+  (`RENDER_EXTERNAL_HOSTNAME`). Pour un domaine perso, ajouter `DJANGO_ALLOWED_HOSTS`.
 
-Les secrets (`DJANGO_SECRET_KEY`, `DATABASE_URL`) vivent dans **Secret Manager**.
-GitHub s'authentifie auprès de Google par **Workload Identity Federation** (limitée
-à `main`) : aucune clé de compte de service n'existe.
+**Deux sondes :**
+
+| Chemin | Base de données | Usage |
+|---|---|---|
+| `/livez/` | non | Render (toutes les quelques secondes) et UptimeRobot |
+| `/healthz/` | oui (`SELECT 1`) | vérification manuelle après un déploiement |
+
+Ne jamais faire pointer une sonde fréquente vers `/healthz/` : Neon ne s'endormirait
+plus et épuiserait son quota gratuit (100 h de calcul par mois).
 
 ### Installation (une seule fois)
 
-1. Créer un projet sur [console.cloud.google.com](https://console.cloud.google.com)
-   et lui lier un compte de facturation (carte demandée, l'usage reste dans l'offre gratuite).
-2. **Budget** : Facturation → Budgets et alertes → budget de 1 € sur ce projet, alertes
-   à 50 % et 100 %.
-3. Depuis le dépôt, avec `gcloud` et `gh` connectés au bon compte :
-   ```bash
-   gcloud auth login
-   scripts/gcp-setup.sh <PROJECT_ID>            # région par défaut : europe-west1
-   ```
-   Le script demande l'URL Neon **de production** (saisie masquée), génère la
-   `SECRET_KEY`, et renseigne les variables GitHub (`GCP_*`, `DJANGO_ALLOWED_HOSTS`).
-4. Premier déploiement : `gh workflow run deploy.yml`, ou merger une PR.
-
-L'app est alors servie sur `https://laruche-<numéro-de-projet>.europe-west1.run.app/`.
+1. **Neon** : dans le projet, branche principale, base `laruche`, copier l'URL
+   *pooled* (`-pooler` dans l'hôte, `?sslmode=require`). C'est l'URL **de production**,
+   différente de celle de `.env`.
+2. **Render** : [dashboard.render.com](https://dashboard.render.com) → connexion avec
+   GitHub → **New** → **Blueprint** → dépôt `laruche` → coller l'URL Neon dans
+   `DATABASE_URL` → **Apply**.
+3. **Anti-veille** : [uptimerobot.com](https://uptimerobot.com) → *New monitor* → HTTP(s),
+   URL `https://<service>.onrender.com/livez/`, intervalle 5 minutes. Sans lui, l'offre
+   gratuite de Render met l'app en veille après 15 minutes sans visite.
 
 ## Workflow Git
 
