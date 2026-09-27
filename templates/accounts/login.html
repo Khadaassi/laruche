@@ -1,0 +1,21 @@
+{% extends "layouts/public.html" %}
+{% block title %}Connexion — La Ruche{% endblock %}
+
+{% block content %}
+  <h1 class="mb-space-4 text-2xl">Connexion</h1>
+  <form method="post" class="space-y-space-4" novalidate>
+    {% csrf_token %}
+    {% if blocked %}<p class="font-medium text-terracotta" role="alert">{{ blocked }}</p>{% endif %}
+    {% for error in form.non_field_errors %}<p class="font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+    {% include "components/_field.html" with field=form.username %}
+    {% include "components/_field.html" with field=form.password %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Se connecter</button>
+  </form>
+{% endblock %}
+
+{% block after_card %}
+  <p class="mt-space-4 text-center text-ink-soft">
+    Pas encore de compte ? <a href="{% url 'accounts:signup' %}" class="font-medium text-ink underline">Créer un compte</a>
+  </p>
+{% endblock %}

@@ -106,13 +106,22 @@ theme: {
 Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dans
 `assets/css/app.css`, pour les SVG inline (hexagones) et les rares styles calculés.
 
-## Recettes de composants (à respecter quand ils seront créés)
+## Recettes de composants
 
 - **Bouton primaire** : `bg-honey text-ink rounded-lg font-medium hover:bg-honey-dark`.
 - **Carte** : `bg-surface-0 rounded-md border border-border`.
 - **Champ / case à cocher** : contour `border-border-strong`, `rounded-md` pour les champs.
+- **Alvéole** : classe `.hex` (`clip-path` hexagonal, `assets/css/app.css`) sur une boîte
+  carrée. Sert aux avatars, badges et à la progression.
+- **Avatar** : `components/_avatar.html`, initiale sur la couleur de la personne
+  (`terracotta`, `honey`, `honey-dark`, `ink-soft` ; jamais `sage`, réservé à « validé »).
+- **Case à cocher de tâche** : vraie `<input type="checkbox">` en `appearance-none`,
+  contour `border-border-strong`, cochée = fond `sage` + coche blanche.
 - **Badge de tâche hexagonal** : doré (`honey`) = à faire ; `sage` + icône coche = fait.
-- **Étiquette « Fait ! +1 »** sur les tâches cochées (vue enfants).
+  L'état suit la case en CSS (`group-has-[:checked]:`), donc instantanément.
+- **Étiquette « Fait ! +1 »** sur les tâches cochées (vue enfants) ; « Fait » en vue parent.
+- **Progression en alvéoles** (écran partagé) : une alvéole par tâche de la période,
+  `sage` si faite, `border` sinon, avec `aria-label` « X sur Y faites ».
 - **Focus** : anneau `honey-dark` 2px décalé de 2px (déjà global via `:focus-visible`).
 - Un état ne repose **jamais** sur la couleur seule : icône et/ou texte en plus.
 
@@ -128,10 +137,18 @@ Ne pas faire un seul gabarit « responsive » : les usages sont trop différents
 | Structure | 1 colonne qui défile | Colonnes côte à côte, **une par enfant, simultanées** |
 | Navigation | Barre **fixe en bas**, labels toujours visibles | Barre **horizontale en haut** |
 | Accueil | Sélecteur de famille, période du jour ouverte, « 3 tâches restantes » (pas de %) | Avatar hexagonal, progression en alvéoles vers le palier d'étoiles |
+| URL | `/` et pages parent | `/affichage/` |
+
+Les pages publiques (connexion, inscription, erreurs) utilisent un troisième gabarit
+minimal, `layouts/public.html` : une carte centrée, sans navigation.
+Le choix mobile / tablette ne dépend jamais du user-agent : deux URL distinctes, et
+les adaptations de largeur passent par les breakpoints Tailwind.
 
 ## Mouvement & célébration — règles pour toute animation future
 
-Rien n'est implémenté en Phase 0. Toute animation ajoutée ensuite doit respecter :
+Implémenté : le rebond du badge à la coche (`hex-pop`, 150 ms, `assets/css/app.css`),
+limité au geste de l'utilisateur et désactivé en mouvement réduit (système ou
+`data-motion="reduced"`). Toute animation ajoutée ensuite doit respecter :
 
 1. **Coche = micro-feedback immédiat.** Réponse visuelle instantanée au tap (≤ 150 ms,
    ex. léger rebond du badge, passage à sage + coche). Optimiste côté client, confirmé

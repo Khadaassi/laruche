@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% comment %}
+Pages publiques (connexion, inscription) : une colonne centrée, sans
+navigation. Hors des deux familles de gabarits : personne n'est encore
+identifié, donc ni vue parent ni affichage partagé.
+{% endcomment %}
+
+{% block layout %}
+  <main id="main" class="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-space-4 py-space-8">
+    <div class="mb-space-6 flex items-center justify-center gap-space-2">
+      {% include "components/_logo.html" with size="h-12 w-12" %}
+      <span class="font-display text-3xl font-semibold">La Ruche</span>
+    </div>
+    <div class="rounded-md border border-border bg-surface-0 p-space-6">
+      {% block content %}{% endblock %}
+    </div>
+    {% block after_card %}{% endblock %}
+  </main>
+{% endblock %}

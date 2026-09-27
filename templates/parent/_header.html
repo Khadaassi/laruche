@@ -1,0 +1,7 @@
+<div class="mb-space-4 flex items-center gap-space-2">
+  {% include "components/_logo.html" with size="h-9 w-9" %}
+  <div>
+    <p class="font-display text-xl font-semibold leading-tight">{{ title|default:"La Ruche" }}</p>
+    {% if subtitle %}<p class="text-sm text-ink-soft">{{ subtitle }}</p>{% endif %}
+  </div>
+</div>

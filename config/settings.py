@@ -69,8 +69,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "csp",
+    "django_ratelimit",
     "apps.core",
     "apps.accounts",
+    "apps.families",
+    "apps.tasks",
+    "apps.display",
 ]
 
 MIDDLEWARE = [
@@ -131,9 +135,22 @@ DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- Cache et limitation des tentatives --------------------------------------
+
+# Cache mémoire du processus, utilisé par django-ratelimit (apps/core/ratelimit.py).
+# Suffisant car gunicorn tourne avec UN worker sur UNE instance (scripts/start.sh) :
+# tous les threads partagent les mêmes compteurs, incrémentés sous verrou.
+# django-ratelimit le signale comme « non partagé » (E003/W001) : avertissements
+# volontairement neutralisés. Plusieurs workers/instances => passer à Redis.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+SILENCED_SYSTEM_CHECKS = ["django_ratelimit.E003", "django_ratelimit.W001"]
+
 # --- Authentification --------------------------------------------------------
 
 AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "tasks:home"
+LOGOUT_REDIRECT_URL = "accounts:login"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -144,6 +161,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+
+# Tests uniquement : hachage rapide (les vrais hacheurs coûtent ~0,3 s par mot de passe).
+if TESTING:
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 # --- Internationalisation ----------------------------------------------------
 

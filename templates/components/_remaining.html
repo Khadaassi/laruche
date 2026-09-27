@@ -1,0 +1,9 @@
+{# « X tâches restantes » (jamais de pourcentage). `oob` pour la mise à jour HTMX. #}
+<p id="remaining-total" {% if oob %}hx-swap-oob="true"{% endif %} class="flex items-center gap-space-2 font-display text-2xl font-semibold" aria-live="polite">
+  {% if remaining %}
+    {{ remaining }} tâche{{ remaining|pluralize }} restante{{ remaining|pluralize }}
+  {% else %}
+    <span class="hex inline-flex h-8 w-8 items-center justify-center bg-sage text-surface-0">{% include "components/_check.html" %}</span>
+    Tout est fait pour aujourd'hui
+  {% endif %}
+</p>

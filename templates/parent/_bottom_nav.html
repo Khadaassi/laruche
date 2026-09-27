@@ -1,0 +1,9 @@
+{# Barre du bas : 5 entrées, icône + label toujours visible. #}
+{% url 'tasks:home' as home_url %}{% url 'core:week' as week_url %}{% url 'core:menu' as menu_url %}{% url 'core:shopping' as shopping_url %}{% url 'families:settings' as settings_url %}
+<ul class="mx-auto grid h-[4.5rem] max-w-md grid-cols-5">
+  {% include "parent/_nav_item.html" with key="home" label="Accueil" url=home_url icon="home" %}
+  {% include "parent/_nav_item.html" with key="week" label="Semaine" url=week_url icon="week" %}
+  {% include "parent/_nav_item.html" with key="menu" label="Menu" url=menu_url icon="menu" %}
+  {% include "parent/_nav_item.html" with key="shopping" label="Courses" url=shopping_url icon="shopping" %}
+  {% include "parent/_nav_item.html" with key="settings" label="Réglages" url=settings_url icon="settings" %}
+</ul>

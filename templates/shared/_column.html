@@ -1,0 +1,40 @@
+{% with person=column.person %}
+<section class="flex snap-start flex-col gap-space-4 rounded-md border border-border bg-surface-0 p-space-6" aria-labelledby="child-{{ person.pk }}">
+  <header class="flex items-center gap-space-4">
+    {% include "components/_avatar.html" with size="h-20 w-20 text-4xl" %}
+    <div>
+      <h2 id="child-{{ person.pk }}" class="text-3xl">{{ person.name }}</h2>
+      {% include "shared/_column_status.html" %}
+    </div>
+  </header>
+
+  {% if column.tasks %}
+    <ul class="space-y-space-2">
+      {% for task in column.tasks %}
+        <li>
+          {# Colonne non cochable (compte enfant, colonne d'un frère ou d'une sœur) : lecture seule. #}
+          <form method="post" action="{% url 'display:toggle' person.pk task.pk %}" data-task-form
+                {% if column.tickable %}hx-post="{% url 'display:toggle' person.pk task.pk %}" hx-trigger="change" hx-swap="none"{% endif %}
+                class="task-row group flex min-h-16 items-center gap-space-4 rounded-md border border-border px-space-4 has-[:checked]:border-sage">
+            {% csrf_token %}
+            <span class="relative flex shrink-0">
+              <input type="checkbox" name="done" id="shared-task-{{ task.pk }}"
+                     class="h-9 w-9 shrink-0 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage disabled:cursor-not-allowed"
+                     {% if task.is_done %}checked{% endif %} {% if not column.tickable %}disabled{% endif %}>
+              <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
+            </span>
+            <label for="shared-task-{{ task.pk }}" class="min-w-0 flex-1 py-space-2 text-xl {% if column.tickable %}cursor-pointer{% endif %}">{{ task.title }}{% if not column.tickable %}<span class="sr-only"> (lecture seule)</span>{% endif %}</label>
+            <span class="hidden whitespace-nowrap rounded-sm bg-sage px-space-2 py-1 text-sm font-semibold text-surface-0 group-has-[:checked]:inline">Fait ! +1</span>
+            <span class="task-badge hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-surface-0 group-has-[:checked]:bg-sage" aria-hidden="true">
+              <span class="hidden group-has-[:checked]:block">{% include "components/_check.html" with check_size="h-5 w-5" %}</span>
+            </span>
+            {% if column.tickable %}<noscript><button type="submit" class="rounded-sm border border-border-strong px-space-2">OK</button></noscript>{% endif %}
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-lg text-ink-soft">Rien de prévu {{ period_phrase }}.</p>
+  {% endif %}
+</section>
+{% endwith %}
