@@ -84,7 +84,7 @@ plus et épuiserait son quota gratuit (100 h de calcul par mois).
 
 ### Installation (une seule fois)
 
-1. **Neon** : dans le projet, branche principale, base `laruche`, copier l'URL
+1. **Neon** : dans le projet `laruche`, branche `production`, base `neondb`, copier l'URL
    *pooled* (`-pooler` dans l'hôte, `?sslmode=require`). C'est l'URL **de production**,
    différente de celle de `.env`.
 2. **Render** : [dashboard.render.com](https://dashboard.render.com) → connexion avec
