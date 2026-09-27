@@ -18,6 +18,7 @@ from apps.household.models import HouseholdChore
 from apps.household.selectors import chores_by_day, set_chore_done
 from apps.household.views import requested_monday
 from apps.household.week import build_week
+from apps.meals.week import build_menu_week
 from apps.saturday.draw import DrawError, accept, close_past_plans, current_plan
 from apps.saturday.models import PlanStatus, SaturdayPlan
 from apps.saturday.views import draw_context, perform_spin
@@ -118,6 +119,24 @@ def week(request):
             "today": timezone.localdate(),
             "reload_in": seconds_until_next_period(),
             **build_week(request.family, requested_monday(request)),
+        },
+    )
+
+
+@require_GET
+@shared_display_required
+def menu(request):
+    """Menu de la semaine en lecture seule : une colonne par jour.
+
+    Ni recettes détaillées ni liste de courses sur l'écran partagé.
+    """
+    return render(
+        request,
+        "shared/menu.html",
+        {
+            "today": timezone.localdate(),
+            "reload_in": seconds_until_next_period(),
+            **build_menu_week(request.family, requested_monday(request)),
         },
     )
 

@@ -1,0 +1,43 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Recettes — La Ruche{% endblock %}
+
+{% block header %}{% include "parent/_header.html" with title="Cuisine" subtitle=request.family.name %}{% endblock %}
+
+{% block content %}
+  {% include "parent/_kitchen_tabs.html" %}
+<div class="space-y-space-6">
+  <section aria-labelledby="recipes-title">
+    <div class="mb-space-2 flex items-center gap-space-2">
+      <h2 id="recipes-title" class="flex-1 text-lg">Recettes</h2>
+      <a href="{% url 'meals:recipes' %}" class="inline-flex min-h-11 items-center rounded-sm border px-space-4 text-sm font-medium {% if not favorites_only %}border-ink bg-ink text-surface-0{% else %}border-border-strong bg-surface-0{% endif %}" {% if not favorites_only %}aria-current="true"{% endif %}>Toutes</a>
+      <a href="{% url 'meals:recipes' %}?favoris=1" class="inline-flex min-h-11 items-center gap-1 rounded-sm border px-space-4 text-sm font-medium {% if favorites_only %}border-ink bg-ink text-surface-0{% else %}border-border-strong bg-surface-0{% endif %}" {% if favorites_only %}aria-current="true"{% endif %}>{% include "components/_icon.html" with name="favorite" %}Favoris</a>
+    </div>
+    <ul class="space-y-space-2">
+      {% for recipe in recipes %}
+        <li>
+          <a href="{% url 'meals:recipe_detail' recipe.pk %}" class="flex min-h-14 items-center gap-space-4 rounded-md border border-border bg-surface-0 p-space-4">
+            <span class="hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="recipe" icon_size="h-5 w-5" %}</span>
+            <span class="min-w-0 flex-1">
+              <span class="flex items-center gap-1 font-medium">{{ recipe.name }}{% if recipe.is_favorite %}{% include "components/_icon.html" with name="favorite" %}<span class="sr-only">(favori)</span>{% endif %}</span>
+              <span class="block text-sm text-ink-soft">{% if recipe.prep_minutes %}{{ recipe.prep_minutes }} min · {% endif %}{{ recipe.ingredient_count }} ingrédient{{ recipe.ingredient_count|pluralize }}</span>
+            </span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </li>
+      {% empty %}
+        <li class="rounded-md border border-border bg-surface-0 p-space-4 text-ink-soft">{% if favorites_only %}Aucune recette en favori.{% else %}Aucune recette pour l'instant.{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="new-title">
+    <h2 id="new-title" class="mb-space-4 text-lg">Nouvelle recette</h2>
+    <form method="post" class="space-y-space-4" novalidate>
+      {% csrf_token %}
+      {% include "parent/_recipe_fields.html" with form=form %}
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Créer la recette</button>
+      <p class="text-sm text-ink-soft">Les ingrédients s'ajoutent ensuite, un par un, avec leur quantité.</p>
+    </form>
+  </section>
+</div>
+{% endblock %}

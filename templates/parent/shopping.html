@@ -1,0 +1,103 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Courses — La Ruche{% endblock %}
+
+{% block header %}{% include "parent/_header.html" with title="Cuisine" subtitle=request.family.name %}{% endblock %}
+
+{% block content %}
+  {% include "parent/_kitchen_tabs.html" %}
+<div class="space-y-space-6">
+  {# Transfert du menu : aperçu obligatoire avant toute écriture. #}
+  {% url 'shopping:transfer' as transfer_url %}
+  {% if menu_changed %}
+    <section class="rounded-md border-2 border-honey-dark bg-surface-0 p-space-4" aria-labelledby="changed-title">
+      <h2 id="changed-title" class="mb-space-2 flex items-center gap-space-2 text-lg">
+        <span class="hex flex h-7 w-7 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="menu" %}</span>
+        Le menu a changé
+      </h2>
+      <p class="mb-space-4 text-ink-soft">Depuis le dernier envoi, le menu de la semaine du {{ transfer_week|date:"j F" }} a été modifié.</p>
+      <a href="{{ transfer_url }}?semaine={{ transfer_week|date:'Y-m-d' }}" class="flex min-h-12 items-center justify-center rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark">Voir les changements</a>
+    </section>
+  {% else %}
+    <div>
+      <a href="{{ transfer_url }}?semaine={{ transfer_week|date:'Y-m-d' }}" class="flex min-h-12 items-center justify-center gap-space-2 rounded-lg border border-border-strong bg-surface-0 px-space-6 font-medium">
+        {% include "components/_icon.html" with name="menu" icon_size="h-5 w-5" %}Ajouter les ingrédients du menu
+      </a>
+      {% if last_transfer %}<p class="mt-space-2 text-center text-sm text-ink-soft">Dernier envoi : menu du {{ last_transfer.week|date:"j F" }}, le {{ last_transfer.transferred_at|date:"j F à H:i" }}.</p>{% endif %}
+    </div>
+  {% endif %}
+
+  <p class="font-medium" aria-live="polite">{% if to_buy_count %}{{ to_buy_count }} article{{ to_buy_count|pluralize }} à acheter{% else %}Rien à acheter pour l'instant.{% endif %}</p>
+
+  {# Articles du menu de la semaine #}
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="menu-items-title">
+    <h2 id="menu-items-title" class="flex items-center gap-space-2 text-lg">
+      <span class="hex flex h-7 w-7 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="menu" %}</span>
+      Du menu de la semaine
+    </h2>
+    <p class="mb-space-2 text-sm text-ink-soft">Quantités additionnées d'une recette à l'autre.</p>
+    <ul class="divide-y divide-border">
+      {% for item in menu_items %}{% include "parent/_shopping_row.html" %}
+      {% empty %}<li class="py-space-2 text-ink-soft">Aucun ingrédient du menu sur la liste.</li>{% endfor %}
+    </ul>
+  </section>
+
+  {# Produits ajoutés à la main (habituels ou ponctuels) #}
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="manual-items-title">
+    <h2 id="manual-items-title" class="flex items-center gap-space-2 text-lg">
+      <span class="hex flex h-7 w-7 items-center justify-center border-2 border-border-strong bg-surface-100 text-ink">{% include "components/_icon.html" with name="recurring" %}</span>
+      Habituels et ajouts
+    </h2>
+    <p class="mb-space-2 text-sm text-ink-soft">Ajoutés à la main, hors menu.</p>
+    <ul class="divide-y divide-border">
+      {% for item in manual_items %}{% include "parent/_shopping_row.html" %}
+      {% empty %}<li class="py-space-2 text-ink-soft">Aucun produit ajouté.</li>{% endfor %}
+    </ul>
+    <form method="post" class="mt-space-4 space-y-space-2 border-t border-border pt-space-4" novalidate>
+      {% csrf_token %}
+      {% include "components/_field.html" with field=form.name %}
+      <div class="grid grid-cols-2 gap-space-2">
+        {% include "components/_field.html" with field=form.quantity %}
+        {% include "components/_field.html" with field=form.unit %}
+      </div>
+      <label class="flex min-h-11 cursor-pointer items-start gap-space-2">
+        {{ form.recurring }}
+        <span><span class="font-medium">Produit habituel</span><span class="block text-sm text-ink-soft">{{ form.recurring.help_text }}</span></span>
+      </label>
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Ajouter à la liste</button>
+    </form>
+  </section>
+
+  {% if bought_count %}
+    <form method="post" action="{% url 'shopping:clear' %}">
+      {% csrf_token %}
+      <button type="submit" class="flex min-h-12 w-full items-center justify-center gap-space-2 rounded-lg border border-border-strong bg-surface-0 px-space-6 font-medium">
+        <span class="hex flex h-6 w-6 items-center justify-center bg-sage text-surface-0">{% include "components/_check.html" with check_size="h-3 w-3" %}</span>
+        Retirer les articles achetés ({{ bought_count }})
+      </button>
+      <p class="mt-space-2 text-center text-sm text-ink-soft">Les produits habituels reviennent « à acheter ».</p>
+    </form>
+  {% endif %}
+
+  {% if at_home_items %}
+    <details class="group/home rounded-md border border-border bg-surface-0">
+      <summary class="flex min-h-14 cursor-pointer list-none items-center gap-space-2 px-space-4 [&::-webkit-details-marker]:hidden">
+        {% include "components/_icon.html" with name="at_home" icon_size="h-5 w-5" %}
+        <h2 class="flex-1 text-lg">Déjà à la maison ({{ at_home_items|length }})</h2>
+        <svg class="h-5 w-5 shrink-0 text-ink-soft transition-transform group-open/home:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+      <p class="px-space-4 text-sm text-ink-soft">Hors de la liste, mais toujours au menu.</p>
+      <ul class="divide-y divide-border px-space-4 pb-space-2">
+        {% for item in at_home_items %}
+          <li class="flex items-center gap-space-2 py-space-2">
+            <span class="flex-1">{{ item.name }}{% if item.quantity_display %} <span class="text-ink-soft">· {{ item.quantity_display }}</span>{% endif %}</span>
+            <form method="post" action="{% url 'shopping:restore' item.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong px-space-4 text-sm font-medium">Remettre à acheter</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+</div>
+{% endblock %}

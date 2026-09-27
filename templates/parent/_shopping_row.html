@@ -1,0 +1,41 @@
+{% comment %}
+Article de la liste de courses. Cochage optimiste (réponse 204), comme les préparatifs.
+L'origine (menu / habituel / ajouté) est dite en texte, jamais par la couleur seule.
+{% endcomment %}
+{% url 'shopping:toggle' item.pk as toggle_url %}
+<li class="group/row flex items-center gap-space-2 py-space-2">
+  <form method="post" action="{{ toggle_url }}" data-task-form hx-post="{{ toggle_url }}" hx-trigger="change" hx-swap="none"
+        class="task-row group flex min-w-0 flex-1 items-center gap-space-4">
+    {% csrf_token %}
+    <span class="relative flex shrink-0">
+      <input type="checkbox" name="done" id="item-{{ item.pk }}"
+             class="h-7 w-7 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage"
+             {% if item.status == "bought" %}checked{% endif %}>
+      <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
+    </span>
+    <label for="item-{{ item.pk }}" class="min-w-0 flex-1 cursor-pointer">
+      <span class="block group-has-[:checked]:text-ink-soft group-has-[:checked]:line-through">
+        <span class="font-medium">{{ item.name }}</span>{% if item.quantity_display %} <span class="text-ink-soft">· {{ item.quantity_display }}</span>{% endif %}
+      </span>
+      <span class="block text-sm text-ink-soft">
+        {% if item.is_from_menu %}{% include "components/_icon.html" with name="menu" icon_size="inline h-3.5 w-3.5 align-[-2px]" %} Menu{% if item.recipes %} · {{ item.recipes }}{% endif %}
+        {% elif item.recurring %}{% include "components/_icon.html" with name="recurring" icon_size="inline h-3.5 w-3.5 align-[-2px]" %} Habituel · chaque semaine
+        {% else %}{% include "components/_icon.html" with name="manual" icon_size="inline h-3.5 w-3.5 align-[-2px]" %} Ajouté à la main{% endif %}
+      </span>
+    </label>
+    <span class="hidden text-sm font-medium text-sage group-has-[:checked]:inline">Acheté</span>
+    <noscript><button type="submit" class="rounded-sm border border-border-strong px-space-2 text-sm">OK</button></noscript>
+  </form>
+  {% if item.is_from_menu %}
+    {# Une fois acheté (même coché à l'instant), « à la maison » n'a plus de sens : masqué. #}
+    <form method="post" action="{% url 'shopping:at_home' item.pk %}" class="group-has-[:checked]/row:hidden">
+      {% csrf_token %}
+      <button type="submit" class="inline-flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong" aria-label="« {{ item.name }} » : déjà à la maison" title="Déjà à la maison">
+        {% include "components/_icon.html" with name="at_home" icon_size="h-5 w-5" %}
+      </button>
+    </form>
+  {% endif %}
+  <a href="{% url 'shopping:edit' item.pk %}" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-border-strong" aria-label="Modifier « {{ item.name }} »">
+    {% include "components/_icon.html" with name="edit" icon_size="h-5 w-5" %}
+  </a>
+</li>

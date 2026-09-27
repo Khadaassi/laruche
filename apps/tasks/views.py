@@ -7,6 +7,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.core.preparation import tomorrow_items
 from apps.families.access import family_member_required, parent_required
 from apps.families.models import Person
+from apps.meals.week import dinner_of
 from apps.saturday.draw import close_past_plans, current_plan
 from apps.school.selectors import school_days_for
 from apps.stars.selectors import pot
@@ -72,6 +73,7 @@ def home(request):
             "tomorrow": tomorrow_items(request.family, now.date(), people=people),
             "saturday_plan": saturday_plan,
             "is_saturday": now.date().weekday() == SATURDAY,
+            "dinner": dinner_of(request.family, now.date()),
         },
     )
 

@@ -1,4 +1,4 @@
-{# Barre du haut de l'écran partagé. Paramètre : tab (board, week, celebrations, saturday). #}
+{# Barre du haut de l'écran partagé. Paramètre : tab (board, week, celebrations, saturday, menu). #}
   <div class="flex min-h-16 flex-wrap items-center gap-x-space-6 gap-y-space-2 py-space-2">
     <div class="flex items-center gap-space-2">
       {% include "components/_logo.html" with size="h-12 w-12" %}
@@ -6,11 +6,12 @@
     </div>
     <p class="text-lg text-ink-soft">{{ today|date:"l j F"|capfirst }}</p>
     {% if period %}<p class="rounded-sm bg-honey px-space-4 py-1 font-display text-lg font-semibold text-ink">{{ period.label }}</p>{% endif %}
-    {% url 'display:board' as board_url %}{% url 'display:week' as week_url %}{% url 'display:celebrations' as celebrations_url %}{% url 'display:saturday' as saturday_url %}
+    {% url 'display:board' as board_url %}{% url 'display:week' as week_url %}{% url 'display:celebrations' as celebrations_url %}{% url 'display:saturday' as saturday_url %}{% url 'display:menu' as menu_url %}
     <ul class="flex gap-space-2" aria-label="Pages de l'écran partagé">
       {% include "shared/_tab.html" with key="board" label="Aujourd'hui" url=board_url %}
       {% include "shared/_tab.html" with key="week" label="Semaine" url=week_url %}
       {% include "shared/_tab.html" with key="celebrations" label="Fêtes" url=celebrations_url %}
+      {% include "shared/_tab.html" with key="menu" label="Menu" url=menu_url %}
       {% include "shared/_tab.html" with key="saturday" label="Samedi" url=saturday_url %}
     </ul>
     <div class="ml-auto">

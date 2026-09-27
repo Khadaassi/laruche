@@ -1,0 +1,41 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}{{ item.name }} — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'shopping:index' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Courses</a>
+  {% include "parent/_header.html" with title=item.name subtitle=item.get_origin_display %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-space-4">
+  <form method="post" class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" novalidate>
+    {% csrf_token %}
+    {% include "components/_field.html" with field=form.name %}
+    <div class="grid grid-cols-2 gap-space-2">
+      {% include "components/_field.html" with field=form.quantity %}
+      {% include "components/_field.html" with field=form.unit %}
+    </div>
+    {% if form.recurring %}
+      <label class="flex min-h-11 cursor-pointer items-start gap-space-2">
+        {{ form.recurring }}
+        <span><span class="font-medium">Produit habituel</span><span class="block text-sm text-ink-soft">{{ form.recurring.help_text }}</span></span>
+      </label>
+    {% else %}
+      <p class="text-sm text-ink-soft">Issu du menu{% if item.recipes %} ({{ item.recipes }}){% endif %} : un nouvel envoi du menu pourra proposer d'en changer la quantité.</p>
+    {% endif %}
+    <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
+  </form>
+
+  {% if item.is_from_menu and item.status != "at_home" %}
+    <form method="post" action="{% url 'shopping:at_home' item.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="flex min-h-12 w-full items-center justify-center gap-space-2 rounded-lg border border-border-strong bg-surface-0 font-medium">{% include "components/_icon.html" with name="at_home" icon_size="h-5 w-5" %}Déjà à la maison</button>
+    </form>
+  {% endif %}
+  <form method="post" action="{% url 'shopping:delete' item.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="w-full rounded-lg bg-terracotta px-space-6 py-3 font-medium text-surface-0">Supprimer de la liste</button>
+    {% if item.is_from_menu %}<p class="mt-space-2 text-center text-sm text-ink-soft">S'il est toujours au menu, il reviendra au prochain envoi. « Déjà à la maison » le garde de côté.</p>{% endif %}
+  </form>
+</div>
+{% endblock %}

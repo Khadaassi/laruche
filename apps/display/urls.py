@@ -18,6 +18,7 @@ urlpatterns = [
     ),
     path("affichage/semaine/", views.week, name="week"),
     path("affichage/fetes/", views.celebrations, name="celebrations"),
+    path("affichage/menu/", views.menu, name="menu"),
     path("affichage/samedi/", views.saturday, name="saturday"),
     path("affichage/samedi/confirmer/", views.saturday_unlock, name="saturday_unlock"),
     path("affichage/samedi/tourner/", views.saturday_spin, name="saturday_spin"),

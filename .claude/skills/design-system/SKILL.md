@@ -154,6 +154,26 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
   text-surface-0`.
 - **Progression en alvéoles** (écran partagé) : une alvéole par tâche de la période,
   `sage` si faite, `border` sinon, avec `aria-label` « X sur Y faites ».
+- **Sélecteur interne « Cuisine »** : `parent/_kitchen_tabs.html`, 3 segments égaux
+  (icône + texte), actif `bg-ink text-surface-0`, sinon `border-border-strong bg-surface-0`.
+- **Créneau de menu** : ligne cliquable (≥ 56 px) « Déjeuner / Dîner » + repas ; une recette
+  porte l'alvéole `honey` avec l'icône couverts, un repas libre est du texte seul ; créneau
+  vide = « Ajouter un repas » en `ink-soft`. Jour courant bordé `honey-dark` (comme le semainier).
+- **Carte « Ce soir au menu »** (accueil parent) : `parent/_dinner_card.html`, alvéole miel
+  + couverts, nom du plat en `font-display`, lien « Voir la recette · 30 min ».
+- **Article de courses** : `parent/_shopping_row.html`, même case que les préparatifs
+  (cochée = `sage` + coche + « Acheté » + texte barré). L'origine est **toujours écrite** sous
+  le nom avec son icône : « Menu · Couscous · Tajine », « Habituel · chaque semaine »,
+  « Ajouté à la main ». Deux sections distinctes : « Du menu de la semaine » (alvéole `honey`)
+  et « Habituels et ajouts » (alvéole contour `border-strong` sur `surface-100`). Boutons carrés
+  44 px : « déjà à la maison » (maison + coche, masqué une fois acheté) et « modifier » (crayon).
+- **Question de retransfert** : encart bordé `honey-dark` 2px « Déjà cochés : que faire ? »,
+  deux puces radio (recette `_chip_choices`) **sans choix par défaut** ; erreur en `terracotta`
+  avec `role="alert"` si on valide sans répondre.
+- **Alerte « Le menu a changé »** (écran Courses) : même encart bordé `honey-dark`, bouton
+  primaire « Voir les changements ». Jamais de rouge ni d'animation : c'est une information.
+- **Favori** : icône cœur au trait (`ink`), jamais l'étoile (réservée aux étoiles gagnées),
+  toujours avec le texte « Favoris » / « (favori) ».
 - **Focus** : anneau `honey-dark` 2px décalé de 2px (déjà global via `:focus-visible`).
 - Un état ne repose **jamais** sur la couleur seule : icône et/ou texte en plus.
 
@@ -170,7 +190,36 @@ Ne pas faire un seul gabarit « responsive » : les usages sont trop différents
 | Navigation | Barre **fixe en bas**, labels toujours visibles | Barre **horizontale en haut** |
 | Accueil | Sélecteur de famille, période du jour ouverte, « 3 tâches restantes » (pas de %) | Avatar hexagonal, progression en alvéoles vers le palier d'étoiles |
 | URL | `/` et pages parent | `/affichage/` |
-| Navigation | Accueil / Semaine / Fêtes / Menu / Réglages | Onglets Aujourd'hui / Semaine / Fêtes |
+| Navigation | Accueil / Semaine / Fêtes / Cuisine / Réglages | Onglets Aujourd'hui / Semaine / Fêtes / Samedi / Menu |
+
+### Navigation parent : onglet « Cuisine » (Phase 4)
+
+La barre du bas reste à **5 entrées, labels toujours visibles** (contrainte de la Phase 0 :
+au-delà, les libellés ne tiennent plus sur un téléphone de 360 px). Menu, courses et
+recettes partagent **un seul onglet « Cuisine »** (icône couverts, `/menu/`), avec en haut
+de chacune de ces pages un **sélecteur interne à 3 segments** : *Menu · Courses · Recettes*
+(`parent/_kitchen_tabs.html`, liens `aria-current="page"`, même recette que le sélecteur de
+personne de l'accueil : segment actif `bg-ink text-surface-0`).
+
+Pourquoi cette option plutôt qu'un bouton « Courses » dans l'écran Menu :
+- **La liste de courses est un usage autonome** (au magasin, téléphone à la main, sans
+  passer par le menu) : elle doit être à **deux taps de n'importe quelle page**, toujours au
+  même endroit. Un bouton au milieu de la page Menu la rendrait dépendante du défilement
+  et de la semaine affichée.
+- Menu, recettes et courses forment **un seul flux** (je choisis des recettes → je planifie
+  → j'envoie aux courses) : un onglet commun rend ce lien visible, et « Recettes » y trouve
+  sa place sans 6e onglet.
+- **Aucun onglet existant n'est sacrifié** (Semaine, Fêtes et Réglages gardent leur place),
+  et l'URL `/menu/` historique reste l'entrée de l'onglet.
+- Le libellé « Cuisine » est un mot court (tient sous l'icône) qui couvre les trois vues ;
+  « Menu » seul aurait été trompeur une fois sur la liste de courses.
+
+L'onglet est actif (`nav_active = "kitchen"`) sur les trois vues et leurs sous-pages.
+Le bouton **« Envoyer aux courses »** du menu reste en plus un raccourci contextuel
+(transfert du menu de la semaine affichée), pas le seul accès à la liste.
+
+Les enfants n'ont pas la liste de courses : l'écran partagé ne gagne qu'un onglet
+**« Menu »** en lecture seule (voir `permissions/SKILL.md`).
 
 Les pages publiques (connexion, inscription, erreurs) utilisent un troisième gabarit
 minimal, `layouts/public.html` : une carte centrée, sans navigation.
