@@ -4,41 +4,7 @@
 {% block top_nav %}{% include "shared/_top_nav.html" with tab="week" %}{% endblock %}
 {% block main_attrs %}x-data="periodClock" data-reload-in="{{ reload_in }}"{% endblock %}
 
-{# Lecture seule : une colonne par jour, côte à côte (défilement horizontal si étroit). #}
-{% block columns %}
-  {% for day in days %}
-    <section class="flex snap-start flex-col gap-space-4 rounded-md border {% if day.is_today %}border-honey-dark{% else %}border-border{% endif %} bg-surface-0 p-space-4" aria-labelledby="day-{{ forloop.counter }}">
-      <h2 id="day-{{ forloop.counter }}" class="text-2xl">
-        {{ day.date|date:"l"|capfirst }} <span class="font-sans text-lg font-normal text-ink-soft">{{ day.date|date:"j F" }}</span>
-      </h2>
-      {% if day.is_today %}<p class="-mt-space-2 w-fit rounded-sm bg-honey px-space-2 text-sm font-semibold text-ink">Aujourd'hui</p>{% endif %}
-
-      {% for celebration in day.celebrations %}
-        <p class="flex items-center gap-space-2 text-lg font-medium">
-          <span class="hex flex h-8 w-8 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="celebration" %}</span>{{ celebration.name }}
-        </p>
-      {% endfor %}
-
-      {% for person, school_day in day.school %}
-        <div class="space-y-1">
-          <p class="flex items-center gap-space-2 font-medium">{% include "components/_avatar.html" %}{{ person.name }}</p>
-          {% include "components/_school_badges.html" %}
-        </div>
-      {% endfor %}
-
-      {% if day.chores %}
-        <ul class="space-y-space-2 border-t border-border pt-space-2" aria-label="Ménage">
-          {% for occurrence in day.chores %}
-            <li class="flex items-center gap-space-2">
-              {% include "components/_avatar.html" with person=occurrence.chore.assignee %}
-              <span class="flex-1 {% if occurrence.is_done %}text-ink-soft line-through{% endif %}">{{ occurrence.chore.title }}</span>
-              {% if occurrence.is_done %}<span class="hex flex h-6 w-6 items-center justify-center bg-sage text-surface-0">{% include "components/_check.html" with check_size="h-3 w-3" %}</span><span class="sr-only">fait</span>{% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-
-      {% if day.is_empty %}<p class="text-ink-soft">Rien de prévu.</p>{% endif %}
-    </section>
-  {% endfor %}
+{# Lecture seule : la même grille horaire que la vue parent, en plus grand. #}
+{% block before_columns %}
+  {% include "components/_week_grid.html" with large=True %}
 {% endblock %}

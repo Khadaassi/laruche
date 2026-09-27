@@ -42,6 +42,15 @@
     @apply space-y-space-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-space-6 lg:space-y-0;
   }
 
+  /* Grille horaire du semainier : 30 demi-heures, un trait discret par heure. */
+  .hour-lines {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--color-border) 0 1px,
+      transparent 1px 2.5rem
+    );
+  }
+
   /* Alvéole : hexagone à pointe en haut, sur une boîte carrée. */
   .hex {
     clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);

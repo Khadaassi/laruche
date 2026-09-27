@@ -181,6 +181,13 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
   sélections possibles, sélection = fond `ink`.
 - **Tri** : deux boutons ↑ / ↓ empilés (44 px de large) à gauche de la ligne, libellés
   « Monter / Descendre « tâche » » pour les lecteurs d'écran.
+- **Grille horaire** (`components/_week_grid.html`, parent et écran partagé) : carte
+  `surface-0`, 7 colonnes égales + colonne des heures, trait `border` à chaque heure
+  (`.hour-lines`, variable CSS du token). Jour courant : en-tête `honey`, colonne
+  `surface-100` ; jour sélectionné (parent) : en-tête `ink` / `surface-0`. **Bloc de
+  rendez-vous** : couleur de la personne (mêmes paires fond/texte que les avatars, donc
+  contrastes AA) ; plusieurs personnes ou toute la famille : `surface-100` bordé
+  `border-strong`, texte `ink`. Titre en gras, horaire en dessous à partir de `md`.
 - **Focus** : anneau `honey-dark` 2px décalé de 2px (déjà global via `:focus-visible`).
 - Un état ne repose **jamais** sur la couleur seule : icône et/ou texte en plus.
 

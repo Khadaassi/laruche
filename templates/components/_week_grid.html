@@ -1,0 +1,74 @@
+{% comment %}
+Grille horaire de la semaine : les 7 jours côte à côte, toujours visibles.
+- Ligne « journée » : fêtes, absences, ménage, dîner (sans heure).
+- Corps : rendez-vous de 7 h à 22 h, placés par le serveur (apps/agenda/grid.py).
+Paramètres : link_days (parent : en-têtes cliquables vers le détail du jour),
+editable (parent : blocs cliquables vers leur modification), large (écran partagé).
+Téléphone : colonnes étroites, icônes seules ; les libellés apparaissent à partir de md.
+{% endcomment %}
+<div class="rounded-md border border-border bg-surface-0 p-space-2 md:p-space-4">
+  <div class="grid grid-cols-[1.75rem_repeat(7,minmax(0,1fr))] gap-x-0.5 md:grid-cols-[3rem_repeat(7,minmax(0,1fr))] md:gap-x-space-2">
+    {# En-têtes des jours #}
+    <div aria-hidden="true"></div>
+    {% for day in days %}
+      {% if link_days %}
+        <a href="?semaine={{ monday|date:'Y-m-d' }}&jour={{ day.date|date:'Y-m-d' }}#jour"
+           class="flex min-h-11 flex-col items-center justify-center rounded-sm text-center {% if day.is_selected %}bg-ink text-surface-0{% elif day.is_today %}bg-honey text-ink{% endif %}"
+           {% if day.is_selected %}aria-current="date"{% endif %}>
+      {% else %}
+        <div class="flex min-h-11 flex-col items-center justify-center rounded-sm text-center {% if day.is_today %}bg-honey text-ink{% endif %}">
+      {% endif %}
+          <span class="text-xs font-medium md:text-sm">{{ day.date|date:"D"|capfirst }}</span>
+          <span class="font-display text-base font-semibold {% if large %}md:text-2xl{% else %}md:text-lg{% endif %}">{{ day.date|date:"j" }}</span>
+          {% if day.is_today %}<span class="sr-only">(aujourd'hui)</span>{% endif %}
+      {% if link_days %}</a>{% else %}</div>{% endif %}
+    {% endfor %}
+
+    {# Journée : ce qui n'a pas d'heure #}
+    <div class="flex items-start justify-end pr-1 pt-space-2 text-[10px] font-medium text-ink-soft md:text-xs" aria-hidden="true">Jour</div>
+    {% for day in days %}
+      <ul class="mt-space-2 flex min-h-8 flex-col gap-1 border-b border-border pb-space-2 text-xs {% if large %}md:text-base{% else %}md:text-sm{% endif %}" aria-label="{{ day.date|date:'l j' }} : journée">
+        {% for celebration in day.celebrations %}
+          <li class="flex items-center gap-1 rounded-sm bg-honey px-1 font-medium text-ink" title="{{ celebration.name }}">{% include "components/_icon.html" with name="celebration" icon_size="h-3.5 w-3.5" %}<span class="hidden truncate md:inline">{{ celebration.name }}</span><span class="sr-only md:hidden">{{ celebration.name }}</span></li>
+        {% endfor %}
+        {% for absence in day.absences %}
+          <li class="flex items-center gap-1 rounded-sm border border-border-strong px-1" title="{{ absence.who }} · {{ absence.label }}">{% include "components/_icon.html" with name="absence_"|add:absence.kind icon_size="h-3.5 w-3.5" %}<span class="hidden truncate md:inline">{% if absence.person %}{{ absence.person.name }}{% else %}Famille{% endif %}</span><span class="sr-only md:hidden">{{ absence.who }} · {{ absence.label }}</span></li>
+        {% endfor %}
+        {% if day.chores and large %}
+          {# Écran partagé : chaque tâche de ménage, avec qui et si c'est fait. #}
+          {% for occurrence in day.chores %}
+            <li class="flex items-center gap-1 px-1">
+              {% include "components/_avatar.html" with person=occurrence.chore.assignee size="h-5 w-5 text-[10px]" %}
+              <span class="min-w-0 truncate {% if occurrence.is_done %}text-ink-soft line-through{% endif %}">{{ occurrence.chore.title }}</span>
+              {% if occurrence.is_done %}<span class="hex flex h-4 w-4 shrink-0 items-center justify-center bg-sage text-surface-0">{% include "components/_check.html" with check_size="h-2.5 w-2.5" %}</span><span class="sr-only">fait</span>{% endif %}
+            </li>
+          {% endfor %}
+        {% elif day.chores %}
+          <li class="flex items-center gap-1 px-1 text-ink-soft" title="Ménage">{% include "components/_icon.html" with name="chore" icon_size="h-3.5 w-3.5" %}<span>{{ day.chores|length }}</span><span class="sr-only"> tâche{{ day.chores|length|pluralize }} de ménage</span></li>
+        {% endif %}
+        {% if day.dinner %}
+          <li class="flex items-center gap-1 px-1 text-ink-soft" title="Dîner : {{ day.dinner.label }}">{% include "components/_icon.html" with name="menu" icon_size="h-3.5 w-3.5" %}<span class="hidden truncate lg:inline">{{ day.dinner.label }}</span><span class="sr-only lg:hidden">Dîner : {{ day.dinner.label }}</span></li>
+        {% endif %}
+      </ul>
+    {% endfor %}
+
+    {# Heures #}
+    <div class="grid grid-rows-[repeat(30,1.25rem)] pt-space-2" aria-hidden="true">
+      {% for hour in hours %}<span class="row-span-2 -mt-2 pr-1 text-right text-[10px] text-ink-soft md:text-xs">{{ hour }}h</span>{% endfor %}
+    </div>
+    {% for day in days %}
+      <ol class="hour-lines mt-space-2 grid grid-rows-[repeat(30,1.25rem)] gap-x-0.5 {% if day.lanes == 3 %}grid-cols-3{% elif day.lanes == 2 %}grid-cols-2{% else %}grid-cols-1{% endif %} {% if day.is_today %}rounded-sm bg-surface-100{% endif %}"
+          aria-label="{{ day.date|date:'l j' }} : rendez-vous">
+        {% for block in day.blocks %}
+          <li class="{{ block.classes }} min-w-0 overflow-hidden rounded-sm px-1 py-0.5 text-[10px] leading-tight md:text-xs {% if large %}md:text-sm{% endif %}">
+            {% if editable %}<a href="{% url 'agenda:edit' block.event.pk %}?jour={{ day.date|date:'Y-m-d' }}" class="block h-full">{% endif %}
+              <span class="block truncate font-semibold">{{ block.event.title }}</span>
+              <span class="hidden truncate md:block">{{ block.event.time_display }}</span>
+              <span class="sr-only md:hidden">{{ block.event.time_display }}</span>
+            {% if editable %}</a>{% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    {% endfor %}
+  </div>
+</div>

@@ -31,12 +31,17 @@ def requested_monday(request) -> datetime.date:
 @require_GET
 @parent_required
 def week(request):
-    """Semainier parent (mobile) : un bloc par jour, ménage + école + fêtes."""
+    """Semainier parent : grille horaire de la semaine, et détail du jour choisi
+    (?jour=AAAA-MM-JJ) avec le ménage à cocher."""
     monday = requested_monday(request)
+    try:
+        selected = datetime.date.fromisoformat(request.GET.get("jour", ""))
+    except ValueError:
+        selected = None
     return render(
         request,
         "parent/week.html",
-        {"nav_active": "week", **build_week(request.family, monday)},
+        {"nav_active": "week", **build_week(request.family, monday, selected)},
     )
 
 

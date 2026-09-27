@@ -18,6 +18,9 @@ module.exports = {
     './apps/**/*.py',
     './static/js/**/*.js',
   ],
+  // Grille horaire du semainier (apps/agenda/grid.py) : lignes et hauteurs des
+  // blocs calculées côté serveur, donc absentes des gabarits.
+  safelist: [{ pattern: /^row-(start|span)-([1-9]|[12][0-9]|30)$/ }, { pattern: /^col-start-[1-3]$/ }],
   theme: {
     colors: {
       transparent: 'transparent',
@@ -57,6 +60,12 @@ module.exports = {
         md: '16px', // cartes, champs
         lg: '28px', // boutons principaux, modales
       },
+      gridRowStart: Object.fromEntries(
+        Array.from({ length: 31 }, (_, i) => [String(i + 1), String(i + 1)]),
+      ),
+      gridRow: Object.fromEntries(
+        Array.from({ length: 30 }, (_, i) => [`span-${i + 1}`, `span ${i + 1} / span ${i + 1}`]),
+      ),
       spacing: {
         'space-2': '8px',
         'space-4': '16px',

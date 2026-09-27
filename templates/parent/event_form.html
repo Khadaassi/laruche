@@ -1,0 +1,56 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}{% if event %}{{ event.title }}{% else %}Nouveau rendez-vous{% endif %} — La Ruche{% endblock %}
+{% block header_width %}max-w-md md:max-w-xl{% endblock %}
+{% block content_width %}max-w-md md:max-w-xl{% endblock %}
+
+{% block header %}
+  <a href="{{ back_url }}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Semaine</a>
+  {% include "parent/_header.html" with title=event|yesno:"Modifier le rendez-vous,Nouveau rendez-vous" %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-space-4">
+  <form method="post" class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" novalidate>
+    {% csrf_token %}
+    {% include "components/_field.html" with field=form.title %}
+
+    <fieldset class="group/scope">
+      <legend class="mb-1 font-medium">{{ form.scope.label }}</legend>
+      <div class="grid grid-cols-2 gap-space-2">
+        {% for radio in form.scope %}<label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+      </div>
+      <div class="mt-space-2 hidden group-has-[[value=people]:checked]/scope:block">
+        {% include "parent/_person_choices.html" with field=form.people %}
+      </div>
+    </fieldset>
+
+    <div class="grid grid-cols-2 gap-space-2">
+      {% include "components/_field.html" with field=form.start_time %}
+      {% include "components/_field.html" with field=form.end_time %}
+    </div>
+
+    <fieldset class="group/repeat space-y-space-4">
+      <legend class="mb-1 font-medium">{{ form.repeat.label }}</legend>
+      <div class="grid grid-cols-2 gap-space-2">
+        {% for radio in form.repeat %}<label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+      </div>
+      <div class="hidden group-has-[[value=once]:checked]/repeat:block">
+        {% include "components/_field.html" with field=form.date %}
+      </div>
+      <div class="hidden space-y-space-4 group-has-[[value=weekly]:checked]/repeat:block">
+        {% include "parent/_schedule_fields.html" %}
+      </div>
+    </fieldset>
+
+    {% include "components/_field.html" with field=form.location %}
+    <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
+  </form>
+
+  {% if event %}
+    <form method="post" action="{% url 'agenda:delete' event.pk %}?jour={{ request.GET.jour }}">
+      {% csrf_token %}
+      <button type="submit" class="w-full rounded-lg bg-terracotta px-space-6 py-3 font-medium text-surface-0">Supprimer{% if not event.is_once %} toute la série{% endif %}</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}
