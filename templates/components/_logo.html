@@ -1,5 +1,12 @@
-{# Symbole La Ruche : alvéole hexagonale contenant un toit simplifié. #}
-<svg class="{{ size|default:'h-8 w-8' }} shrink-0" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-  <polygon class="fill-honey" points="24,3 42.2,13.5 42.2,34.5 24,45 5.8,34.5 5.8,13.5"/>
-  <path class="fill-transparent stroke-ink" d="M14 25 L24 16 L34 25 M18 22 V33 H30 V22" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+{% comment %}
+Logomark La Ruche — SOURCE UNIQUE, ne jamais le recopier ailleurs (un test le vérifie).
+Hexagone miel contenant un toit stylisé en trait encre. Géométrie exacte de la
+marque ; couleurs par tokens (fill-honey = #E8A33D, stroke-ink = #241B13).
+Le favicon static/favicon.svg reprend la même géométrie (fichier statique, hors gabarits).
+Paramètre : size (classes de taille, défaut h-8 w-8).
+{% endcomment %}
+<svg class="{{ size|default:'h-8 w-8' }} shrink-0" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <polygon class="fill-honey" points="60,14 99.8,37 99.8,83 60,106 20.2,83 20.2,37"/>
+  <path class="stroke-ink" d="M36 60 L60 38 L84 60" fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <line class="stroke-ink" x1="44" y1="78" x2="76" y2="78" stroke-width="7" stroke-linecap="round"/>
 </svg>

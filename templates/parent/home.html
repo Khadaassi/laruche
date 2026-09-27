@@ -2,7 +2,9 @@
 {% block title %}Accueil — La Ruche{% endblock %}
 
 {% block header %}
-  {% include "parent/_header.html" with title=request.family.name subtitle=today|date:"l j F"|capfirst %}
+  {% with day=today|date:"l j F"|capfirst %}
+    {% include "parent/_header.html" with title=greeting subtitle=request.family.name|add:" · "|add:day stars=family_stars %}
+  {% endwith %}
 {% endblock %}
 
 {% block content %}
@@ -85,7 +87,8 @@
           <svg class="h-5 w-5 shrink-0 text-ink-soft transition-transform group-open/period:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
         </summary>
         {% if group.tasks %}
-          <ul class="divide-y divide-border border-t border-border px-space-4">
+          {# Une mini-carte par tâche, comme sur l'écran partagé (zone de tap plus grande). #}
+          <ul class="space-y-space-2 border-t border-border p-space-2">
             {% for task in group.tasks %}{% include "parent/_task_row.html" %}{% endfor %}
           </ul>
         {% else %}

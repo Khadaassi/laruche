@@ -228,3 +228,47 @@ class ComingSoonTests(SecureClientMixin, TestCase):
 
     def test_stub_pages_require_login(self):
         self.assertEqual(self.get(reverse("core:menu")).status_code, 302)
+
+
+class WarmHeaderTests(SecureClientMixin, TestCase):
+    """En-tête de l'accueil : salutation selon la période, étoiles de la famille."""
+
+    def setUp(self):
+        self.family = make_family(name="Famille Martin")
+        self.parent = join(self.family, "Sam")
+        self.lina = make_child_profile(self.family, "Lina")
+        self.noah = make_child_profile(self.family, "Noah")
+        Task.objects.create(person=self.lina, title="Dents", period=Period.MORNING)
+        self.client.force_login(self.parent)
+
+    def home_at(self, hour_utc):
+        moment = datetime.datetime(2026, 9, 28, hour_utc, 0, tzinfo=datetime.UTC)
+        with mock.patch("django.utils.timezone.now", return_value=moment):
+            return self.get(reverse("tasks:home"))
+
+    def test_greeting_follows_the_period(self):
+        # Heure de Paris = UTC + 2 en septembre.
+        self.assertContains(self.home_at(6), "Bonjour la famille")  # 08:00
+        self.assertContains(self.home_at(12), "Bon après-midi")  # 14:00
+        self.assertContains(self.home_at(18), "Bonsoir la famille")  # 20:00
+
+    def test_family_name_and_date_stay_visible(self):
+        response = self.home_at(6)
+        self.assertContains(response, "Famille Martin · Lundi 28 septembre")
+        self.assertContains(response, "tâche restante")
+
+    def test_star_pill_sums_children_stars(self):
+        from apps.stars.tests.test_stars import earn
+
+        earn(self.lina, 7, start=MONDAY - datetime.timedelta(days=1))
+        earn(self.noah, 5, start=MONDAY - datetime.timedelta(days=1))
+        # Les parents ne gagnent pas d'étoiles : ne compte pas.
+        earn(self.parent.person, 9, start=MONDAY - datetime.timedelta(days=1))
+        response = self.home_at(6)
+        self.assertEqual(response.context["family_stars"], 12)
+        self.assertContains(response, '12<span class="sr-only"> étoiles dans la famille</span>')
+
+    def test_tasks_are_mini_cards(self):
+        html = self.home_at(6).content.decode()
+        self.assertIn("rounded-md border border-border bg-surface-100", html)
+        self.assertNotIn("divide-y divide-border border-t border-border px-space-4", html)

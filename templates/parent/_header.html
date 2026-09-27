@@ -1,7 +1,17 @@
+{% comment %}
+En-tête des pages parent : logomark, titre, sous-titre.
+Option `stars` : pastille dorée des étoiles de la famille (accueil).
+{% endcomment %}
 <div class="mb-space-4 flex items-center gap-space-2">
-  {% include "components/_logo.html" with size="h-9 w-9" %}
-  <div>
+  {% include "components/_logo.html" with size="h-10 w-10" %}
+  <div class="min-w-0 flex-1">
     <p class="font-display text-xl font-semibold leading-tight">{{ title|default:"La Ruche" }}</p>
     {% if subtitle %}<p class="text-sm text-ink-soft">{{ subtitle }}</p>{% endif %}
   </div>
+  {% if stars is not None and stars != "" %}
+    <p class="inline-flex shrink-0 items-center gap-1 rounded-sm bg-honey py-1 pl-space-2 pr-space-2 font-semibold text-ink">
+      {% include "components/_icon.html" with name="celebration" icon_size="h-4 w-4" %}
+      {{ stars }}<span class="sr-only"> étoile{{ stars|pluralize }} dans la famille</span>
+    </p>
+  {% endif %}
 </div>

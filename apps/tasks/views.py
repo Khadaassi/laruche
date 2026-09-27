@@ -9,10 +9,11 @@ from apps.families.access import family_member_required, parent_required
 from apps.families.models import Person
 from apps.saturday.draw import close_past_plans, current_plan
 from apps.school.selectors import school_days_for
+from apps.stars.selectors import pot
 
 from .forms import TaskForm
 from .models import Task
-from .periods import Period, period_at
+from .periods import GREETINGS, Period, period_at
 from .selectors import count_remaining, group_by_period, tasks_for_day
 from .services import set_done
 
@@ -53,15 +54,19 @@ def home(request):
     school = school_days_for(request.family, now.date(), people=children)
     close_past_plans(request.family, now.date())
     saturday_plan = current_plan(request.family, now.date())
+    current = period_at(now.time())
     return render(
         request,
         "parent/home.html",
         {
             "nav_active": "home",
+            "greeting": GREETINGS[current],
+            # Étoiles de la famille : somme des soldes des enfants (le pot commun).
+            "family_stars": pot(request.family),
             "today": now.date(),
             "people": Person.objects.for_family(request.family),
             "selected": person,
-            "groups": group_by_period(tasks, current=period_at(now.time())),
+            "groups": group_by_period(tasks, current=current),
             "remaining": count_remaining(tasks),
             "school_today": [(c, school[c.pk]) for c in children if c.pk in school],
             "tomorrow": tomorrow_items(request.family, now.date(), people=people),
