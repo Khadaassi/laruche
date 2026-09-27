@@ -157,10 +157,12 @@ class ManageTasksTests(SecureClientMixin, TestCase):
 
     def task_data(self, person, **overrides):
         data = {
-            "person": person.pk,
+            "people": [person.pk],
             "title": "Ranger la chambre",
             "period": Period.EVENING,
+            "days_preset": "custom",
             "weekday_choices": ["0", "2", "4"],
+            "when": "always",
         }
         data.update(overrides)
         return data
@@ -176,14 +178,138 @@ class ManageTasksTests(SecureClientMixin, TestCase):
     def test_cannot_create_task_for_another_family_person(self):
         self.client.force_login(self.parent)
         response = self.post(reverse("tasks:manage"), self.task_data(self.other_person))
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("person", response.context["form"].errors)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("people", response.context["form"].errors)
         self.assertFalse(Task.objects.exists())
 
     def test_at_least_one_weekday(self):
         self.client.force_login(self.parent)
         response = self.post(reverse("tasks:manage"), self.task_data(self.lina, weekday_choices=[]))
         self.assertIn("weekday_choices", response.context["form"].errors)
+
+    def test_one_task_per_selected_person(self):
+        noah = make_child_profile(self.family, "Noah")
+        self.client.force_login(self.parent)
+        self.post(
+            reverse("tasks:manage"), self.task_data(self.lina, people=[self.lina.pk, noah.pk])
+        )
+        self.assertEqual(
+            sorted(Task.objects.values_list("person__name", "title")),
+            [("Lina", "Ranger la chambre"), ("Noah", "Ranger la chambre")],
+        )
+
+    def test_day_presets(self):
+        self.client.force_login(self.parent)
+        for preset, days in (
+            ("everyday", [0, 1, 2, 3, 4, 5, 6]),
+            ("school", [0, 1, 3, 4]),
+            ("weekend", [5, 6]),
+        ):
+            with self.subTest(preset=preset):
+                Task.objects.all().delete()
+                self.post(
+                    reverse("tasks:manage"),
+                    self.task_data(self.lina, days_preset=preset, weekday_choices=[]),
+                )
+                self.assertEqual(Task.objects.get().weekday_list, days)
+
+    def test_date_range(self):
+        self.client.force_login(self.parent)
+        data = self.task_data(
+            self.lina, when="range", start_date="2026-10-12", end_date="2026-10-16"
+        )
+        self.post(reverse("tasks:manage"), data)
+        task = Task.objects.get()
+        self.assertEqual(
+            (task.start_date, task.end_date),
+            (datetime.date(2026, 10, 12), datetime.date(2026, 10, 16)),
+        )
+        self.assertEqual(task.dates_display, "du 12/10 au 16/10")
+        bad = self.post(reverse("tasks:manage"), dict(data, end_date="2026-10-01"))
+        self.assertIn("end_date", bad.context["form"].errors)
+        missing = self.post(reverse("tasks:manage"), dict(data, start_date=""))
+        self.assertIn("start_date", missing.context["form"].errors)
+        self.assertEqual(Task.objects.count(), 1)
+
+    def test_scheduled_on_respects_weekdays_and_range(self):
+        task = Task.objects.create(
+            person=self.lina,
+            title="Stage",
+            period=Period.MORNING,
+            weekdays=0b0011111,
+            start_date=datetime.date(2026, 10, 12),
+            end_date=datetime.date(2026, 10, 16),
+        )
+        scheduled = Task.objects.for_family(self.family).scheduled_on
+        self.assertIn(task, scheduled(datetime.date(2026, 10, 12)))
+        self.assertNotIn(task, scheduled(datetime.date(2026, 10, 9)))  # avant
+        self.assertNotIn(task, scheduled(datetime.date(2026, 10, 19)))  # après
+        self.assertTrue(task.is_scheduled_on(datetime.date(2026, 10, 16)))
+        self.assertFalse(task.is_scheduled_on(datetime.date(2026, 10, 17)))
+
+    def test_edit_task(self):
+        task = Task.objects.create(person=self.lina, title="Dents", period=Period.MORNING)
+        self.client.force_login(self.parent)
+        page = self.get(reverse("tasks:edit", args=[task.pk]))
+        self.assertContains(page, "Dents")
+        self.post(
+            reverse("tasks:edit", args=[task.pk]),
+            {
+                "title": "Dents (2 min)",
+                "period": "evening",
+                "days_preset": "weekend",
+                "when": "always",
+            },
+        )
+        task.refresh_from_db()
+        self.assertEqual(
+            (task.title, task.period, task.weekday_list), ("Dents (2 min)", "evening", [5, 6])
+        )
+        self.assertEqual(task.person, self.lina)
+
+    def test_reorder_within_person_and_period(self):
+        a, b, c = (
+            Task.objects.create(person=self.lina, title=t, period=Period.MORNING) for t in "ABC"
+        )
+        other_period = Task.objects.create(person=self.lina, title="Soir", period=Period.EVENING)
+        self.client.force_login(self.parent)
+        self.post(reverse("tasks:move_up", args=[c.pk]))
+        self.post(reverse("tasks:move_up", args=[c.pk]))
+        self.post(reverse("tasks:move_up", args=[c.pk]))  # déjà en tête : sans effet
+        self.post(reverse("tasks:move_down", args=[a.pk]))
+        order = Task.objects.filter(period=Period.MORNING).order_by("position", "pk")
+        self.assertEqual([t.title for t in order], ["C", "B", "A"])
+        other_period.refresh_from_db()
+        self.assertEqual(other_period.position, 0)
+        # L'ordre choisi est celui de l'écran du jour.
+        from apps.tasks.selectors import tasks_for_day
+
+        day = datetime.date(2026, 9, 28)
+        titles = [t.title for t in tasks_for_day(self.family, day, period=Period.MORNING)]
+        self.assertEqual(titles, ["C", "B", "A"])
+
+    def test_edit_and_move_other_family_task_is_404(self):
+        task = Task.objects.create(person=self.other_person, title="X", period=Period.MORNING)
+        self.client.force_login(self.parent)
+        for url in (
+            reverse("tasks:edit", args=[task.pk]),
+            reverse("tasks:move_up", args=[task.pk]),
+            reverse("tasks:move_down", args=[task.pk]),
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(self.post(url, {"title": "Piraté"}).status_code, 404)
+        task.refresh_from_db()
+        self.assertEqual(task.title, "X")
+
+    def test_child_cannot_edit_or_reorder(self):
+        task = Task.objects.create(person=self.lina, title="Dents", period=Period.MORNING)
+        self.client.force_login(self.kid)
+        for url in (
+            reverse("tasks:edit", args=[task.pk]),
+            reverse("tasks:move_up", args=[task.pk]),
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(self.post(url, {"title": "X"}).status_code, 403)
 
     def test_child_cannot_manage_tasks(self):
         self.client.force_login(self.kid)

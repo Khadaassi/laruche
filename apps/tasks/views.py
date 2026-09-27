@@ -19,6 +19,7 @@ from .selectors import count_remaining, group_by_period, tasks_for_day
 from .services import set_done
 
 PERSON_PARAM = "personne"
+PERIOD_ORDER = {period: index for index, period in enumerate(Period)}
 SATURDAY = 5
 
 
@@ -86,9 +87,7 @@ def toggle(request, pk):
     Les enfants cochent depuis l'écran partagé (display:toggle).
     """
     today = timezone.localdate()
-    task = get_object_or_404(
-        Task.objects.for_family(request.family).on_weekday(today.weekday()), pk=pk
-    )
+    task = get_object_or_404(Task.objects.for_family(request.family).scheduled_on(today), pk=pk)
     set_done(task, today, request.POST.get("done") == "on", by=request.user)
 
     # Le filtre ne sert qu'à recalculer les compteurs affichés ; il reste
@@ -113,7 +112,7 @@ def toggle(request, pk):
 @require_http_methods(["GET", "POST"])
 @parent_required
 def manage(request):
-    """Réglages → tâches : liste et ajout (parents uniquement)."""
+    """Réglages → tâches : liste (triable), ajout pour une ou plusieurs personnes."""
     form = TaskForm(request.POST or None, family=request.family)
     if request.method == "POST" and form.is_valid():
         form.save()
@@ -125,9 +124,54 @@ def manage(request):
         {
             "nav_active": "settings",
             "form": form,
-            "tasks": tasks.order_by("person__created_at", "person__pk", "period", "position", "pk"),
+            # Par personne, puis dans l'ordre de la journée (pas l'ordre alphabétique
+            # des codes de période), puis dans l'ordre choisi par le parent.
+            "tasks": sorted(
+                tasks.order_by("position", "created_at", "pk"),
+                key=lambda t: (t.person.created_at, t.person_id, PERIOD_ORDER[t.period]),
+            ),
         },
+        status=400 if form.is_bound and form.errors else 200,
     )
+
+
+@require_http_methods(["GET", "POST"])
+@parent_required
+def edit(request, pk):
+    task = get_object_or_404(Task.objects.for_family(request.family), pk=pk)
+    form = TaskForm(request.POST or None, instance=task, family=request.family)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        return redirect("tasks:manage")
+    return render(
+        request,
+        "parent/task_edit.html",
+        {"nav_active": "settings", "form": form, "task": task},
+        status=400 if form.is_bound and form.errors else 200,
+    )
+
+
+@require_POST
+@parent_required
+def move(request, pk, direction):
+    """Monte ou descend une tâche parmi celles de la même personne et période.
+
+    C'est cet ordre qui s'affiche sur l'accueil parent et l'écran partagé.
+    """
+    task = get_object_or_404(Task.objects.for_family(request.family), pk=pk)
+    siblings = list(
+        Task.objects.filter(person=task.person, period=task.period).order_by(
+            "position", "created_at", "pk"
+        )
+    )
+    index = next(i for i, t in enumerate(siblings) if t.pk == task.pk)
+    target = index - 1 if direction == "monter" else index + 1
+    if 0 <= target < len(siblings):
+        siblings[index], siblings[target] = siblings[target], siblings[index]
+    for position, sibling in enumerate(siblings):
+        sibling.position = position
+    Task.objects.bulk_update(siblings, ["position"])
+    return redirect(f"{reverse('tasks:manage')}#task-{task.pk}")
 
 
 @require_POST
