@@ -289,10 +289,10 @@ autre changement : 10 journées complètes = un palier.
 l'affichage de chaque colonne (chargement ou réponse au cochage). Seul l'appel qui le fait
 avancer montre l'encart : une seule fois par journée, même entre deux écrans ou après un
 recochage. Un jour complété depuis le téléphone d'un parent est fêté au prochain affichage
-de l'écran partagé ; le parent voit, lui, une simple annonce statique dans la réponse de son
-cochage (« Journée terminée pour Lina : +1 étoile »), qui ne consomme pas la fête des
-enfants. Si l'étoile du jour fait aussi franchir un palier, un seul encart (celui du palier,
-avec la ligne « Journée terminée : +1 étoile »).
+de l'écran partagé ; le parent voit, lui, la même célébration plein écran dans la réponse
+de son cochage, puis la ligne « Journée terminée pour Lina : +1 étoile », sans consommer la
+fête des enfants. Si l'étoile du jour fait aussi franchir un palier, une seule célébration
+(plein écran, avec « Palier N atteint ! »).
 
 **Solde de départ** (`services.grant_opening_balance(person, amount, reason)`) : reprend
 tel quel un total d'étoiles gagné dans une autre application (pas recalculé, pas

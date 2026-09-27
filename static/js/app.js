@@ -44,6 +44,21 @@ document.addEventListener('alpine:init', () => {
       setTimeout(() => { this.done = true; }, 4500);
     },
   }));
+
+  // « Journée terminée ! » en plein écran : l'animation est en CSS (jouée une fois).
+  // Ici : focus sur « Super ! », fermeture au clic, à Échap, ou seule après 8 s
+  // (un écran partagé ne doit pas rester bloqué si personne ne ferme).
+  Alpine.data('celebrationOverlay', () => ({
+    open: true,
+    init() {
+      this.$nextTick(() => this.$refs.close && this.$refs.close.focus({ preventScroll: true }));
+      this.timer = setTimeout(() => this.close(), 8000);
+    },
+    close() {
+      clearTimeout(this.timer);
+      this.open = false;
+    },
+  }));
 });
 
 // Cases à cocher des tâches : l'état change tout de suite côté client

@@ -65,21 +65,21 @@ class SharedScreenTierTests(SecureClientMixin, TestCase):
 
     def test_crossing_a_tier_celebrates_in_the_toggle_response_once(self, _now):
         first = self.tick()
-        self.assertContains(first, "Palier 1 !")
-        self.assertContains(first, "Bravo Lina, 10 étoiles gagnées !")
-        # La journée terminée est dite dans l'encart du palier, sans second encart.
-        self.assertContains(first, "Journée terminée : +1 étoile")
-        self.assertNotContains(first, "Journée terminée ! +1")
+        # La dernière tâche termine aussi la journée : une seule célébration, plein
+        # écran, qui annonce le palier (pas d'encart de palier en plus).
+        self.assertContains(first, "Journée terminée !")
+        self.assertContains(first, "Palier 1 atteint !")
+        self.assertNotContains(first, "tier-celebration")
         # Décocher / recocher, puis recharger l'écran : pas de doublon.
-        self.assertNotContains(self.tick(done=False), "Palier 1 !")
-        self.assertNotContains(self.tick(), "Palier 1 !")
-        self.assertNotContains(self.get(reverse("display:board")), "Palier 1 !")
+        self.assertNotContains(self.tick(done=False), "Palier 1")
+        self.assertNotContains(self.tick(), "Palier 1")
+        self.assertNotContains(self.get(reverse("display:board")), "Palier 1")
 
     def test_tier_reached_elsewhere_is_celebrated_on_next_board_load(self, _now):
         TaskCompletion.objects.create(task=self.task, date=MONDAY)  # coché par un parent
         award_day_star(self.lina, MONDAY)
-        self.assertContains(self.get(reverse("display:board")), "Palier 1 !")
-        self.assertNotContains(self.get(reverse("display:board")), "Palier 1 !")
+        self.assertContains(self.get(reverse("display:board")), "Palier 1")
+        self.assertNotContains(self.get(reverse("display:board")), "Palier 1")
 
     def test_parent_tasks_never_trigger_a_celebration(self, _now):
         earn(self.parent.person, 30)

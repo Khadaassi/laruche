@@ -17,6 +17,8 @@ from apps.tasks.periods import Period
 
 MONDAY_8AM = datetime.datetime(2026, 9, 28, 6, 0, tzinfo=datetime.UTC)
 MONDAY = datetime.date(2026, 9, 28)
+# Marqueur de la célébration plein écran « Journée terminée ! ».
+OVERLAY = 'x-data="celebrationOverlay"'
 
 
 def tick(task, day=MONDAY):
@@ -148,8 +150,10 @@ class DayStarScreenTests(SecureClientMixin, TestCase):
     def test_last_task_celebrates_once(self, _now):
         self.assertNotContains(self.tick(self.morning), "Journée terminée")
         last = self.tick(self.evening)
-        self.assertContains(last, "Journée terminée ! +1")
+        self.assertContains(last, OVERLAY)
+        self.assertContains(last, "Journée terminée !")
         self.assertContains(last, "Bravo Lina, tout est fait aujourd'hui !")
+        self.assertContains(last, "+1 étoile · 1 étoile")
         self.assertContains(last, "1 étoile")
         # Décocher / recocher, recharger l'écran : ni nouvelle étoile ni nouvelle fête.
         self.assertNotContains(self.tick(self.evening, done=False), "Journée terminée")
@@ -178,19 +182,20 @@ class DayStarScreenTests(SecureClientMixin, TestCase):
         self.tick(self.morning), self.tick(self.evening)
         self.assertFalse(DayStar.objects.exists())
         url = reverse("display:toggle_chore", args=[self.lina.pk, chore.pk])
-        self.assertContains(self.htmx_post(url, {"done": "on"}), "Journée terminée ! +1")
+        self.assertContains(self.htmx_post(url, {"done": "on"}), OVERLAY)
 
     def test_parent_ticking_the_last_task_announces_it_and_the_screen_celebrates(self, _now):
         tick(self.morning)
         self.client.force_login(self.parent)
         url = reverse("tasks:toggle", args=[self.evening.pk])
-        self.assertContains(
-            self.htmx_post(url, {"done": "on"}), "Journée terminée pour Lina : +1 étoile"
-        )
+        response = self.htmx_post(url, {"done": "on"})
+        self.assertContains(response, "Journée terminée pour Lina : +1 étoile")
+        # Le parent voit aussi la célébration plein écran.
+        self.assertContains(response, OVERLAY)
         # La fête des enfants n'est pas consommée par le parent : elle attend l'écran.
         board = self.get(reverse("display:board"))
-        self.assertContains(board, "Journée terminée ! +1")
-        self.assertNotContains(self.get(reverse("display:board")), "Journée terminée ! +1")
+        self.assertContains(board, OVERLAY)
+        self.assertNotContains(self.get(reverse("display:board")), OVERLAY)
 
     def test_parent_other_ticks_announce_nothing(self, _now):
         self.client.force_login(self.parent)
