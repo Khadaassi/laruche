@@ -154,6 +154,26 @@ Les tokens sont aussi exposés en variables CSS (`var(--color-honey)`, etc.) dan
   text-surface-0`.
 - **Progression en alvéoles** (écran partagé) : une alvéole par tâche de la période,
   `sage` si faite, `border` sinon, avec `aria-label` « X sur Y faites ».
+- **Sélecteur interne « Cuisine »** : `parent/_kitchen_tabs.html`, 3 segments égaux
+  (icône + texte), actif `bg-ink text-surface-0`, sinon `border-border-strong bg-surface-0`.
+- **Créneau de menu** : ligne cliquable (≥ 56 px) « Déjeuner / Dîner » + repas ; une recette
+  porte l'alvéole `honey` avec l'icône couverts, un repas libre est du texte seul ; créneau
+  vide = « Ajouter un repas » en `ink-soft`. Jour courant bordé `honey-dark` (comme le semainier).
+- **Carte « Ce soir au menu »** (accueil parent) : `parent/_dinner_card.html`, alvéole miel
+  + couverts, nom du plat en `font-display`, lien « Voir la recette · 30 min ».
+- **Article de courses** : `parent/_shopping_row.html`, même case que les préparatifs
+  (cochée = `sage` + coche + « Acheté » + texte barré). L'origine est **toujours écrite** sous
+  le nom avec son icône : « Menu · Couscous · Tajine », « Habituel · chaque semaine »,
+  « Ajouté à la main ». Deux sections distinctes : « Du menu de la semaine » (alvéole `honey`)
+  et « Habituels et ajouts » (alvéole contour `border-strong` sur `surface-100`). Boutons carrés
+  44 px : « déjà à la maison » (maison + coche, masqué une fois acheté) et « modifier » (crayon).
+- **Question de retransfert** : encart bordé `honey-dark` 2px « Déjà cochés : que faire ? »,
+  deux puces radio (recette `_chip_choices`) **sans choix par défaut** ; erreur en `terracotta`
+  avec `role="alert"` si on valide sans répondre.
+- **Alerte « Le menu a changé »** (écran Courses) : même encart bordé `honey-dark`, bouton
+  primaire « Voir les changements ». Jamais de rouge ni d'animation : c'est une information.
+- **Favori** : icône cœur au trait (`ink`), jamais l'étoile (réservée aux étoiles gagnées),
+  toujours avec le texte « Favoris » / « (favori) ».
 - **Focus** : anneau `honey-dark` 2px décalé de 2px (déjà global via `:focus-visible`).
 - Un état ne repose **jamais** sur la couleur seule : icône et/ou texte en plus.
 

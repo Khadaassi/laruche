@@ -4,8 +4,9 @@ Organisation familiale : semainier, tâches des enfants, menu de la semaine.
 Deux usages : une **vue parent** sur mobile, et un **affichage partagé** sur une
 tablette commune où les enfants voient leurs tâches côte à côte.
 
-> Phase 1 : familles et inscription par code, tâches du jour, accueil parent (mobile)
-> et affichage partagé (tablette). Semaine, menu et courses sont encore « à venir ».
+> Familles et inscription par code, tâches du jour, accueil parent (mobile) et affichage
+> partagé (tablette), école, ménage et semainier, fêtes, étoiles et roue du samedi, et
+> (Phase 4) onglet **Cuisine** : recettes, menu de la semaine et liste de courses.
 
 ## Premiers pas
 

@@ -5,7 +5,8 @@ description: Modèle de domaine de La Ruche (familles, membres, personnes, tâch
 
 # Modèle de domaine — La Ruche
 
-État à la fin de la **Phase 3** (étoiles, roue du samedi). Les règles d'accès qui
+État à la fin de la **Phase 4** (menu de la semaine, recettes, liste de courses).
+Les règles d'accès qui
 s'appliquent à ces modèles sont dans `permissions/SKILL.md`.
 
 ## Vue d'ensemble
@@ -35,6 +36,13 @@ stars.StarSpend (famille, total, motif) ──1:N── stars.StarDebit (enfant,
 
 families.Family ──1:N── saturday.SaturdayActivity (catalogue : saison, lieu, prix, étoiles, dernière fois)
                 └──1:N── saturday.SaturdayPlan (samedi, statut, activité, tirages, dépense d'étoiles)
+
+families.Family ──1:N── meals.Recipe (nom, préparation, favori)
+                │            ├──1:N── RecipeIngredient (nom, quantité, unité)
+                │            └──1:N── RecipeStep (n°, texte)
+                ├──1:N── meals.MealSlot (date, déjeuner/dîner, recette OU repas libre)
+                ├──1:N── shopping.ShoppingItem (article, quantité, unité, origine, état)
+                └──1:1── shopping.ShoppingTransfer (dernière semaine envoyée aux courses)
 ```
 
 | App | Modèle | Rôle |
@@ -56,6 +64,12 @@ families.Family ──1:N── saturday.SaturdayActivity (catalogue : saison, l
 | `stars` | `StarSpend` / `StarDebit` | Dépense d'étoiles de la famille et part de chaque enfant. Les étoiles gagnées ne sont pas stockées. |
 | `saturday` | `SaturdayActivity` | Activité du catalogue : `name`, `season` (toutes / 4 saisons), `place` (sortie / maison), `is_free`, `price` indicatif, `star_cost` (0 = pas d'étoiles), `last_done_on`. Catalogue de départ (18 activités) à la création d'une famille. |
 | `saturday` | `SaturdayPlan` | Un samedi d'une famille (unique `(family, date)`) : `status` (tirage en cours / prévu / fait), activité proposée puis validée, `activity_name` (copie pour l'historique), `spins` (≤ 3), `star_spend`. |
+| `meals` | `Recipe` | Recette de la famille : `name`, `prep_minutes` (facultatif), `is_favorite`. Tri : favoris d'abord, puis par nom. |
+| `meals` | `RecipeIngredient` | Ingrédient : `name`, `quantity` (décimal > 0, **vide = à convenance**), `unit` (liste fermée, voir « Unités »). |
+| `meals` | `RecipeStep` | Étape numérotée : `position` (1, 2, 3…), `text`. Unique `(recipe, position)`. |
+| `meals` | `MealSlot` | Un repas du menu : `date`, `meal` (déjeuner / dîner), `kind` (recette / restes / extérieur / autre), `recipe` (si et seulement si `kind = recette`, contrainte en base), `note` libre. Unique `(family, date, meal)`. Pas de ligne = rien de prévu. |
+| `shopping` | `ShoppingItem` | Article de **la** liste de la famille : `name`, `quantity`, `unit`, `origin` (menu / ajouté à la main), `status` (à acheter / acheté / déjà à la maison), `recurring` (produit habituel, ajouts manuels seulement), `merge_key` et `recipes` (articles du menu). |
+| `shopping` | `ShoppingTransfer` | Dernier transfert menu → courses d'une famille (OneToOne) : `week` (lundi), `transferred_at`. |
 | `display` | `SharedDisplayDevice` | Tablette commune autorisée par un parent. Stocke l'empreinte SHA-256 du jeton, `last_used_at`, `revoked_at`. |
 
 ## Règles métier
@@ -156,8 +170,7 @@ Cette section n'existait pas avant la Phase 2 : elle est créée ici.
 
 - **Onglet dédié « Fêtes »** dans la nav parent, à la place de « Courses » (qui n'était
   qu'une page « à venir ») : la barre reste à 5 entrées lisibles sur téléphone. La liste
-  de cadeaux couvre une partie du besoin « courses » pour les fêtes ; une vraie liste de
-  courses pourra reprendre une place plus tard.
+  de courses est arrivée en Phase 4 dans l'onglet « Cuisine » (voir design-system).
 - **Préparatifs : modèle dédié**, pas `tasks.Task` : une tâche enfant est récurrente
   (jours, période) avec une validation par jour, un préparatif est unique et coché une
   fois pour toutes.
@@ -288,6 +301,101 @@ garnie d'autres activités de la saison, pour le décor seulement.
   date de dernière réalisation de l'activité est mise à jour (report paresseux, comme les
   fêtes annuelles). Un tirage non validé est abandonné une fois le samedi passé.
 
+## Menu, recettes et courses (`meals/`, `shopping/`) — Phase 4
+
+Deux apps : `meals` (recettes, menu) et `shopping` (liste de courses, transfert). La liste
+dépend du menu, jamais l'inverse. Toutes deux portent `family` directement.
+
+### Recettes
+
+- **Étapes = liste ordonnée** (`RecipeStep`, une ligne par étape), pas un bloc de texte.
+  Saisie mobile dans un seul champ « une étape par ligne » (plus simple au doigt qu'un
+  formulaire à lignes multiples sans JS) ; la numérotation tapée à la main (« 1. », « - »)
+  est retirée et les étapes sont renumérotées à l'enregistrement (`Recipe.replace_steps`).
+- **Ingrédients quantifiés** (`quantity` + `unit`) : c'est ce qui permet l'addition aux
+  courses. Ajout / suppression un par un sur la fiche (même pattern que les sous-éléments
+  des fêtes). Quantité vide = « à convenance » (sel, poivre).
+- **Pas de nombre de portions ni de mise à l'échelle** : une recette de famille est écrite
+  pour la famille. À ajouter si le besoin apparaît (multiplier les quantités au transfert).
+- **Supprimer une recette la retire du menu** (`MealSlot.recipe` en CASCADE), après une page
+  de confirmation qui liste les repas concernés. Les articles déjà sur la liste restent.
+- Distinct de `celebrations.RecipeIdea` (idée libre pour une fête, sans ingrédients) : les
+  deux coexistent, sans lien.
+
+### Unités (`meals/units.py`)
+
+Liste fermée : pièce(s), g, kg, ml, cl, l, c. à soupe, c. à café, paquet(s), boîte(s).
+
+- **Conversion simple à l'intérieur d'une grandeur** : masse (g ↔ kg) et volume
+  (ml ↔ cl ↔ l). Rien d'autre ne se convertit (une cuillère de farine n'a pas de poids
+  fiable, une « pièce » d'oignon non plus).
+- **Unités non convertibles pour un même ingrédient → lignes séparées**, pour ne jamais
+  inventer une équivalence : « Farine · 200 g » et « Farine · 2 c. à soupe ».
+- **Unité du résultat** : si toutes les lignes ont la même unité, on la garde
+  (20 cl + 25 cl = 45 cl ; 1 kg + 1 kg = 2 kg). Sinon : kg / l dès 1000 g / 1000 ml,
+  cl pour un volume rond, sinon g / ml (250 g + 1 kg = 1,25 kg ; 25 cl + 0,5 l = 75 cl).
+- **Même ingrédient** = même nom **normalisé** (`normalize_name`) : casse, accents,
+  espaces et « œ » ignorés (« Crème fraîche » = « creme fraiche »). **Pas de gestion des
+  pluriels** (« tomate » ≠ « tomates ») : trop de mots invariables (ananas, pois, radis)
+  pour une règle simple ; mieux vaut saisir le même mot dans les recettes.
+- Ingrédients sans quantité du même nom → une seule ligne sans quantité.
+
+### Menu de la semaine
+
+- Deux créneaux par jour, **déjeuner et dîner**. Chacun : une recette de la famille, ou un
+  repas libre (**restes**, **extérieur**, **autre** + texte obligatoire), avec une précision
+  facultative (« Restes · du couscous »). Choisir « Rien de prévu » supprime la ligne.
+- Vue semaine avec navigation `?semaine=AAAA-MM-JJ`, **même pattern que le semainier**
+  (`household.views.requested_monday`, gabarit `parent/_week_nav.html`). Assemblage partagé
+  parent / écran partagé : `meals/week.py` (`build_menu_week`).
+- **Accueil parent : carte « Ce soir au menu »** (`dinner_of`), avec lien vers la recette et
+  sa durée ; sans dîner prévu, lien direct vers le créneau du soir.
+- Écran partagé : onglet **Menu** en lecture seule (`/affichage/menu/`), une colonne par jour.
+
+### Liste de courses et transfert menu → courses (`shopping/transfer.py`)
+
+- **Une seule liste par famille** (pas d'historique de listes) : c'est l'usage réel au
+  magasin. Deux origines, affichées dans **deux sections distinctes** avec leur libellé :
+  « Du menu de la semaine » (avec les recettes concernées) et « Habituels et ajouts ».
+- **Produits habituels** = ajout manuel coché « Produit habituel » (`recurring`). « Retirer
+  les articles achetés » supprime les achats, sauf les habituels qui **repassent « à
+  acheter »** : la liste par défaut se reconstitue d'elle-même chaque semaine.
+- **« Déjà à la maison »** (articles du menu) : l'article quitte la liste active pour une
+  section repliée, **sans être supprimé** ni toucher au menu. Le transfert suivant le
+  retrouve et le laisse de côté. « Remettre à acheter » le fait revenir.
+- **Transfert = aperçu puis confirmation**, jamais d'écriture directe
+  (`/courses/envoyer-le-menu/?semaine=…`) : `week_needs` additionne les ingrédients des
+  recettes de la semaine (une recette prévue deux fois compte deux fois), `build_plan`
+  compare aux articles « menu » existants (retrouvés par `merge_key` = nom normalisé +
+  grandeur) et range chaque ligne :
+  | Situation | Effet à la confirmation |
+  |---|---|
+  | Nouvel ingrédient | ajouté « à acheter » |
+  | Article **à acheter**, quantité changée | quantité mise à jour (listé dans l'aperçu) |
+  | Article **acheté ou « à la maison »**, même quantité | inchangé, reste coché (dit dans l'aperçu) |
+  | Article **acheté ou « à la maison »**, **quantité changée** | **conflit : choix obligatoire** |
+  | Article à acheter / à la maison qui n'est plus au menu | retiré de la liste (listé) |
+  | Article acheté qui n'est plus au menu | gardé coché (vous l'avez acheté) |
+  | Produit ajouté à la main | **jamais touché**, même s'il porte le même nom |
+- **Retransfert sur un article déjà coché — comportement explicite** : pour chaque conflit,
+  l'aperçu affiche « Acheté : 7 · au menu maintenant : 10 » et deux boutons sans valeur par
+  défaut, **« Garder coché »** (la quantité suit le menu, l'article reste acheté) ou
+  **« Remettre à acheter »**. Sans réponse, rien n'est écrit et la question est reposée
+  (400). On ne demande rien pour un article coché dont la quantité n'a pas changé : le
+  redemander à chaque envoi serait du bruit, et l'aperçu dit qu'il reste coché.
+  « À la maison » suit la même règle que « acheté » (même risque : 2 boîtes à la maison,
+  3 au menu).
+- `apply_transfer` recalcule le plan **sous verrou de la famille** : si le menu ou la liste
+  a changé entre l'aperçu et la confirmation et qu'un nouveau conflit apparaît, il est
+  refusé (`MissingDecision`) et reposé, jamais tranché en silence.
+- L'écran Courses signale « **Le menu a changé** » quand le menu de la semaine du dernier
+  envoi (si elle n'est pas passée) donnerait un plan avec des changements.
+- Un article du menu modifié à la main (quantité) garde sa `merge_key` : le transfert
+  suivant proposera la quantité du menu (visible dans l'aperçu). Un article du menu
+  supprimé revient au transfert suivant s'il est toujours au menu (« À la maison » est
+  fait pour le mettre de côté).
+- Le cochage d'un article est optimiste (HTMX, 204), comme les préparatifs de fêtes.
+
 ## Choix techniques documentés
 
 **Authentification : vues maison sur `django.contrib.auth`, pas django-allauth.**
@@ -372,5 +480,5 @@ HTMX envoie l'état voulu (`hx-swap="none"`) et la réponse ne remplace que les 
 ## Évolutions prévues
 
 - Moteur de routines personnalisables (Phase 2) : remplacera ou enrichira `Task`.
-- Semainier, menu, courses : pages « à venir » dans la nav parent.
+- Menu : portions et mise à l'échelle des quantités ; rayons du magasin pour trier la liste.
 - Paliers d'étoiles : s'appuieront sur l'historique `TaskCompletion`.

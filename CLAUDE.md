@@ -6,11 +6,12 @@ samedi…). Projet repris **de zéro** : ne jamais réutiliser de code de l'anci
 
 ## Phase actuelle
 
-**Phase 3 — étoiles et roue du samedi.** Après la Phase 1 (familles, tâches du jour,
-accueil parent, écran partagé) et la Phase 2 (école, ménage/semainier, fêtes) : étoiles
-gagnées par les enfants (pot commun) et roue des activités du samedi.
+**Phase 4 — menu de la semaine et liste de courses.** Après la Phase 1 (familles, tâches
+du jour, accueil parent, écran partagé), la Phase 2 (école, ménage/semainier, fêtes) et la
+Phase 3 (étoiles, roue du samedi) : recettes à ingrédients quantifiés, menu déjeuner/dîner,
+liste de courses avec transfert du menu (quantités additionnées, choix explicite au
+retransfert), le tout sous l'onglet parent « Cuisine ».
 Modèle et choix documentés dans `.claude/skills/domain-model/SKILL.md`.
-Menu est encore une page « à venir ».
 
 ## Stack
 
@@ -31,7 +32,7 @@ Menu est encore une page « à venir ».
 ```
 config/                 réglages, urls, wsgi/asgi (settings.py unique, piloté par env)
 apps/
-  core/                 transverse : /healthz/, pages « à venir », tests des gabarits/sécurité
+  core/                 transverse : /healthz/, tests des gabarits/sécurité
   accounts/             accounts.User, connexion par e-mail, inscription par code famille
   families/             Family, FamilyMembership, Person ; access.py (décorateurs d'accès), réglages
   tasks/                Task, TaskCompletion, périodes, accueil parent, cochage
@@ -41,6 +42,8 @@ apps/
   celebrations/         Celebration, CelebrationTodo, GiftItem, RecipeIdea
   stars/                StarSpend, StarDebit (étoiles gagnées déduites des validations)
   saturday/             SaturdayActivity, SaturdayPlan, tirage et roue
+  meals/                Recipe (ingrédients, étapes), MealSlot (menu), unités et conversions
+  shopping/             ShoppingItem, ShoppingTransfer, transfert menu → courses
 templates/
   base.html             squelette HTML commun (polices, CSS, HTMX, Alpine, CSRF)
   layouts/
@@ -129,4 +132,4 @@ npm run check:tokens                      # tokens conformes à la charte
 
 - `.claude/skills/design-system/SKILL.md` — avant tout gabarit, CSS ou animation
 - `.claude/skills/permissions/SKILL.md` — avant toute vue, queryset, formulaire, endpoint HTMX
-- `.claude/skills/domain-model/SKILL.md` — avant tout modèle ou migration (Phase 1)
+- `.claude/skills/domain-model/SKILL.md` — avant tout modèle ou migration

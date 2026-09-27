@@ -77,6 +77,23 @@ le serveur refuse une activité que le pot ne peut pas payer. La limite de 3 tir
 samedi est comptée côté serveur et ne se contourne pas en changeant de filtres ; un
 tirage en cours ne peut pas être annulé (seul un plan validé l'est, étoiles remboursées).
 
+### Menu, recettes et courses (Phase 4)
+
+| Donnée / action | Parent | Enfant (compte) / appareil partagé |
+|---|---|---|
+| Menu de la semaine | Lecture + écriture (`/menu/`, créneaux) | **Lecture seule** : onglet « Menu » de l'écran partagé (`/affichage/menu/`), noms des repas seulement |
+| Recettes (ingrédients, étapes, favoris) | Lecture + écriture (`/recettes/…`) | Aucun accès (le menu affiche seulement le nom) |
+| Liste de courses, transfert du menu | Lecture + écriture (`/courses/…`) | **Aucun accès** : pas d'onglet, pas de lien, et toutes les URL refusées |
+| Carte « Ce soir au menu » | Accueil parent | — |
+
+Choix : les courses ne concernent pas les enfants (aucun intérêt, et rien à y cocher
+depuis la tablette) ; les leur montrer ajouterait un écran sans usage. Toutes les vues
+`meals` et `shopping` sont `parent_required` (403 pour un compte enfant, redirection vers
+la connexion pour l'appareil partagé, qui n'a pas de session). Les recettes proposées dans
+le formulaire d'un créneau sont filtrées par famille (recette d'une autre famille → formulaire
+invalide), et `MealSlot.clean()` revérifie la famille de la recette. Le transfert ne lit que
+le menu et les articles de la famille de la requête (`for_family`).
+
 ### Un seul chemin d'accès enfant : l'écran partagé
 
 Usage réel : les enfants n'ont pas d'appareil individuel. Ils partagent **un même écran**
@@ -86,12 +103,12 @@ colonnes de **tous** les enfants de la famille.
 
 | Accès | Ce qui s'affiche | Colonnes cochables |
 |---|---|---|
-| Appareil partagé (jeton) | Écran partagé (Aujourd'hui, Semaine, Fêtes) | Toutes (les enfants se partagent l'écran) |
+| Appareil partagé (jeton) | Écran partagé (Aujourd'hui, Semaine, Fêtes, Menu, Samedi) | Toutes (les enfants se partagent l'écran) |
 | Compte enfant connecté | Le même écran partagé | **Uniquement la sienne** (les autres en lecture seule, refusées côté serveur en 403) |
 | Parent connecté | Vue parent ; écran partagé en aperçu | Toutes |
 
 Un compte enfant qui ouvre une page parent (`/`) est redirigé vers `/affichage/` ; les
-autres pages parent (réglages, tâches, semaine, menu, courses) lui renvoient 403. Il n'y a
+autres pages parent (réglages, tâches, semaine, menu, recettes, courses) lui renvoient 403. Il n'y a
 pas d'implémentation parallèle « compte enfant » : même vue, même gabarit, même endpoint
 de cochage que l'appareil partagé ; seule la règle « quelles colonnes sont cochables »
 dépend du visiteur (`request.tickable_person_id`).
@@ -146,11 +163,13 @@ un compte enfant y accède aussi, avec sa seule colonne cochable (voir §2).
     `SchoolDayOverride.objects.for_family`, `HouseholdChore.objects.for_family`,
     `Celebration.objects.for_family`, et `CelebrationTodo / GiftItem / RecipeIdea
     .objects.for_family` (filtrés via la fête), `SaturdayActivity.objects.for_family`,
-    `SaturdayPlan.objects.for_family` ; les étoiles sont toujours calculées pour les
+    `SaturdayPlan.objects.for_family`, `Recipe / MealSlot / ShoppingItem
+    .objects.for_family` et `RecipeIngredient / RecipeStep.objects.for_family` (filtrés via
+    la recette) ; les étoiles sont toujours calculées pour les
     enfants de la famille de la requête (`stars.selectors.balances(family)`) ;
   - `apps.display.access.can_tick(request, person)` : la colonne de cette personne
     est-elle cochable par ce visiteur (vérifié dans `display:toggle`, 403 sinon).
-- Les vues parent (`/`, réglages, tâches, pages « à venir », `tasks:toggle`) sont
+- Les vues parent (`/`, réglages, tâches, menu, recettes, courses, `tasks:toggle`) sont
   réservées aux parents.
 - **Tests obligatoires** pour toute vue touchant des données familiales :
   - accès d'une autre famille → 404 ;
