@@ -6,10 +6,11 @@ samedi…). Projet repris **de zéro** : ne jamais réutiliser de code de l'anci
 
 ## Phase actuelle
 
-**Phase 1 — fondations métier.** Familles, membres, personnes, tâches du jour minimales,
-inscription par code famille, accueil parent mobile et affichage partagé tablette.
+**Phase 2 — école, ménage, fêtes.** En plus de la Phase 1 (familles, tâches du jour,
+accueil parent, écran partagé) : cantine/APC/étude par enfant avec exceptions datées,
+« à préparer pour demain », ménage et semainier, fêtes (préparatifs, cadeaux, recettes).
 Modèle et choix documentés dans `.claude/skills/domain-model/SKILL.md`.
-Semaine, Menu et Courses sont des pages « à venir ».
+Menu est encore une page « à venir ».
 
 ## Stack
 
@@ -34,7 +35,10 @@ apps/
   accounts/             accounts.User, connexion par e-mail, inscription par code famille
   families/             Family, FamilyMembership, Person ; access.py (décorateurs d'accès), réglages
   tasks/                Task, TaskCompletion, périodes, accueil parent, cochage
-  display/              SharedDisplayDevice, écran partagé tablette
+  display/              SharedDisplayDevice, écran partagé tablette (aujourd'hui, semaine, fêtes)
+  school/               SchoolDaySchedule, SchoolDayOverride (cantine, APC, étude)
+  household/            HouseholdChore, ChoreCompletion, semainier
+  celebrations/         Celebration, CelebrationTodo, GiftItem, RecipeIdea
 templates/
   base.html             squelette HTML commun (polices, CSS, HTMX, Alpine, CSRF)
   layouts/

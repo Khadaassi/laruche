@@ -1,0 +1,56 @@
+{% extends "layouts/shared_display.html" %}
+{% block title %}Fêtes — La Ruche{% endblock %}
+
+{% block top_nav %}{% include "shared/_top_nav.html" with tab="celebrations" %}{% endblock %}
+{% block main_attrs %}x-data="periodClock" data-reload-in="{{ reload_in }}"{% endblock %}
+
+{% comment %}
+Lecture seule. Préparatifs et idées de recettes des fêtes à venir.
+Jamais la liste de cadeaux : les enfants lisent cet écran (surprises).
+{% endcomment %}
+{% block columns %}
+  {% for celebration in celebrations %}
+    <section class="flex snap-start flex-col gap-space-4 rounded-md border border-border bg-surface-0 p-space-6" aria-labelledby="celebration-{{ celebration.pk }}">
+      <header class="flex items-center gap-space-4">
+        <span class="hex flex h-14 w-14 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="celebration" icon_size="h-7 w-7" %}</span>
+        <div>
+          <h2 id="celebration-{{ celebration.pk }}" class="text-2xl">{{ celebration.name }}</h2>
+          <p class="text-lg text-ink-soft">{{ celebration.date|date:"l j F"|capfirst }}{% if celebration.date == today %} · aujourd'hui{% endif %}</p>
+        </div>
+      </header>
+
+      <div>
+        <h3 class="mb-space-2 font-display text-lg">Préparatifs</h3>
+        <ul class="space-y-space-2">
+          {% for todo in celebration.todos.all %}
+            <li class="flex items-center gap-space-2 text-lg">
+              {% if todo.done %}
+                <span class="hex flex h-7 w-7 shrink-0 items-center justify-center bg-sage text-surface-0">{% include "components/_check.html" %}</span>
+                <span class="text-ink-soft line-through">{{ todo.title }}</span><span class="sr-only">(fait)</span>
+              {% else %}
+                <span class="hex block h-7 w-7 shrink-0 bg-honey" aria-hidden="true"></span>
+                <span>{{ todo.title }}</span>
+              {% endif %}
+              {% if todo.assignee %}<span class="ml-auto text-base text-ink-soft">{{ todo.assignee.name }}</span>{% endif %}
+            </li>
+          {% empty %}
+            <li class="text-ink-soft">Rien pour l'instant.</li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {% if celebration.recipes.all %}
+        <div>
+          <h3 class="mb-space-2 font-display text-lg">Idées de recettes</h3>
+          <ul class="space-y-1 text-lg">
+            {% for recipe in celebration.recipes.all %}<li>{{ recipe.name }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </section>
+  {% empty %}
+    <div class="rounded-md border border-border bg-surface-0 p-space-8 text-center">
+      <p class="text-lg font-medium">Aucune fête à venir pour l'instant.</p>
+    </div>
+  {% endfor %}
+{% endblock %}

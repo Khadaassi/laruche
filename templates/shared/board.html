@@ -1,29 +1,7 @@
 {% extends "layouts/shared_display.html" %}
 {% block title %}Affichage partagé — La Ruche{% endblock %}
 
-{% block top_nav %}
-  <div class="flex min-h-16 flex-wrap items-center gap-x-space-6 gap-y-space-2 py-space-2">
-    <div class="flex items-center gap-space-2">
-      {% include "components/_logo.html" with size="h-10 w-10" %}
-      <span class="font-display text-2xl font-semibold">{{ request.family.name }}</span>
-    </div>
-    <p class="text-lg text-ink-soft">{{ today|date:"l j F"|capfirst }}</p>
-    <p class="rounded-sm bg-honey px-space-4 py-1 font-display text-lg font-semibold text-ink">{{ period.label }}</p>
-    <div class="ml-auto">
-      {% if request.display_device %}
-        <a href="{% url 'display:exit' %}" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong px-space-4 font-medium">Mode parent</a>
-      {% elif request.tickable_person_id is None %}
-        <a href="{% url 'tasks:home' %}" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong px-space-4 font-medium">Retour à mon compte</a>
-      {% else %}
-        {# Compte enfant : pas de vue parent, seulement la déconnexion. #}
-        <form method="post" action="{% url 'accounts:logout' %}">
-          {% csrf_token %}
-          <button type="submit" class="inline-flex min-h-11 items-center rounded-sm border border-border-strong px-space-4 font-medium">Se déconnecter</button>
-        </form>
-      {% endif %}
-    </div>
-  </div>
-{% endblock %}
+{% block top_nav %}{% include "shared/_top_nav.html" with tab="board" %}{% endblock %}
 
 {# Recharge une seule fois, au changement de période (voir app.js). #}
 {% block main_attrs %}x-data="periodClock" data-reload-in="{{ reload_in }}"{% endblock %}

@@ -1,0 +1,15 @@
+{# Icône au trait (currentColor). Paramètres : name, icon_size. Décorative : le texte l'accompagne toujours. #}
+<svg class="{{ icon_size|default:'h-4 w-4' }} shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  {% if name == "canteen" %}<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"/><path d="M17 21V3c-2 1-3 4-3 8h3"/>
+  {% elif name == "packed" %}<path d="M4 11c0-4 4-6 8-6s8 2 8 6"/><path d="M4 11h16v3H4z"/><path d="M5 14v4h14v-4"/>
+  {% elif name == "other" %}<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>
+  {% elif name == "none" %}<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+  {% elif name == "study" %}<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/><path d="M9 7h6"/>
+  {% elif name == "gift" %}<rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-2-4-6-4-6-1.5S10 8 12 8c2 0 6 1 6-1.5S14 4 12 8z"/>
+  {% elif name == "chore" %}<path d="M14 3 8 13"/><path d="M5 13h8l2 8H3z"/><path d="M7 17v4M11 17v4"/>
+  {% elif name == "celebration" %}<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/>
+  {% elif name == "no_school" %}<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
+  {% elif name == "lunch_elsewhere" %}<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/>
+  {% elif name == "tomorrow" %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+  {% else %}<circle cx="12" cy="12" r="3"/>{% endif %}
+</svg>

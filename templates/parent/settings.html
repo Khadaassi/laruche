@@ -46,8 +46,12 @@
     </section>
 
     <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="tasks-title">
-      <h2 id="tasks-title" class="mb-space-2 text-lg">Tâches</h2>
-      <a href="{% url 'tasks:manage' %}" class="flex min-h-11 items-center justify-between font-medium underline">Gérer les tâches du quotidien <span aria-hidden="true">→</span></a>
+      <h2 id="tasks-title" class="mb-space-2 text-lg">Organisation</h2>
+      <ul class="divide-y divide-border">
+        <li><a href="{% url 'tasks:manage' %}" class="flex min-h-11 items-center justify-between font-medium underline">Tâches du quotidien des enfants <span aria-hidden="true">→</span></a></li>
+        <li><a href="{% url 'school:manage' %}" class="flex min-h-11 items-center justify-between font-medium underline">Cantine, APC et étude <span aria-hidden="true">→</span></a></li>
+        <li><a href="{% url 'household:manage' %}" class="flex min-h-11 items-center justify-between font-medium underline">Ménage <span aria-hidden="true">→</span></a></li>
+      </ul>
     </section>
 
     <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="display-title">

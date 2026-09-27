@@ -18,9 +18,7 @@ def healthz(request):
 
 # Sections de la nav parent pas encore construites : page « à venir ».
 COMING_SOON = {
-    "week": ("Semaine", "Le semainier de la famille arrive bientôt."),
     "menu": ("Menu", "Le menu de la semaine arrive bientôt."),
-    "shopping": ("Courses", "La liste de courses partagée arrive bientôt."),
 }
 
 

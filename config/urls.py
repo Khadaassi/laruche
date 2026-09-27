@@ -9,4 +9,7 @@ urlpatterns = [
     path("", include("apps.families.urls")),
     path("", include("apps.tasks.urls")),
     path("", include("apps.display.urls")),
+    path("", include("apps.school.urls")),
+    path("", include("apps.household.urls")),
+    path("", include("apps.celebrations.urls")),
 ]

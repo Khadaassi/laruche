@@ -75,6 +75,9 @@ INSTALLED_APPS = [
     "apps.families",
     "apps.tasks",
     "apps.display",
+    "apps.school",
+    "apps.household",
+    "apps.celebrations",
 ]
 
 MIDDLEWARE = [
