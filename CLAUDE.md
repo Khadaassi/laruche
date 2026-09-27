@@ -18,7 +18,8 @@ Semaine, Menu et Courses sont des pages « à venir ».
 - **Tailwind CSS 3** (`tailwind.config.js`, source `assets/css/app.css` → `static/css/app.css`)
 - **HTMX 2** pour les interactions serveur sans rechargement (drag & drop, roue du samedi…)
 - **Alpine.js 3, build CSP** (`@alpinejs/csp`) pour l'interactivité légère côté client
-- **django-csp 4**, **WhiteNoise** (statiques), **gunicorn**
+- **django-csp 4**, **WhiteNoise** (statiques), **gunicorn** (1 worker : requis par le cache
+  mémoire du rate-limit), **django-ratelimit** (connexion, code famille, sortie tablette)
 - Hébergement : **Render** gratuit (`render.yaml`, `Dockerfile`), déployé à chaque merge sur
   `main` si la CI est verte ; sonde `/livez/` sans base (ne jamais sonder `/healthz/` en boucle : Neon)
 - Qualité : **ruff** (lint + format), tests Django (`manage.py test`)

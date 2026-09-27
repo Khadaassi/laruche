@@ -9,9 +9,9 @@ tablette commune où les enfants voient leurs tâches côte à côte.
 
 ## Premiers pas
 
-1. `/inscription/` avec un **nouveau code** (8 caractères minimum) et un nom de famille :
-   la famille est créée et vous en êtes le premier parent.
-2. Les autres membres s'inscrivent avec **le même code** : ils arrivent en « enfant » ;
+1. `/inscription/` → **Créer une nouvelle famille** avec un nom : vous en êtes le premier
+   parent, et un code d'invitation est généré (visible dans **Réglages**).
+2. Les autres membres choisissent **Rejoindre une famille existante** avec ce code : ils arrivent en « enfant » ;
    un parent peut les passer en parent depuis **Réglages**.
 3. **Réglages** : ajouter des enfants sans compte, puis **Gérer les tâches du quotidien**.
 4. Sur la tablette commune : se connecter en parent, **Réglages → Affichage partagé →

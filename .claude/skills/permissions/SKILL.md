@@ -93,6 +93,9 @@ un compte enfant y accède aussi, avec sa seule colonne cochable (voir §2).
 - Vérification **côté serveur** à chaque requête, y compris les endpoints HTMX
   (un fragment HTMX est une vue comme une autre). Masquer un bouton ne protège rien.
 - Écritures uniquement en POST (CSRF actif, jeton passé à HTMX par `hx-headers`).
+- Toute saisie de secret (mot de passe, code famille) passe par un garde de
+  `apps/core/ratelimit.py` (connexion, rejoindre une famille, sortie du mode tablette) ;
+  une nouvelle entrée de ce type doit en ajouter un, avec son test.
 - Centraliser les contrôles plutôt que de les réécrire dans chaque vue :
   - `apps.families.access.family_member_required` : compte connecté rattaché à une famille ;
     pose `request.family`, `request.membership`, `request.person` (403 sans famille) ;

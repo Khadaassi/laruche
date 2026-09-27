@@ -32,12 +32,14 @@ display.SharedDisplayDevice ──N:1── families.Family   (jeton d'appareil,
 
 ## Règles métier
 
-- **Inscription avec code famille** (`families.services.join_or_create_family`) :
-  - code connu → le compte rejoint la famille ;
-  - code inconnu → la famille est créée, **à condition** qu'un nom de famille soit
-    fourni (une faute de frappe dans un code existant ne crée donc pas une famille
-    fantôme) et que le code fasse **au moins 8 caractères** (il suffit à rejoindre
-    la famille : il ne doit pas être devinable).
+- **Inscription** : deux choix explicites dans le formulaire.
+  - **Créer une famille** (`families.services.create_family`) : un nom suffit ; le
+    **code d'invitation est toujours généré** (10 caractères aléatoires, alphabet de 31
+    signes sans 0/O/1/I/L, soit ~8·10¹⁴ possibilités). Il n'est jamais choisi par
+    l'utilisateur, donc jamais devinable ; il s'affiche dans les réglages du parent.
+  - **Rejoindre une famille** (`families.services.join_family`) : avec le code donné par
+    un parent. Un code inconnu est refusé (rien n'est créé) et compte comme une
+    tentative pour le rate-limit.
 - **Premier inscrit = parent**, les suivants entrent en `child`. La ligne `Family` est
   verrouillée (`select_for_update`) pendant l'inscription pour éviter deux « premiers ».
   Si une famille existe mais n'a plus aucun membre, le prochain inscrit redevient parent.
@@ -84,6 +86,22 @@ ses gabarits et du JS à adapter à la CSP stricte, pour des fonctions dont on n
 besoin aujourd'hui (connexion sociale, MFA). On garde `LoginView`/`LogoutView` de Django,
 un `LoginForm` qui normalise l'e-mail et une vue d'inscription. À reconsidérer si l'on
 veut la vérification d'e-mail, la réinitialisation de mot de passe ou la connexion Google.
+
+**Rate-limit (django-ratelimit), sur les échecs seulement** (`apps/core/ratelimit.py`) :
+
+| Action | Limites (une seule saturée suffit à bloquer) |
+|---|---|
+| Connexion | 20 échecs / 15 min par IP ; 10 échecs / 15 min par compte visé (e-mail) |
+| Rejoindre une famille (code inconnu) | 10 / h par IP ; 100 / h au total (toutes IP) |
+| Sortie du mode tablette (mot de passe parent) | 10 / 15 min par IP ; 5 / 15 min par appareil |
+
+Une réussite ne consomme rien. Une fois bloqué, le mot de passe n'est même pas vérifié
+(réponse 429). L'IP vient de la première entrée de `X-Forwarded-For` derrière Render,
+qui peut être falsifiée : c'est pourquoi chaque action a aussi une limite indépendante
+de l'IP (compte, appareil, ou plafond global qui borne la recherche d'un code). Les
+compteurs vivent dans le cache mémoire du processus : valable avec **un seul worker
+gunicorn sur une seule instance** ; ils repartent à zéro au redémarrage. Au-delà,
+passer à un cache partagé (Redis).
 
 **`username` = e-mail normalisé.** Évite un modèle `User` sans `username` (migration
 lourde) tout en garantissant l'unicité de l'e-mail par la contrainte existante.
