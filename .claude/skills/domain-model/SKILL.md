@@ -71,6 +71,7 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 | `shopping` | `ShoppingItem` | Article de **la** liste de la famille : `name`, `quantity`, `unit`, `origin` (menu / ajouté à la main), `status` (à acheter / acheté / déjà à la maison), `recurring` (produit habituel, ajouts manuels seulement), `merge_key` et `recipes` (articles du menu). |
 | `shopping` | `ShoppingTransfer` | Dernier transfert menu → courses d'une famille (OneToOne) : `week` (lundi), `transferred_at`. |
 | `absences` | `Absence` | Période d'absence : `person` (vide = **toute la famille**), `kind` (vacances / malade / absent), `note`, `start_date` ≤ `end_date` (bornes incluses). |
+| `agenda` | `Event` | Rendez-vous / activité à heure fixe : `title`, `people` (M2M, vide = toute la famille), `start_time` < `end_time`, `weekdays` + `start_date` / `end_date` (une seule fois = début = fin), `location`. |
 | `display` | `SharedDisplayDevice` | Tablette commune autorisée par un parent. Stocke l'empreinte SHA-256 du jeton, `last_used_at`, `revoked_at`. |
 
 ## Règles métier
@@ -184,10 +185,11 @@ Cette section n'existait pas avant la Phase 2 : elle est créée ici.
   s'y coche exactement comme ses tâches du jour (même règle de colonne, compte dans
   « X tâches restantes »). Une tâche de ménage **assignée à un parent** n'apparaît jamais
   sur l'écran partagé et n'y est pas cochable.
-- **Semainier** (`/semaine/`, remplace la page « à venir ») : un bloc par jour avec fêtes,
-  école de chaque enfant et ménage (cochable par un parent). Navigation de semaine en
+- **Semainier** (`/semaine/`) : **grille horaire** des 7 jours (voir « Rendez-vous et
+  grille horaire »), puis le détail du jour choisi (`?jour=AAAA-MM-JJ`) avec fêtes,
+  absences, école, ménage (cochable par un parent) et dîner. Navigation de semaine en
   semaine (`?semaine=AAAA-MM-JJ`). Même assemblage (`household/week.py`) pour la version
-  tablette en lecture seule (`/affichage/semaine/`, une colonne par jour).
+  tablette en lecture seule (`/affichage/semaine/`, même grille en grand).
 
 ## Fêtes (`celebrations/`)
 
@@ -442,6 +444,30 @@ modification des tâches : les tâches restent telles quelles et reprennent seul
   (lien « Vacances, malade ? Changer une journée »).
 - Pas de calendrier des vacances scolaires importé : les dates se saisissent (une fois par
   période de vacances).
+
+## Rendez-vous et grille horaire (`agenda/`)
+
+- **Nouveau type, à côté des tâches** : un rendez-vous (dentiste, foot, piano, marché) a
+  une **heure de début et de fin** ; les tâches du quotidien et le ménage restent sans heure
+  (période matin/midi/soir pour les tâches) et ne sont pas placés dans la grille.
+- **Qui** : toute la famille (`people` vide) ou une ou plusieurs personnes (un seul
+  rendez-vous partagé, pas une copie par personne).
+- **Répétition** : *une seule fois* (une date) ou *chaque semaine* avec les mêmes
+  raccourcis de jours et la même période facultative que les tâches (`ScheduleFieldsMixin`).
+  Supprimer un rendez-vous répété supprime **toute la série** (pas d'exception par
+  occurrence : à ajouter si le besoin apparaît). Une absence ne masque pas un rendez-vous
+  (le médecin quand on est malade reste affiché).
+- **Grille** (`agenda/grid.py`) : 7 h → 22 h par demi-heures (30 lignes). Le serveur calcule
+  ligne, hauteur et voie de chaque bloc ; le gabarit n'a que des classes Tailwind
+  (`row-start-N`, `row-span-N`, `col-start-N`, safelist dans `tailwind.config.js`), aucun
+  style inline. Les rendez-vous qui se chevauchent sont **côte à côte** (3 voies au plus).
+  Un rendez-vous qui déborde de 7 h–22 h est collé au bord, avec son heure réelle.
+- **Les 7 jours toujours visibles, sans défilement horizontal**, à toutes les largeurs :
+  sur téléphone les colonnes sont étroites (titre tronqué, icônes seules dans la ligne
+  « journée »), les libellés apparaissent à partir de `md` ; le détail complet est dans le
+  panneau du jour choisi.
+- Ligne **« Jour »** au-dessus des heures : fêtes, absences, ménage (nombre ; noms sur
+  l'écran partagé), dîner du menu.
 
 ## Choix techniques documentés
 

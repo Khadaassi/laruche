@@ -103,6 +103,15 @@ le menu et les articles de la famille de la requête (`for_family`).
 Toutes les vues `absences` sont `parent_required` ; les personnes proposées sont filtrées par
 famille et `Absence.clean()` revérifie la famille. Point d'entrée : `Absence.objects.for_family`.
 
+### Rendez-vous
+
+| Donnée / action | Parent | Enfant (compte) / appareil partagé |
+|---|---|---|
+| Rendez-vous | Lecture + écriture (Semaine → Ajouter / toucher un bloc) | **Lecture seule** : grille de `/affichage/semaine/`, sans lien de modification |
+
+Vues `agenda` en `parent_required`, `Event.objects.for_family`, personnes proposées filtrées
+par famille (une personne d'une autre famille rend le formulaire invalide).
+
 ### Un seul chemin d'accès enfant : l'écran partagé
 
 Usage réel : les enfants n'ont pas d'appareil individuel. Ils partagent **un même écran**
