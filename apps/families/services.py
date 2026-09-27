@@ -2,29 +2,18 @@
 
 from django.db import IntegrityError, transaction
 
-from .models import Family, FamilyMembership, Person, Role, next_avatar_color
+from .models import (
+    Family,
+    FamilyMembership,
+    Person,
+    Role,
+    next_avatar_color,
+    normalize_invite_code,
+)
 
 
-@transaction.atomic
-def join_or_create_family(*, user, invite_code: str, family_name: str = "") -> FamilyMembership:
-    """Rattache `user` à la famille du code, ou la crée si le code est inconnu.
-
-    Le premier membre d'une famille devient parent ; les suivants entrent en
-    enfant (un parent les promeut ensuite depuis les réglages). La ligne de la
-    famille est verrouillée pour que deux inscriptions simultanées ne
-    produisent pas deux « premiers » parents.
-    L'appelant a déjà normalisé le code et vérifié qu'un nom est fourni en
-    cas de création (voir accounts.forms.SignupForm).
-    """
-    family = Family.objects.select_for_update().filter(invite_code=invite_code).first()
-    if family is None:
-        try:
-            with transaction.atomic():
-                family = Family.objects.create(name=family_name, invite_code=invite_code)
-        except IntegrityError:
-            # Créée entre-temps par une inscription concurrente : on la rejoint.
-            family = Family.objects.select_for_update().get(invite_code=invite_code)
-
+def _add_member(user, family: Family) -> FamilyMembership:
+    """Premier membre d'une famille = parent ; les suivants entrent en enfant."""
     role = Role.CHILD if family.memberships.exists() else Role.PARENT
     membership = FamilyMembership.objects.create(user=user, family=family, role=role)
     Person.objects.create(
@@ -35,6 +24,40 @@ def join_or_create_family(*, user, invite_code: str, family_name: str = "") -> F
         avatar_color=next_avatar_color(family),
     )
     return membership
+
+
+@transaction.atomic
+def create_family(*, user, name: str) -> FamilyMembership:
+    """Crée une famille dont `user` est le premier parent.
+
+    Le code d'invitation est toujours généré (aléatoire, 10 caractères) :
+    il n'est jamais choisi par l'utilisateur, donc jamais devinable.
+    """
+    for _ in range(5):
+        try:
+            with transaction.atomic():
+                family = Family.objects.create(name=name, invite_code="")
+            break
+        except IntegrityError:  # collision de code, improbable : on retire
+            continue
+    else:
+        raise RuntimeError("Impossible de générer un code d'invitation unique.")
+    return _add_member(user, family)
+
+
+@transaction.atomic
+def join_family(*, user, invite_code: str) -> FamilyMembership | None:
+    """Rattache `user` à la famille du code ; None si le code est inconnu.
+
+    La ligne de la famille est verrouillée pour que deux inscriptions
+    simultanées dans une famille vide ne produisent pas deux « premiers ».
+    Les suivants entrent en enfant (un parent les promeut depuis les réglages).
+    """
+    code = normalize_invite_code(invite_code)
+    family = Family.objects.select_for_update().filter(invite_code=code).first() if code else None
+    if family is None:
+        return None
+    return _add_member(user, family)
 
 
 @transaction.atomic

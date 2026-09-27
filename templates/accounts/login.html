@@ -5,6 +5,7 @@
   <h1 class="mb-space-4 text-2xl">Connexion</h1>
   <form method="post" class="space-y-space-4" novalidate>
     {% csrf_token %}
+    {% if blocked %}<p class="font-medium text-terracotta" role="alert">{{ blocked }}</p>{% endif %}
     {% for error in form.non_field_errors %}<p class="font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
     {% include "components/_field.html" with field=form.username %}
     {% include "components/_field.html" with field=form.password %}

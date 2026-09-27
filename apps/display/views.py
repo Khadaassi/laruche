@@ -6,6 +6,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.accounts.forms import LoginForm
+from apps.core.ratelimit import BLOCKED_MESSAGE, EXIT_DISPLAY
 from apps.families.access import get_membership, parent_required
 from apps.families.models import Person
 from apps.tasks.periods import PERIOD_PHRASES, current_period, seconds_until_next_period
@@ -112,14 +113,33 @@ def exit_display(request):
     if device is None:
         return redirect("display:board")
     form = LoginForm(request, data=request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        user = form.get_user()
-        membership = get_membership(user)
-        if membership is not None and membership.is_parent and membership.family == device.family:
-            device.revoke()
-            login(request, user)
-            response = redirect("tasks:home")
-            delete_device_cookie(response)
-            return response
-        form.add_error(None, "Seul un parent de cette famille peut quitter l'affichage partagé.")
+    # Limite par appareil (le jeton, pas l'IP) : on ne teste pas les mots de
+    # passe des parents en boucle depuis la tablette.
+    target = str(device.pk)
+    if request.method == "POST":
+        if EXIT_DISPLAY.is_blocked(request, target=target):
+            # Formulaire vierge : le mot de passe n'est même pas vérifié.
+            return render(
+                request,
+                "shared/exit.html",
+                {"form": LoginForm(request), "blocked": BLOCKED_MESSAGE},
+                status=429,
+            )
+        if form.is_valid():
+            user = form.get_user()
+            membership = get_membership(user)
+            if (
+                membership is not None
+                and membership.is_parent
+                and membership.family == device.family
+            ):
+                device.revoke()
+                login(request, user)
+                response = redirect("tasks:home")
+                delete_device_cookie(response)
+                return response
+            form.add_error(
+                None, "Seul un parent de cette famille peut quitter l'affichage partagé."
+            )
+        EXIT_DISPLAY.record_failure(request, target=target)
     return render(request, "shared/exit.html", {"form": form})

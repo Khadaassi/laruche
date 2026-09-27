@@ -4,13 +4,29 @@
 {% block content %}
   <h1 class="mb-space-2 text-2xl">Créer un compte</h1>
   <p class="mb-space-4 text-ink-soft">
-    Avec le code d'une famille existante, vous la rejoignez. Avec un nouveau code, vous
-    créez votre famille et en devenez le premier parent.
+    Créez votre famille (vous en serez le premier parent, un code d'invitation est
+    généré pour les autres membres), ou rejoignez-en une avec le code donné par un parent.
   </p>
   <form method="post" class="space-y-space-4" novalidate>
     {% csrf_token %}
+    {% if blocked %}<p class="font-medium text-terracotta" role="alert">{{ blocked }}</p>{% endif %}
     {% for error in form.non_field_errors %}<p class="font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
-    {% for field in form %}{% include "components/_field.html" %}{% endfor %}
+    {% include "components/_field.html" with field=form.first_name %}
+    {% include "components/_field.html" with field=form.email %}
+    {% include "components/_field.html" with field=form.password %}
+    <fieldset>
+      <legend class="mb-1 font-medium">{{ form.mode.label }}</legend>
+      <div class="grid grid-cols-1 gap-space-2">
+        {% for radio in form.mode %}
+          <label class="flex min-h-11 cursor-pointer items-center rounded-sm border border-border-strong px-space-4 has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">
+            {{ radio.tag }}<span>{{ radio.choice_label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% for error in form.mode.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+    </fieldset>
+    {% include "components/_field.html" with field=form.family_name %}
+    {% include "components/_field.html" with field=form.invite_code %}
     <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Créer mon compte</button>
   </form>
 {% endblock %}

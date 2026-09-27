@@ -194,6 +194,25 @@ class DeviceTests(SecureClientMixin, TestCase):
         self.assertTrue(SharedDisplayDevice.objects.get().is_active)
         self.assertNotIn("_auth_user_id", self.client.session)
 
+    def test_exit_attempts_are_limited_per_device(self, _now):
+        self.activate()
+        for n in range(5):
+            self.post(
+                reverse("display:exit"),
+                {"username": self.parent.email, "password": "faux"},
+                REMOTE_ADDR=f"10.0.0.{n}",
+            )
+        # Bloqué même avec le bon mot de passe et une autre IP : l'appareil reste.
+        response = self.post(
+            reverse("display:exit"),
+            {"username": self.parent.email, "password": PASSWORD},
+            REMOTE_ADDR="192.0.2.7",
+        )
+        self.assertEqual(response.status_code, 429)
+        self.assertContains(response, "Trop de tentatives", status_code=429)
+        self.assertTrue(SharedDisplayDevice.objects.get().is_active)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
     def test_exit_with_parent_password_revokes_device(self, _now):
         self.activate()
         response = self.post(

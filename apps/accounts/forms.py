@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm
 
-from apps.families.models import INVITE_CODE_MIN_LENGTH, Family, normalize_invite_code
+from apps.families.models import Family, normalize_invite_code
 
 from .models import User
 
@@ -17,7 +17,8 @@ class StyledFormMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            field.widget.attrs.setdefault("class", FIELD_CLASSES)
+            if not isinstance(field.widget, forms.RadioSelect):
+                field.widget.attrs.setdefault("class", FIELD_CLASSES)
 
 
 def normalize_email(raw: str) -> str:
@@ -41,6 +42,10 @@ class LoginForm(StyledFormMixin, AuthenticationForm):
         return normalize_email(self.cleaned_data["username"])
 
 
+MODE_CREATE = "create"
+MODE_JOIN = "join"
+
+
 class SignupForm(StyledFormMixin, forms.Form):
     first_name = forms.CharField(
         label="Prénom", max_length=40, widget=forms.TextInput(attrs={"autocomplete": "given-name"})
@@ -54,19 +59,32 @@ class SignupForm(StyledFormMixin, forms.Form):
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
         help_text="12 caractères minimum.",
     )
-    invite_code = forms.CharField(
-        label="Code famille",
-        max_length=32,
-        widget=forms.TextInput(attrs={"autocomplete": "off", "autocapitalize": "characters"}),
-        help_text="Le code donné par un parent pour rejoindre sa famille, "
-        "ou un nouveau code pour créer la vôtre.",
+    mode = forms.ChoiceField(
+        label="Votre famille",
+        choices=[
+            (MODE_CREATE, "Créer une nouvelle famille"),
+            (MODE_JOIN, "Rejoindre une famille existante"),
+        ],
+        initial=MODE_CREATE,
+        widget=forms.RadioSelect(attrs={"class": "sr-only"}),
     )
     family_name = forms.CharField(
         label="Nom de la famille",
         max_length=80,
         required=False,
-        help_text="Seulement si vous créez une nouvelle famille.",
+        help_text="Pour une nouvelle famille. Son code d'invitation sera créé "
+        "automatiquement et visible dans vos réglages.",
     )
+    invite_code = forms.CharField(
+        label="Code famille",
+        max_length=32,
+        required=False,
+        widget=forms.TextInput(attrs={"autocomplete": "off", "autocapitalize": "characters"}),
+        help_text="Pour rejoindre une famille : le code donné par un parent.",
+    )
+
+    # Vrai si le formulaire a été refusé pour un code inconnu (compté par le rate-limit).
+    invalid_code = False
 
     def clean_email(self):
         email = normalize_email(self.cleaned_data["email"])
@@ -82,23 +100,18 @@ class SignupForm(StyledFormMixin, forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        code = cleaned.get("invite_code")
-        if code and not Family.objects.filter(invite_code=code).exists():
-            # Code inconnu = création. On exige un nom (une faute de frappe dans
-            # un code existant ne crée donc pas une famille par erreur) et un
-            # code assez long pour ne pas être deviné.
-            if not cleaned.get("family_name", "").strip():
-                self.add_error(
-                    "family_name",
-                    "Ce code ne correspond à aucune famille. Vérifiez-le, "
-                    "ou donnez un nom pour créer une nouvelle famille.",
-                )
-            if len(code) < INVITE_CODE_MIN_LENGTH:
-                self.add_error(
-                    "invite_code",
-                    f"Pour créer une famille, choisissez un code d'au moins "
-                    f"{INVITE_CODE_MIN_LENGTH} caractères.",
-                )
+        mode = cleaned.get("mode")
+        if mode == MODE_CREATE:
+            cleaned["family_name"] = cleaned.get("family_name", "").strip()
+            if not cleaned["family_name"]:
+                self.add_error("family_name", "Donnez un nom à votre famille.")
+        elif mode == MODE_JOIN:
+            code = cleaned.get("invite_code", "")
+            if not code:
+                self.add_error("invite_code", "Saisissez le code donné par un parent.")
+            elif not Family.objects.filter(invite_code=code).exists():
+                self.invalid_code = True
+                self.add_error("invite_code", "Ce code ne correspond à aucune famille.")
         password = cleaned.get("password")
         if password:
             candidate = User(
@@ -111,8 +124,3 @@ class SignupForm(StyledFormMixin, forms.Form):
             except forms.ValidationError as error:
                 self.add_error("password", error)
         return cleaned
-
-    @property
-    def creates_family(self) -> bool:
-        code = self.cleaned_data.get("invite_code")
-        return bool(code) and not Family.objects.filter(invite_code=code).exists()

@@ -7,9 +7,6 @@ from django.db import models
 # Alphabet des codes générés : sans 0/O ni 1/I/L, pour être dicté sans erreur.
 INVITE_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 INVITE_CODE_LENGTH = 10
-# Longueur minimale d'un code choisi à la création d'une famille : le code
-# suffit pour rejoindre la famille, il ne doit pas être devinable.
-INVITE_CODE_MIN_LENGTH = 8
 
 
 def normalize_invite_code(raw: str) -> str:
