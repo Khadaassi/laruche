@@ -41,6 +41,9 @@ display.SharedDisplayDevice ──N:1── families.Family   (jeton d'appareil,
 - **Premier inscrit = parent**, les suivants entrent en `child`. La ligne `Family` est
   verrouillée (`select_for_update`) pendant l'inscription pour éviter deux « premiers ».
   Si une famille existe mais n'a plus aucun membre, le prochain inscrit redevient parent.
+- **Compte enfant** : aucune vue dédiée ; il utilise l'écran partagé (voir « Choix
+  techniques »), et n'a accès ni aux réglages, ni à la gestion des tâches, ni à
+  l'activation d'un appareil.
 - **Promotion** : un parent passe un compte `child` en `parent` depuis les réglages
   (`promote_to_parent`) ; le `role` de sa `Person` suit.
 - **Code d'invitation régénérable** par un parent (10 caractères aléatoires, alphabet
@@ -110,6 +113,16 @@ un cookie `HttpOnly`/`Secure`/`SameSite=Lax` d'un an contenant un jeton aléatoi
 son empreinte est en base), la session parent est fermée. L'appareil n'a que le privilège
 « enfant ». Sortie : « Mode parent » → mot de passe d'un parent de **cette** famille, qui
 révoque l'appareil. Un parent connecté peut aussi ouvrir `/affichage/` en aperçu.
+
+**Un seul chemin d'accès enfant : l'écran partagé (Phase 1.1).** Les enfants partagent un
+même écran, en même temps ; aucun usage individuel sur un appareil personnel n'est prévu.
+Un compte enfant n'a donc pas d'écran à lui : il est envoyé sur `/affichage/`, voit les
+colonnes de tous les enfants de la famille et ne coche que la sienne. Pas de seconde
+implémentation (vue « mono-enfant » ou accueil enfant) : même vue, même gabarit, même
+endpoint que l'appareil partagé ; seule la liste des colonnes cochables change. Les
+comptes enfants continuent d'exister parce que l'inscription par code les crée (tout
+inscrit après le premier entre en `child`) et qu'ils restent la porte d'entrée avant une
+promotion en parent ; le rôle `Person.role = child` sans compte reste le cas courant.
 
 **Mobile vs tablette : deux URL, pas de détection user-agent.** `/` (vue parent) et
 `/affichage/` (écran partagé). Les adaptations à la largeur passent par les breakpoints

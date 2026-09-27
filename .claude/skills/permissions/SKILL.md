@@ -30,11 +30,31 @@ l'appartenance (`FamilyMembership.role`) vaut `child`.
 | Rôle | Lecture | Écriture |
 |---|---|---|
 | **Parent** (compte connecté) | Toutes les données de sa famille | Toutes les données de sa famille (semainier, menu, tâches, enfants, réglages) |
-| **Enfant** | Ses données + le partagé de la famille en **lecture seule** (semainier, menu) | **Uniquement ses propres données** (cocher/décocher ses tâches) |
+| **Enfant** (compte connecté) | **L'écran partagé** : toutes les colonnes de tous les enfants de la famille, + semainier/menu en **lecture seule** | **Uniquement sa propre colonne** (cocher/décocher ses tâches) |
 | **Affichage partagé** (appareil) | Profils enfants de la famille + semainier/menu en lecture | Actions « enfant » pour un enfant de la famille, rien d'autre |
 
-Un enfant ne peut jamais : modifier le semainier ou le menu, créer/supprimer une tâche,
-agir sur les données d'un frère ou d'une sœur hors affichage partagé, accéder aux réglages.
+Un compte enfant ne peut jamais : modifier le semainier ou le menu, créer/supprimer une
+tâche, cocher la colonne d'un frère ou d'une sœur, accéder aux réglages, à la gestion des
+tâches ni à l'activation d'un appareil partagé.
+
+### Un seul chemin d'accès enfant : l'écran partagé
+
+Usage réel : les enfants n'ont pas d'appareil individuel. Ils partagent **un même écran**
+(tablette ou ordinateur), en même temps, chacun cochant ses tâches. Il n'existe donc
+**pas de vue « mono-enfant »** : tout accès enfant affiche l'écran partagé, avec les
+colonnes de **tous** les enfants de la famille.
+
+| Accès | Ce qui s'affiche | Colonnes cochables |
+|---|---|---|
+| Appareil partagé (jeton) | Écran partagé | Toutes (les enfants se partagent l'écran) |
+| Compte enfant connecté | Le même écran partagé | **Uniquement la sienne** (les autres en lecture seule, refusées côté serveur en 403) |
+| Parent connecté | Vue parent ; écran partagé en aperçu | Toutes |
+
+Un compte enfant qui ouvre une page parent (`/`) est redirigé vers `/affichage/` ; les
+autres pages parent (réglages, tâches, semaine, menu, courses) lui renvoient 403. Il n'y a
+pas d'implémentation parallèle « compte enfant » : même vue, même gabarit, même endpoint
+de cochage que l'appareil partagé ; seule la règle « quelles colonnes sont cochables »
+dépend du visiteur (`request.tickable_person_id`).
 
 ## 3. Mode « affichage partagé » (tablette commune)
 
@@ -66,7 +86,7 @@ seulement que tout reste dans la famille et au niveau de privilège « enfant »
 
 Implémentation : `apps/display/access.py` (cookie `laruche_display`, décorateur
 `shared_display_required`). Un parent connecté peut aussi ouvrir l'écran en aperçu ;
-un compte enfant n'y a pas accès (403).
+un compte enfant y accède aussi, avec sa seule colonne cochable (voir §2).
 
 ## 4. Implémentation attendue
 
@@ -77,9 +97,12 @@ un compte enfant n'y a pas accès (403).
   - `apps.families.access.family_member_required` : compte connecté rattaché à une famille ;
     pose `request.family`, `request.membership`, `request.person` (403 sans famille) ;
   - `apps.families.access.parent_required` : idem + rôle parent (403 sinon) ;
-  - `apps.display.access.shared_display_required` : appareil partagé valide ou parent ;
-  - `apps.tasks.permissions.can_toggle` : parent → toute tâche de la famille, enfant →
-    uniquement les siennes.
+  - `apps.display.access.shared_display_required` : appareil partagé valide, parent ou
+    compte enfant ; pose `request.tickable_person_id` (None = toutes les colonnes) ;
+  - `apps.display.access.can_tick(request, person)` : la colonne de cette personne
+    est-elle cochable par ce visiteur (vérifié dans `display:toggle`, 403 sinon).
+- Les vues parent (`/`, réglages, tâches, pages « à venir », `tasks:toggle`) sont
+  réservées aux parents.
 - **Tests obligatoires** pour toute vue touchant des données familiales :
   - accès d'une autre famille → 404 ;
   - enfant/affichage partagé tentant une écriture interdite → 403 ou 404 ;
