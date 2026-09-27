@@ -1,0 +1,89 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Réglages — La Ruche{% endblock %}
+
+{% block header %}{% include "parent/_header.html" with title="Réglages" subtitle=request.family.name %}{% endblock %}
+
+{% block content %}
+<div class="space-y-space-6">
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="family-title">
+      <h2 id="family-title" class="mb-space-2 text-lg">Code famille</h2>
+      <p class="text-ink-soft">À donner aux membres qui créent leur compte. Ils arrivent en « enfant » ; vous pouvez ensuite les passer en parent.</p>
+      <p class="my-space-4 select-all rounded-sm bg-surface-100 px-space-4 py-3 text-center font-display text-2xl font-semibold tracking-widest">{{ request.family.invite_code }}</p>
+      <form method="post" action="{% url 'families:regenerate_code' %}">
+        {% csrf_token %}
+        <button type="submit" class="w-full rounded-lg border border-border-strong px-space-6 py-3 font-medium">Générer un nouveau code</button>
+      </form>
+    </section>
+
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="members-title">
+      <h2 id="members-title" class="mb-space-2 text-lg">Membres</h2>
+      <ul class="divide-y divide-border">
+        {% for person in people %}
+          <li class="flex min-h-14 items-center gap-space-4 py-space-2">
+            {% include "components/_avatar.html" with size="h-10 w-10" %}
+            <div class="flex-1">
+              <p class="font-medium">{{ person.name }}</p>
+              <p class="text-sm text-ink-soft">{{ person.get_role_display }} · {% if person.user %}a un compte{% else %}sans compte{% endif %}</p>
+            </div>
+            {% if person.user and person.user.membership.role == "child" %}
+              <form method="post" action="{% url 'families:promote' person.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="rounded-sm border border-border-strong px-space-2 py-2 text-sm font-medium">Passer en parent</button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      <form method="post" action="{% url 'families:add_child' %}" class="mt-space-4 space-y-space-2 border-t border-border pt-space-4">
+        {% csrf_token %}
+        <p class="font-medium">Ajouter un enfant sans compte</p>
+        <label for="{{ child_form.name.id_for_label }}" class="sr-only">{{ child_form.name.label }}</label>
+        <div class="flex gap-space-2">
+          {{ child_form.name }}
+          <button type="submit" class="shrink-0 rounded-lg bg-honey px-space-4 font-medium text-ink hover:bg-honey-dark">Ajouter</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="tasks-title">
+      <h2 id="tasks-title" class="mb-space-2 text-lg">Tâches</h2>
+      <a href="{% url 'tasks:manage' %}" class="flex min-h-11 items-center justify-between font-medium underline">Gérer les tâches du quotidien <span aria-hidden="true">→</span></a>
+    </section>
+
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="display-title">
+      <h2 id="display-title" class="mb-space-2 text-lg">Affichage partagé</h2>
+      <p class="text-ink-soft">Transforme cet appareil (tablette de la cuisine…) en écran des enfants. Votre session parent y sera fermée ; pour en sortir, il faudra votre mot de passe.</p>
+      <form method="post" action="{% url 'display:activate' %}" class="mt-space-4 space-y-space-2">
+        {% csrf_token %}
+        {% include "components/_field.html" with field=device_form.name %}
+        <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Activer sur cet appareil</button>
+      </form>
+      {% if devices %}
+        <h3 class="mb-space-2 mt-space-6 font-display text-base">Appareils actifs</h3>
+        <ul class="divide-y divide-border">
+          {% for device in devices %}
+            <li class="flex items-center gap-space-4 py-space-2">
+              <div class="flex-1">
+                <p class="font-medium">{{ device.name }}</p>
+                <p class="text-sm text-ink-soft">Activé le {{ device.created_at|date:"j F Y" }}{% if device.last_used_at %} · vu {{ device.last_used_at|timesince }}{% endif %}</p>
+              </div>
+              <form method="post" action="{% url 'display:revoke' device.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="rounded-sm border border-border-strong px-space-2 py-2 text-sm font-medium">Révoquer</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="account-title">
+    <h2 id="account-title" class="mb-space-2 text-lg">Mon compte</h2>
+    <p class="mb-space-4 text-ink-soft">{{ request.user.email }} · {{ request.membership.get_role_display }}</p>
+    <form method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="w-full rounded-lg border border-border-strong px-space-6 py-3 font-medium">Se déconnecter</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

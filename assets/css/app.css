@@ -34,3 +34,26 @@
     @apply outline outline-2 outline-offset-2 outline-honey-dark;
   }
 }
+
+@layer components {
+  /* Alvéole : hexagone à pointe en haut, sur une boîte carrée. */
+  .hex {
+    clip-path: polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%);
+  }
+}
+
+/* Micro-feedback de la coche (design-system, règle 1) : léger rebond du badge
+   au moment où l'on coche. `:focus` limite l'effet au geste de l'utilisateur
+   (pas au chargement de la page). Désactivé en mouvement réduit, système ou
+   interrupteur (data-motion="reduced" sur <html>). */
+@keyframes hex-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-motion='reduced']) .task-row:has(input:checked:focus) .task-badge {
+    animation: hex-pop 150ms ease-out;
+  }
+}

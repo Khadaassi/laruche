@@ -1,0 +1,7 @@
+{# Champ de formulaire : label, widget, aide, erreurs reliées par aria-describedby. #}
+<div class="space-y-1">
+  <label for="{{ field.id_for_label }}" class="block font-medium">{{ field.label }}</label>
+  {{ field }}
+  {% if field.help_text %}<p id="{{ field.auto_id }}_help" class="text-sm text-ink-soft">{{ field.help_text }}</p>{% endif %}
+  {% for error in field.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
+</div>

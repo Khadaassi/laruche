@@ -1,0 +1,15 @@
+{# Compteur + alvéoles de progression d'une colonne. `oob` pour la mise à jour HTMX. #}
+<div id="child-status-{{ column.person.pk }}" {% if oob %}hx-swap-oob="true"{% endif %}>
+  <p class="text-lg text-ink-soft" aria-live="polite">
+    {% if not column.tasks %}Rien à faire pour l'instant
+    {% elif column.remaining %}{{ column.remaining }} tâche{{ column.remaining|pluralize }} restante{{ column.remaining|pluralize }}
+    {% else %}<span class="font-semibold text-sage">Tout est fait !</span>{% endif %}
+  </p>
+  {% if column.tasks %}
+    <div class="mt-1 flex flex-wrap gap-1" role="img" aria-label="{{ column.done }} sur {{ column.tasks|length }} faites">
+      {% for task in column.tasks %}
+        <span class="hex block h-5 w-5 {% if task.is_done %}bg-sage{% else %}bg-border{% endif %}"></span>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
