@@ -173,6 +173,77 @@ Cette section n'existait pas avant la Phase 2 : elle est créée ici.
 - Suppression d'une fête : page de confirmation (pas de `confirm()` JS), supprime aussi
   ses préparatifs, cadeaux et recettes.
 
+## Étoiles (`stars/`) — socle posé en Phase 3
+
+Le brief de la Phase 3 supposait un système d'étoiles existant ; il n'y avait que
+l'affichage « Fait ! +1 » et la progression **du jour** en alvéoles. Le socle est posé
+ici, au plus simple et fidèle à ce que l'interface promettait déjà :
+
+- **Gain** : +1 étoile par tâche du jour cochée **par/pour un enfant** (`TaskCompletion`
+  d'une tâche d'une `Person` enfant) et +1 par tâche de ménage d'un enfant cochée
+  (`ChoreCompletion`). Les étoiles **gagnées ne sont pas stockées** : elles se déduisent
+  des validations existantes. Décocher retire l'étoile, sans double comptabilité.
+- **Dépense** : un registre (`StarSpend` + une ligne `StarDebit` par enfant). Solde d'un
+  enfant = gagnées − dépensées. Un décochage après une dépense peut rendre un solde
+  négatif (cas marginal) : le pot ne compte que les soldes positifs.
+- **Palier** : tous les 10 étoiles **gagnées** (`STAR_TIER`). Le palier mesure l'effort
+  cumulé et ne recule jamais quand on dépense : dépenser pour la famille ne fait pas
+  « perdre » un palier (aucune mécanique culpabilisante).
+
+## Roue du samedi (`saturday/`)
+
+### Financement d'une activité familiale en étoiles — choix retenu
+
+**Pot commun, contribution proportionnelle au solde de chacun.**
+
+- Le **pot** = somme des soldes positifs des enfants de la famille. Une activité qui coûte
+  N étoiles est **possible si le pot ≥ N**, sinon elle est exclue du tirage et refusée à la
+  validation.
+- À la validation (« On y va ! »), N est réparti entre les enfants **au prorata de leur
+  solde** (méthode du plus fort reste, arrondi équitable, jamais plus que le solde d'un
+  enfant). Exemple : soldes 10 / 5 / 0, coût 6 → 4 / 2 / 0.
+- Chaque contribution est enregistrée (qui a donné combien), visible par les parents et
+  affichée sur le plan (« Lina 4 ★, Noah 2 ★ »).
+
+**Pourquoi** :
+- Une activité familiale concerne tout le monde : un pot commun la rend accessible dès que
+  la famille a, ensemble, assez d'étoiles.
+- Une part **égale** exigée de chaque enfant bloquerait toute la fratrie à cause d'un seul
+  (et le désignerait) : contraire à la règle « jamais d'animation ni de mécanique
+  culpabilisante ». Au prorata, un enfant à 0 étoile ne bloque rien et ne « doit » rien.
+- Pas de saisie de contributions volontaires : ce serait une négociation à chaque samedi.
+  Le calcul est automatique, prévisible et explicable aux enfants.
+- Le solde de chacun reste individuel (ses étoiles, son palier) : rien ne change pour
+  l'existant.
+- **Annuler** un plan (avant le samedi) **rembourse** exactement les contributions.
+
+### Tirage
+
+- **Samedi visé** : aujourd'hui si on est samedi, sinon le prochain samedi.
+- **Saison** du samedi visé (hémisphère nord, saisons météorologiques) : printemps
+  mars–mai, été juin–août, automne septembre–novembre, hiver décembre–février. Les
+  activités « toutes saisons » sont toujours éligibles.
+- **Filtres** : coût (gratuit / peu importe / j'ai des étoiles à dépenser) et lieu
+  (sortie / maison / peu importe). « Gratuit » = ni prix ni coût en étoiles. Une activité
+  en étoiles n'est éligible que si le pot peut la payer.
+- **Pondération contre les répétitions** : fenêtre de **8 semaines**. Poids = 1 si jamais
+  faite ou faite il y a 8 semaines et plus, sinon proportionnel au temps écoulé, avec un
+  plancher de 0,1 (faite la semaine dernière ≈ 10 fois moins probable, jamais impossible :
+  si c'est la seule éligible, elle sort quand même).
+- **Relances** : 3 tirages maximum par samedi (le premier + **2 relances**), comptés
+  côté serveur quel que soit le changement de filtres. La 4e tentative est refusée avec un
+  message clair. Annuler un plan validé rouvre le tirage (décision explicite d'un parent).
+- Le serveur tire ; le navigateur ne fait qu'animer la roue vers le résultat déjà choisi
+  (aucune triche possible en rechargeant). Pas d'IA : tirage pondéré classique.
+
+### Plan du samedi
+
+- « On y va ! » → plan validé (et étoiles déduites), affiché sur l'accueil parent et sur
+  l'écran partagé (lecture seule pour les enfants).
+- Une fois le samedi passé, ou sur « C'est fait », le plan passe dans l'historique et la
+  date de dernière réalisation de l'activité est mise à jour (report paresseux, comme les
+  fêtes annuelles). Un tirage non validé est abandonné une fois le samedi passé.
+
 ## Choix techniques documentés
 
 **Authentification : vues maison sur `django.contrib.auth`, pas django-allauth.**
