@@ -1,4 +1,5 @@
 import datetime
+import re
 from unittest import mock
 
 from django.test import TestCase
@@ -40,6 +41,15 @@ class SaturdayViewsTests(SecureClientMixin, TestCase):
         self.assertContains(response, "On y va !")
         self.assertContains(response, "Retourne (2 relances restantes)")
         self.assertNotContains(response, "Intrus")
+
+    def test_wheel_rotation_is_machine_readable(self, _now):
+        # Locale française : un float s'afficherait « 1912,5 » et le JS lirait NaN,
+        # la roue s'arrêterait alors à 0° au lieu de l'activité tirée.
+        self.client.force_login(self.parent)
+        html = self.spin().content.decode()
+        raw = re.search(r'data-rotation="([^"]+)"', html).group(1)
+        self.assertRegex(raw, r"^\d+(\.\d+)?$")
+        self.assertGreaterEqual(float(raw), 5 * 360)
 
     def test_third_reroll_is_blocked_with_a_clear_message(self, _now):
         self.client.force_login(self.parent)
