@@ -64,9 +64,12 @@
    style). Célébration à l'arrêt de la roue : c'est une vraie réussite
    (design-system, règle 2). Aucune boucle infinie. */
 @layer components {
+  /* Pivot = centre de la roue. fill-box (boîte englobante du groupe, centrée sur
+     l'origine) et non view-box : avec view-box, « 50 % 50 % » désigne le point
+     (100, 100) du repère et la roue tourne en orbite hors du cadre. */
   .wheel-rotor {
-    transform-box: view-box;
-    transform-origin: 50% 50%;
+    transform-box: fill-box;
+    transform-origin: center;
   }
 
   .confetti {
