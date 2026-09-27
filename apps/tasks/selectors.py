@@ -54,16 +54,31 @@ def group_by_period(tasks, current: Period) -> list[PeriodGroup]:
 
 @dataclass
 class PersonColumn:
+    """Colonne d'une personne : ses tâches, et (écran partagé) son ménage du jour.
+
+    `chores` contient des occurrences de ménage (`is_done`), comptées comme
+    les tâches dans « X tâches restantes » et dans la progression.
+    """
+
     person: object
     tasks: list[Task] = field(default_factory=list)
+    chores: list = field(default_factory=list)
+
+    @property
+    def progress(self) -> list[bool]:
+        return [t.is_done for t in self.tasks] + [c.is_done for c in self.chores]
+
+    @property
+    def total(self) -> int:
+        return len(self.progress)
 
     @property
     def remaining(self) -> int:
-        return count_remaining(self.tasks)
+        return self.progress.count(False)
 
     @property
     def done(self) -> int:
-        return len(self.tasks) - self.remaining
+        return self.total - self.remaining
 
 
 def group_by_person(people, tasks) -> list[PersonColumn]:

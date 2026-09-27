@@ -199,3 +199,74 @@ class HouseholdViewsTests(SecureClientMixin, TestCase):
             response = self.get(url)
             self.assertEqual(response.status_code, 302)
             self.assertIn(reverse("accounts:login"), response["Location"])
+
+
+@mock.patch("django.utils.timezone.now", return_value=MONDAY_8AM)
+class ChildChoreOnSharedScreenTests(SecureClientMixin, TestCase):
+    """Un enfant coche sa tâche de ménage sur sa colonne, comme ses tâches du jour."""
+
+    def setUp(self):
+        self.family = make_family()
+        self.parent = join(self.family, "Sam")
+        self.kid = join(self.family, "Lina")
+        self.noah = make_child_profile(self.family, "Noah")
+        self.own = chore(self.family, self.kid.person, "Vider le lave-vaisselle", days=(0,))
+        self.sibling = chore(self.family, self.noah, "Mettre la table", days=(0,))
+        self.parents = chore(self.family, self.parent.person, "Lessive", days=(0,))
+        self.tomorrow = chore(self.family, self.kid.person, "Poubelles", days=(1,))
+
+    def toggle(self, person, c, done=True):
+        url = reverse("display:toggle_chore", args=[person.pk, c.pk])
+        return self.htmx_post(url, {"done": "on"} if done else {})
+
+    def test_child_ticks_own_chore(self, _now):
+        self.client.force_login(self.kid)
+        response = self.toggle(self.kid.person, self.own)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'id="child-status-{self.kid.person.pk}" hx-swap-oob="true"')
+        self.assertTrue(ChoreCompletion.objects.filter(chore=self.own, date=MONDAY).exists())
+        self.toggle(self.kid.person, self.own, done=False)
+        self.assertFalse(ChoreCompletion.objects.exists())
+
+    def test_child_cannot_tick_sibling_chore(self, _now):
+        self.client.force_login(self.kid)
+        self.assertEqual(self.toggle(self.noah, self.sibling).status_code, 403)
+        # Ni en le faisant passer par sa propre colonne.
+        self.assertEqual(self.toggle(self.kid.person, self.sibling).status_code, 404)
+        self.assertFalse(ChoreCompletion.objects.exists())
+
+    def test_child_cannot_tick_parent_chore(self, _now):
+        self.client.force_login(self.kid)
+        self.assertEqual(self.toggle(self.kid.person, self.parents).status_code, 404)
+        self.assertEqual(self.toggle(self.parent.person, self.parents).status_code, 404)
+        self.assertFalse(ChoreCompletion.objects.exists())
+
+    def test_shared_device_cannot_tick_parent_chore_either(self, _now):
+        self.client.force_login(self.parent)
+        self.post(reverse("display:activate"), {"name": "Tablette"})
+        self.assertEqual(self.toggle(self.parent.person, self.parents).status_code, 404)
+        self.assertEqual(self.toggle(self.noah, self.sibling).status_code, 200)
+
+    def test_chore_not_scheduled_today_is_404(self, _now):
+        self.client.force_login(self.kid)
+        self.assertEqual(self.toggle(self.kid.person, self.tomorrow).status_code, 404)
+
+    def test_other_family_chore_is_404(self, _now):
+        stranger = make_child_profile(make_family(name="Voisins"), "Tom")
+        intruder = chore(stranger.family, stranger, "Intrus", days=(0,))
+        self.client.force_login(self.kid)
+        self.assertEqual(self.toggle(stranger, intruder).status_code, 404)
+
+    def test_column_shows_chores_and_counts_them(self, _now):
+        self.client.force_login(self.kid)
+        response = self.get(reverse("display:board"))
+        columns = {c.person.name: c for c in response.context["columns"]}
+        self.assertEqual(
+            [o.chore.title for o in columns["Lina"].chores], ["Vider le lave-vaisselle"]
+        )
+        self.assertEqual(columns["Lina"].remaining, 1)
+        self.assertNotContains(response, "Lessive")  # ménage des parents : jamais sur l'écran
+        own_url = reverse("display:toggle_chore", args=[self.kid.person.pk, self.own.pk])
+        sibling_url = reverse("display:toggle_chore", args=[self.noah.pk, self.sibling.pk])
+        self.assertContains(response, f'hx-post="{own_url}"')
+        self.assertNotContains(response, f'hx-post="{sibling_url}"')
