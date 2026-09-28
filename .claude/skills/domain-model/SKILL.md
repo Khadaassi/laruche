@@ -24,7 +24,9 @@ families.Person (enfant) ──1:N── school.SchoolDaySchedule   (jour de sem
                          └─1:N── school.SchoolDayOverride   (date précise, remplace la semaine type)
 
 families.Family ──1:N── household.HouseholdChore ──N:1── families.Person (assigné, parent ou enfant)
-                              └──1:N── household.ChoreCompletion (chore, date)
+                              │                 └─N:0..1── families.Person (en alternance avec)
+                              ├──1:N── household.ChoreCompletion (chore, date)
+                              └──1:N── household.ChoreSwap (chore, semaine : échange des rôles)
 
 families.Family ──1:N── celebrations.Celebration (nom, date)
                               ├──1:N── CelebrationTodo (titre, qui, fait)
@@ -56,7 +58,8 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 | `tasks` | `TaskCompletion` | « Fait » pour une tâche **à une date**. Absence de ligne = à faire. Unique `(task, date)`. `completed_by` vide si coché depuis l'affichage partagé. |
 | `school` | `SchoolDaySchedule` | Semaine type d'un enfant : `weekday` (0 = lundi), `lunch` (cantine / sandwich-APC / autre / pas d'école), `lunch_note`, `study`. Unique `(person, weekday)`. Pas de ligne = rien à afficher. |
 | `school` | `SchoolDayOverride` | Exception pour une **date** : mêmes champs, remplace la semaine type ce jour-là. Unique `(person, date)`. |
-| `household` | `HouseholdChore` | Tâche de ménage : `title`, `assignee` (toute `Person`, parent compris), `weekdays` (masque), `interval_weeks` (1 ou 2), `start_date`. Porte `family` directement. |
+| `household` | `HouseholdChore` | Tâche de ménage : `title`, `assignee` (toute `Person`, parent compris), `alternate` (facultatif : alternance hebdomadaire avec une autre personne, seulement si `interval_weeks = 1`, contrainte en base), `weekdays` (masque), `interval_weeks` (1 ou 2), `start_date`. Porte `family` directement. |
+| `household` | `ChoreSwap` | Échange des rôles d'une tâche en alternance à partir de la semaine du lundi `week`. Unique `(chore, week)`. |
 | `household` | `ChoreCompletion` | « Fait » pour une tâche de ménage à une date. Unique `(chore, date)`. |
 | `celebrations` | `Celebration` | Fête datée (`name`, `date`), `recurs_yearly` (chaque année), `previous` (occurrence de l'année d'avant, OneToOne). |
 | `celebrations` | `CelebrationTodo` | Préparatif unique : `title`, `assignee` (facultatif), `done`. |
@@ -179,9 +182,25 @@ Cette section n'existait pas avant la Phase 2 : elle est créée ici.
 - **Récurrence simple** : « tous les jours », « chaque semaine » (jours choisis) ou
   « une semaine sur deux » (jours choisis, compté à partir de la semaine de création).
   Stockée comme les tâches enfants (masque de jours) + `interval_weeks`.
-- **Pas de rotation automatique** : assignation fixe par tâche. Une rotation demande des
-  règles d'équité (absences, âges, échanges) qui méritent une conception à part ; une
-  rotation naïve produirait surtout des corrections manuelles.
+- **Alternance hebdomadaire entre deux personnes** (facultative, `alternate`) : pour les
+  rôles que les enfants s'échangent chaque semaine (lave-vaisselle / table). `assignee` a
+  la tâche la semaine de `start_date` (semaine de création), `alternate` la suivante, et
+  ainsi de suite ; le changement se fait le **lundi**, pour toute la semaine.
+  `HouseholdChore.person_on(jour)` donne la personne chargée ; toutes les lectures
+  (semainier, écran partagé, étoile du jour, absences, cochage) passent par elle, jamais
+  par `assignee` directement (`ChoreOccurrence.person`).
+  - Pas de rotation à plus de deux personnes, ni d'alternance « une semaine sur deux ».
+  - **Échange par un parent** (Réglages → Ménage, « Échanger les rôles ») : inverse
+    l'alternance **à partir de la semaine en cours**, pour toutes les tâches de la même
+    paire d'un coup. Stocké comme un `ChoreSwap` par tâche et par semaine : la personne
+    d'une semaine dépend de la parité des semaines écoulées **et** du nombre d'échanges
+    antérieurs ou égaux. Les semaines passées ne changent donc jamais (les cochages
+    restent attribués à la bonne personne) ; refaire l'échange la même semaine l'annule.
+  - Absence : la tâche de la semaine est suspendue pour la personne chargée, **pas**
+    reportée sur l'autre (même règle que sans alternance).
+  - Les cochages (`ChoreCompletion`) ne stockent pas la personne : un échange en milieu de
+    semaine réattribue les jours déjà cochés de cette semaine à l'autre enfant. Les étoiles
+    déjà gagnées (`DayStar`) restent acquises.
 - **Assignation à toute personne**, parents compris (contrairement aux tâches enfants).
 - **Cochage** : un parent coche tout depuis le semainier. Une tâche de ménage **assignée
   à un enfant** apparaît aussi sur sa colonne de l'écran partagé (« Ménage du jour ») et

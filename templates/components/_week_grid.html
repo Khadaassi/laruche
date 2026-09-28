@@ -38,7 +38,7 @@ Téléphone : colonnes étroites, icônes seules ; les libellés apparaissent à
           {# Écran partagé : chaque tâche de ménage, avec qui et si c'est fait. #}
           {% for occurrence in day.chores %}
             <li class="flex items-center gap-1 px-1">
-              {% include "components/_avatar.html" with person=occurrence.chore.assignee size="h-5 w-5 text-[10px]" %}
+              {% include "components/_avatar.html" with person=occurrence.person size="h-5 w-5 text-[10px]" %}
               <span class="min-w-0 truncate {% if occurrence.is_done %}text-ink-soft line-through{% endif %}">{{ occurrence.chore.title }}</span>
               {% if occurrence.is_done %}<span class="hex flex h-4 w-4 shrink-0 items-center justify-center bg-sage text-surface-0">{% include "components/_check.html" with check_size="h-2.5 w-2.5" %}</span><span class="sr-only">fait</span>{% endif %}
             </li>

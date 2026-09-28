@@ -12,7 +12,7 @@ from apps.stars.services import award_day_star
 
 from .forms import ChoreForm
 from .models import HouseholdChore, monday_of
-from .selectors import set_chore_done
+from .selectors import rotations, set_chore_done, swap_rotation
 from .week import build_week
 
 WEEK_PARAM = "semaine"
@@ -54,13 +54,19 @@ def toggle(request, pk, day):
         date = datetime.date.fromisoformat(day)
     except ValueError as error:
         raise Http404 from error
-    chore = get_object_or_404(HouseholdChore.objects.for_family(request.family), pk=pk)
-    if not chore.occurs_on(date) or absences_on(request.family, date).is_absent(chore.assignee_id):
+    chore = get_object_or_404(
+        HouseholdChore.objects.for_family(request.family).select_related("assignee", "alternate"),
+        pk=pk,
+    )
+    if not chore.occurs_on(date):
+        raise Http404
+    person = chore.person_on(date)
+    if absences_on(request.family, date).is_absent(person.pk):
         raise Http404
     done = request.POST.get("done") == "on"
     set_chore_done(chore, date, done)
     if done:
-        award_day_star(chore.assignee, date)
+        award_day_star(person, date)
     if request.headers.get("HX-Request") == "true":
         return HttpResponse(status=204)
     return redirect(f"{reverse('household:week')}?{WEEK_PARAM}={monday_of(date).isoformat()}")
@@ -80,10 +86,34 @@ def manage(request):
         {
             "nav_active": "settings",
             "form": form,
-            "chores": HouseholdChore.objects.for_family(request.family).select_related("assignee"),
+            "chores": HouseholdChore.objects.for_family(request.family).select_related(
+                "assignee", "alternate"
+            ),
+            "rotations": rotations(request.family, timezone.localdate()),
         },
         status=400 if form.is_bound and form.errors else 200,
     )
+
+
+@require_POST
+@parent_required
+def swap(request):
+    """Échange les rôles d'une alternance à partir de cette semaine (parents).
+
+    Reçoit les tâches de la paire (`chore`, plusieurs fois) : seules celles de
+    la famille et en alternance sont échangées ; aucune → 404. Refaire
+    l'échange la même semaine l'annule.
+    """
+    ids = [raw for raw in request.POST.getlist("chore") if raw.isdigit()]
+    chores = list(
+        HouseholdChore.objects.for_family(request.family).filter(
+            pk__in=ids, alternate__isnull=False
+        )
+    )
+    if not chores:
+        raise Http404
+    swap_rotation(chores, timezone.localdate())
+    return redirect("household:manage")
 
 
 @require_POST

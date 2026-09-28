@@ -12,5 +12,6 @@ urlpatterns = [
         name="toggle",
     ),
     path("reglages/menage/", views.manage, name="manage"),
+    path("reglages/menage/echanger/", views.swap, name="swap"),
     path("reglages/menage/<int:pk>/supprimer/", views.delete, name="delete"),
 ]

@@ -13,10 +13,10 @@
     </span>
     <label for="chore-{{ chore.pk }}-{{ occurrence.date|date:'Ymd' }}" class="flex-1 cursor-pointer">
       <span class="block group-has-[:checked]:text-ink-soft group-has-[:checked]:line-through">{{ chore.title }}</span>
-      <span class="text-sm text-ink-soft">{{ chore.assignee.name }}</span>
+      <span class="text-sm text-ink-soft">{{ occurrence.person.name }}</span>
     </label>
     <span class="hidden text-sm font-medium text-sage group-has-[:checked]:inline">Fait</span>
-    {% include "components/_avatar.html" with person=chore.assignee %}
+    {% include "components/_avatar.html" with person=occurrence.person %}
     <noscript><button type="submit" class="rounded-sm border border-border-strong px-space-2 text-sm">OK</button></noscript>
   </form>
 </li>

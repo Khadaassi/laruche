@@ -26,8 +26,12 @@ class ChoreForm(forms.ModelForm):
 
     class Meta:
         model = HouseholdChore
-        fields = ["title", "assignee"]
-        labels = {"assignee": "Qui"}
+        fields = ["title", "assignee", "alternate"]
+        labels = {"assignee": "Qui", "alternate": "En alternance avec"}
+        help_texts = {
+            "alternate": "Facultatif. « Qui » s'en charge cette semaine, puis la tâche "
+            "change de main chaque lundi."
+        }
 
     def __init__(self, *args, family, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,7 +40,9 @@ class ChoreForm(forms.ModelForm):
         # Parent ou enfant : toute personne de la famille (et seulement elle).
         self.fields["assignee"].queryset = Person.objects.for_family(family)
         self.fields["assignee"].empty_label = None
-        for name in ("title", "assignee"):
+        self.fields["alternate"].queryset = Person.objects.for_family(family)
+        self.fields["alternate"].empty_label = "Personne (toujours la même)"
+        for name in ("title", "assignee", "alternate"):
             self.fields[name].widget.attrs["class"] = FIELD_CLASSES
 
     def clean(self):
@@ -44,6 +50,10 @@ class ChoreForm(forms.ModelForm):
         frequency = cleaned.get("frequency")
         if frequency and frequency != Frequency.DAILY and not cleaned.get("weekday_choices"):
             self.add_error("weekday_choices", "Choisissez au moins un jour.")
+        if frequency == Frequency.BIWEEKLY and cleaned.get("alternate"):
+            self.add_error(
+                "alternate", "L'alternance se fait chaque semaine : choisissez une autre fréquence."
+            )
         return cleaned
 
     def save(self, commit=True):

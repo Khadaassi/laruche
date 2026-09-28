@@ -47,8 +47,13 @@ tâches ni à l'activation d'un appareil partagé.
 | Fêtes : **cadeaux** | Lecture + écriture | **Jamais affichés** sur l'écran partagé : les enfants y verraient leurs surprises |
 
 Endpoint : `display:toggle_chore` (`/affichage/enfants/<enfant>/menage/<tâche>/fait/`) :
-enfant de la famille, `can_tick` (403 sinon), tâche de ménage **assignée à cet enfant** et
-prévue aujourd'hui (404 sinon).
+enfant de la famille, `can_tick` (403 sinon), tâche de ménage **qui revient à cet enfant
+aujourd'hui** (`person_on`, alternance comprise : la tâche de son frère ou de sa sœur cette
+semaine-là → 404) et prévue aujourd'hui (404 sinon).
+
+Endpoint : `household:swap` (`/reglages/menage/echanger/`, POST) : `parent_required` (403
+pour un compte enfant) ; les tâches reçues sont filtrées par famille **et** alternance, aucune
+tâche retenue → 404.
 
 Choix : les enfants voient les préparatifs et les idées de recettes (esprit familial :
 tout le monde sait ce qui se prépare), mais pas la liste de cadeaux. Aucune écriture enfant
