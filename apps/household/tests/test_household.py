@@ -6,18 +6,22 @@ from django.urls import reverse
 
 from apps.families.tests.factories import SecureClientMixin, join, make_child_profile, make_family
 from apps.household.forms import ChoreForm
-from apps.household.models import ChoreCompletion, HouseholdChore
-from apps.household.selectors import chores_by_day
+from apps.household.models import ChoreCompletion, ChoreSwap, HouseholdChore
+from apps.household.selectors import chores_by_day, rotations, swap_rotation
+from apps.stars.models import DayStar
 from apps.tasks.models import weekdays_to_mask
 
 MONDAY_8AM = datetime.datetime(2026, 9, 28, 6, 0, tzinfo=datetime.UTC)
 MONDAY = datetime.date(2026, 9, 28)
 
 
-def chore(family, assignee, title="Aspirateur", days=(0,), interval=1, start=MONDAY):
+def chore(
+    family, assignee, title="Aspirateur", days=(0,), interval=1, start=MONDAY, alternate=None
+):
     return HouseholdChore.objects.create(
         family=family,
         assignee=assignee,
+        alternate=alternate,
         title=title,
         weekdays=weekdays_to_mask(days),
         interval_weeks=interval,
@@ -270,3 +274,198 @@ class ChildChoreOnSharedScreenTests(SecureClientMixin, TestCase):
         sibling_url = reverse("display:toggle_chore", args=[self.noah.pk, self.sibling.pk])
         self.assertContains(response, f'hx-post="{own_url}"')
         self.assertNotContains(response, f'hx-post="{sibling_url}"')
+
+
+NEXT_MONDAY = MONDAY + datetime.timedelta(weeks=1)
+LAST_MONDAY = MONDAY - datetime.timedelta(weeks=1)
+
+
+class RotationTests(TestCase):
+    """Lave-vaisselle / table : les deux enfants échangent leurs rôles chaque semaine."""
+
+    def setUp(self):
+        self.family = make_family()
+        self.lina = make_child_profile(self.family, "Lina")
+        self.noah = make_child_profile(self.family, "Noah")
+        self.dishes = chore(
+            self.family, self.lina, "Remplir le lave-vaisselle", days=range(7),
+            start=LAST_MONDAY, alternate=self.noah,
+        )  # fmt: skip
+        self.table = chore(
+            self.family, self.noah, "Mettre la table", days=range(7),
+            start=LAST_MONDAY, alternate=self.lina,
+        )  # fmt: skip
+
+    def who(self, c, day):
+        return HouseholdChore.objects.get(pk=c.pk).person_on(day).name
+
+    def test_alternates_every_monday(self):
+        weeks = [LAST_MONDAY + datetime.timedelta(weeks=w) for w in range(4)]
+        self.assertEqual(
+            [self.who(self.dishes, d) for d in weeks], ["Lina", "Noah", "Lina", "Noah"]
+        )
+        self.assertEqual([self.who(self.table, d) for d in weeks], ["Noah", "Lina", "Noah", "Lina"])
+        # Toute la semaine, du lundi au dimanche.
+        self.assertEqual(self.who(self.dishes, MONDAY + datetime.timedelta(days=6)), "Noah")
+
+    def test_without_alternate_always_assignee(self):
+        fixed = chore(self.family, self.lina, "Poubelles", days=range(7), start=LAST_MONDAY)
+        self.assertEqual(fixed.person_on(NEXT_MONDAY), self.lina)
+
+    def test_swap_inverts_from_this_week_only(self):
+        swap_rotation([self.dishes, self.table], MONDAY + datetime.timedelta(days=3))
+        self.assertEqual(ChoreSwap.objects.get(chore=self.dishes).week, MONDAY)
+        self.assertEqual(self.who(self.dishes, LAST_MONDAY), "Lina")  # passé inchangé
+        self.assertEqual(self.who(self.dishes, MONDAY), "Lina")
+        self.assertEqual(self.who(self.dishes, NEXT_MONDAY), "Noah")  # puis l'alternance reprend
+        self.assertEqual(self.who(self.table, MONDAY), "Noah")
+
+    def test_swap_twice_same_week_cancels(self):
+        swap_rotation([self.dishes], MONDAY)
+        swap_rotation([self.dishes], MONDAY + datetime.timedelta(days=2))
+        self.assertFalse(ChoreSwap.objects.exists())
+        self.assertEqual(self.who(self.dishes, MONDAY), "Noah")
+
+    def test_occurrences_go_to_person_of_the_week(self):
+        week = chores_by_day(self.family, MONDAY, 1)[MONDAY]
+        self.assertEqual(
+            {(o.chore.title, o.person.name) for o in week},
+            {("Remplir le lave-vaisselle", "Noah"), ("Mettre la table", "Lina")},
+        )
+
+    def test_absence_checks_person_of_the_week(self):
+        from apps.absences.models import Absence
+
+        Absence.objects.create(
+            family=self.family, person=self.noah, start_date=MONDAY, end_date=MONDAY
+        )
+        week = chores_by_day(self.family, MONDAY, 1)[MONDAY]
+        self.assertEqual([o.chore.title for o in week], ["Mettre la table"])
+
+    def test_rotations_grouped_by_pair(self):
+        [rotation] = rotations(self.family, MONDAY)
+        self.assertEqual([p.name for p in rotation.people], ["Lina", "Noah"])
+        self.assertEqual(
+            {(c.title, p.name) for c, p in rotation.chores},
+            {("Remplir le lave-vaisselle", "Noah"), ("Mettre la table", "Lina")},
+        )
+
+    def test_alternate_must_differ_and_be_weekly(self):
+        from django.db import IntegrityError, transaction
+
+        for fields in ({"alternate": self.lina}, {"alternate": self.noah, "interval_weeks": 2}):
+            with (
+                self.subTest(fields=fields),
+                transaction.atomic(),
+                self.assertRaises(IntegrityError),
+            ):
+                HouseholdChore.objects.filter(pk=self.dishes.pk).update(**fields)
+
+
+class RotationFormTests(TestCase):
+    def setUp(self):
+        self.family = make_family()
+        self.lina = make_child_profile(self.family, "Lina")
+        self.noah = make_child_profile(self.family, "Noah")
+
+    def form(self, **data):
+        base = {"title": "Table", "assignee": self.lina.pk, "frequency": "daily"}
+        base.update(data)
+        return ChoreForm(base, family=self.family)
+
+    def test_alternate_saved(self):
+        form = self.form(alternate=self.noah.pk)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.save().alternate, self.noah)
+
+    def test_alternate_is_optional(self):
+        form = self.form()
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.save().alternate)
+
+    def test_same_person_rejected(self):
+        self.assertIn("alternate", self.form(alternate=self.lina.pk).errors)
+
+    def test_biweekly_rejected(self):
+        form = self.form(alternate=self.noah.pk, frequency="biweekly", weekday_choices=["1"])
+        self.assertIn("alternate", form.errors)
+
+    def test_other_family_rejected(self):
+        stranger = make_child_profile(make_family(name="Voisins"), "Tom")
+        self.assertIn("alternate", self.form(alternate=stranger.pk).errors)
+
+
+@mock.patch("django.utils.timezone.now", return_value=MONDAY_8AM)
+class RotationViewsTests(SecureClientMixin, TestCase):
+    def setUp(self):
+        self.family = make_family()
+        self.parent = join(self.family, "Sam")
+        self.kid = join(self.family, "Lina")
+        self.noah = make_child_profile(self.family, "Noah")
+        # Semaine de départ = semaine dernière : cette semaine, c'est à Noah.
+        self.dishes = chore(
+            self.family, self.kid.person, "Remplir le lave-vaisselle", days=range(7),
+            start=LAST_MONDAY, alternate=self.noah,
+        )  # fmt: skip
+        self.table = chore(
+            self.family, self.noah, "Mettre la table", days=range(7),
+            start=LAST_MONDAY, alternate=self.kid.person,
+        )  # fmt: skip
+
+    def swap(self, *chores):
+        return self.post(reverse("household:swap"), {"chore": [c.pk for c in chores]})
+
+    def toggle_shared(self, person, c):
+        url = reverse("display:toggle_chore", args=[person.pk, c.pk])
+        return self.htmx_post(url, {"done": "on"})
+
+    def test_manage_page_shows_who_does_what(self, _now):
+        self.client.force_login(self.parent)
+        response = self.get(reverse("household:manage"))
+        self.assertContains(response, "Alternances de la semaine")
+        self.assertContains(response, "Lina et Noah en alternance")
+        self.assertEqual(len(response.context["rotations"]), 1)
+
+    def test_parent_swaps_roles(self, _now):
+        self.client.force_login(self.parent)
+        self.assertRedirects(
+            self.swap(self.dishes, self.table),
+            reverse("household:manage"),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(ChoreSwap.objects.filter(week=MONDAY).count(), 2)
+        [rotation] = rotations(self.family, MONDAY)
+        self.assertIn((self.dishes, self.kid.person), rotation.chores)
+
+    def test_child_cannot_swap(self, _now):
+        self.client.force_login(self.kid)
+        self.assertEqual(self.swap(self.dishes).status_code, 403)
+        self.assertFalse(ChoreSwap.objects.exists())
+
+    def test_swap_other_family_chore_is_404(self, _now):
+        other = make_family(name="Voisins")
+        a, b = make_child_profile(other, "Tom"), make_child_profile(other, "Zoé")
+        intruder = chore(other, a, "Intrus", days=range(7), alternate=b)
+        fixed = chore(self.family, self.noah, "Poubelles", days=range(7))
+        self.client.force_login(self.parent)
+        self.assertEqual(self.swap(intruder).status_code, 404)
+        self.assertEqual(self.swap(fixed).status_code, 404)  # sans alternance
+        self.assertFalse(ChoreSwap.objects.exists())
+
+    def test_shared_screen_follows_the_week(self, _now):
+        self.client.force_login(self.kid)
+        # Cette semaine, le lave-vaisselle est à Noah : Lina ne le coche pas.
+        self.assertEqual(self.toggle_shared(self.kid.person, self.dishes).status_code, 404)
+        self.assertEqual(self.toggle_shared(self.kid.person, self.table).status_code, 200)
+        columns = {c.person.name: c for c in self.get(reverse("display:board")).context["columns"]}
+        self.assertEqual([o.chore.title for o in columns["Lina"].chores], ["Mettre la table"])
+        self.assertEqual(
+            [o.chore.title for o in columns["Noah"].chores], ["Remplir le lave-vaisselle"]
+        )
+
+    def test_parent_tick_awards_star_to_person_of_the_week(self, _now):
+        self.client.force_login(self.parent)
+        url = reverse("household:toggle", args=[self.table.pk, MONDAY.isoformat()])
+        self.htmx_post(url, {"done": "on"})
+        self.assertTrue(DayStar.objects.filter(person=self.kid.person, date=MONDAY).exists())
+        self.assertFalse(DayStar.objects.filter(person=self.noah).exists())

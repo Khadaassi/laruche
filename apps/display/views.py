@@ -2,6 +2,7 @@ import datetime
 
 from django.contrib.auth import login, logout
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -72,7 +73,7 @@ def child_columns(request, person=None):
         # Journée complète (étoile du jour) : fêtée une seule fois, sur cet écran.
         column.celebrate_day = claim_day_celebration(column.person, today)
         # Ménage du jour de l'enfant (toutes périodes), coché comme ses tâches.
-        column.chores = [o for o in chores_today if o.chore.assignee_id == column.person.pk]
+        column.chores = [o for o in chores_today if o.person.pk == column.person.pk]
         column.tickable = can_tick(request, column.person)
         column.absence = absent.for_person(column.person.pk)
         column.school = school_today.get(column.person.pk)
@@ -205,18 +206,25 @@ def toggle_chore(request, person_pk, chore_pk):
     """Coche une tâche de ménage d'un enfant depuis sa colonne.
 
     Mêmes règles que les tâches : l'enfant ciblé est un enfant de la
-    famille, la tâche de ménage lui est assignée et prévue aujourd'hui, et
-    un compte enfant ne coche que sa propre colonne. Une tâche de ménage
-    assignée à un parent n'est jamais atteignable ici (404).
+    famille, la tâche de ménage lui revient aujourd'hui (alternance
+    comprise) et y est prévue, et un compte enfant ne coche que sa propre
+    colonne. Une tâche de ménage d'un parent n'est jamais atteignable ici (404).
     """
     today = timezone.localdate()
     child = get_object_or_404(Person.objects.for_family(request.family).children(), pk=person_pk)
     if not can_tick(request, child):
         raise PermissionDenied("Un enfant ne coche que sa propre colonne.")
     chore = get_object_or_404(
-        HouseholdChore.objects.for_family(request.family).filter(assignee=child), pk=chore_pk
+        HouseholdChore.objects.for_family(request.family).filter(
+            Q(assignee=child) | Q(alternate=child)
+        ),
+        pk=chore_pk,
     )
-    if not chore.occurs_on(today) or absences_on(request.family, today).is_absent(child.pk):
+    if (
+        not chore.occurs_on(today)
+        or chore.person_on(today).pk != child.pk
+        or absences_on(request.family, today).is_absent(child.pk)
+    ):
         raise Http404
     done = request.POST.get("done") == "on"
     set_chore_done(chore, today, done)

@@ -14,22 +14,50 @@
       {% csrf_token %}
       {% include "components/_field.html" with field=form.title %}
       {% include "components/_field.html" with field=form.assignee %}
+      {% include "components/_field.html" with field=form.alternate %}
       {% include "parent/_chip_choices.html" with field=form.frequency cols="grid-cols-1" %}
       {% include "parent/_chip_choices.html" with field=form.weekday_choices cols="grid-cols-4" %}
       <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Ajouter</button>
     </form>
   </section>
 
+  {% if rotations %}
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="rotations-title">
+      <h2 id="rotations-title" class="mb-space-2 text-lg">Alternances de la semaine</h2>
+      <p class="mb-space-4 text-sm text-ink-soft">Les rôles s'échangent tout seuls chaque lundi. Pour les inverser dès cette semaine, utilisez « Échanger » ; les semaines passées ne changent pas.</p>
+      <div class="space-y-space-6">
+        {% for rotation in rotations %}
+          <div>
+            <h3 class="mb-space-2 font-medium">{{ rotation.people.0.name }} et {{ rotation.people.1.name }}</h3>
+            <ul class="mb-space-4 divide-y divide-border">
+              {% for chore, person in rotation.chores %}
+                <li class="flex items-center gap-space-4 py-space-2">
+                  {% include "components/_avatar.html" with person=person %}
+                  <p class="flex-1"><span class="font-medium">{{ person.name }}</span> · {{ chore.title }}</p>
+                </li>
+              {% endfor %}
+            </ul>
+            <form method="post" action="{% url 'household:swap' %}">
+              {% csrf_token %}
+              {% for chore_id in rotation.chore_ids %}<input type="hidden" name="chore" value="{{ chore_id }}">{% endfor %}
+              <button type="submit" class="w-full rounded-lg border border-border-strong px-space-6 py-3 font-medium">Échanger les rôles<span class="sr-only"> de {{ rotation.people.0.name }} et {{ rotation.people.1.name }}</span></button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
   <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="list-title">
     <h2 id="list-title" class="mb-space-2 text-lg">Toutes les tâches de ménage</h2>
-    <p class="mb-space-2 text-sm text-ink-soft">Chaque tâche reste assignée à la même personne (pas de rotation automatique).</p>
+    <p class="mb-space-2 text-sm text-ink-soft">Sans alternance, une tâche reste toujours à la même personne.</p>
     <ul class="divide-y divide-border">
       {% for chore in chores %}
         <li class="flex items-center gap-space-4 py-space-2">
           {% include "components/_avatar.html" with person=chore.assignee %}
           <div class="flex-1">
             <p class="font-medium">{{ chore.title }}</p>
-            <p class="text-sm text-ink-soft">{{ chore.assignee.name }} · {{ chore.schedule_display }}</p>
+            <p class="text-sm text-ink-soft">{% if chore.alternate %}{{ chore.assignee.name }} et {{ chore.alternate.name }} en alternance{% else %}{{ chore.assignee.name }}{% endif %} · {{ chore.schedule_display }}</p>
           </div>
           <form method="post" action="{% url 'household:delete' chore.pk %}">
             {% csrf_token %}

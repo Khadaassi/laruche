@@ -69,9 +69,7 @@ def day_progress(person, day: datetime.date) -> tuple[int, int]:
     malade) n'est pas prévue. Absente ou sans rien de prévu : (0, 0).
     """
     tasks = tasks_for_day(person.family, day, people=[person])
-    chores = [
-        o for o in chores_by_day(person.family, day, 1)[day] if o.chore.assignee_id == person.pk
-    ]
+    chores = [o for o in chores_by_day(person.family, day, 1)[day] if o.person.pk == person.pk]
     states = [t.is_done for t in tasks] + [o.is_done for o in chores]
     return sum(states), len(states)
 
