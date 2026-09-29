@@ -1,4 +1,5 @@
 import datetime
+import unicodedata
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -124,6 +125,16 @@ class Task(models.Model):
             return f"jusqu'au {self.end_date:{fmt}}"
         return ""
 
+    @property
+    def is_homework(self) -> bool:
+        """Tâche « devoirs », reconnue à son intitulé (accents et casse ignorés).
+
+        Sert les jours d'étude : question « As-tu fini tes devoirs à l'étude ? »
+        et devoirs en tête de liste. Aucun réglage en plus pour les parents.
+        """
+        plain = unicodedata.normalize("NFKD", self.title).encode("ascii", "ignore").decode()
+        return "devoir" in plain.lower()
+
     def is_scheduled_on(self, day: datetime.date) -> bool:
         in_range = (not self.start_date or self.start_date <= day) and (
             not self.end_date or day <= self.end_date
@@ -158,3 +169,28 @@ class TaskCompletion(models.Model):
 
     def __str__(self):
         return f"{self.task} — {self.date:%d/%m/%Y}"
+
+
+class HomeworkCheck(models.Model):
+    """Réponse d'un enfant, un jour d'étude, à « As-tu fini tes devoirs à l'étude ? ».
+
+    Une seule par enfant et par jour : la question n'est posée qu'une fois.
+    « Oui » coche ses tâches devoirs du jour ; « Non » ne change rien.
+    """
+
+    person = models.ForeignKey(
+        "families.Person", on_delete=models.CASCADE, related_name="homework_checks"
+    )
+    date = models.DateField()
+    finished = models.BooleanField("devoirs finis à l'étude")
+    answered_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "devoirs à l'étude"
+        verbose_name_plural = "devoirs à l'étude"
+        constraints = [
+            models.UniqueConstraint(fields=["person", "date"], name="unique_homework_check"),
+        ]
+
+    def __str__(self):
+        return f"{self.person} — {self.date:%d/%m/%Y} — {'oui' if self.finished else 'non'}"

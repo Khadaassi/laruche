@@ -46,6 +46,10 @@ tâches ni à l'activation d'un appareil partagé.
 | Fêtes : préparatifs, recettes | Lecture + écriture | Lecture seule (`/affichage/fetes/`, fêtes à venir) |
 | Fêtes : **cadeaux** | Lecture + écriture | **Jamais affichés** sur l'écran partagé : les enfants y verraient leurs surprises |
 
+Endpoint : `display:homework_check` (`/affichage/enfants/<enfant>/devoirs-etude/`, POST) :
+mêmes règles que `display:toggle` (enfant de la famille sinon 404, `can_tick` sinon 403),
+et seulement un jour d'étude de cet enfant, sans absence (404 sinon).
+
 Endpoint : `display:toggle_chore` (`/affichage/enfants/<enfant>/menage/<tâche>/fait/`) :
 enfant de la famille, `can_tick` (403 sinon), tâche de ménage **qui revient à cet enfant
 aujourd'hui** (`person_on`, alternance comprise : la tâche de son frère ou de sa sœur cette

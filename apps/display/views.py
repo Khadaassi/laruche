@@ -28,9 +28,10 @@ from apps.school.models import Lunch
 from apps.school.selectors import school_days_for
 from apps.stars.selectors import balances
 from apps.stars.services import award_day_star, claim_day_celebration, claim_tier_celebration
+from apps.tasks.models import HomeworkCheck
 from apps.tasks.periods import PERIOD_PHRASES, current_period, seconds_until_next_period
 from apps.tasks.selectors import group_by_person, tasks_for_day
-from apps.tasks.services import set_done
+from apps.tasks.services import answer_homework_check, set_done
 
 from .access import (
     can_tick,
@@ -66,6 +67,11 @@ def child_columns(request, person=None):
     stars = balances(request.family, people=children)
     absent = absences_on(request.family, today)
     columns = group_by_person(children, tasks)
+    answered = set(
+        HomeworkCheck.objects.filter(person__in=children, date=today).values_list(
+            "person_id", flat=True
+        )
+    )
     for column in columns:
         column.stars = stars.get(column.person.pk)
         # Nouveau palier atteint : fêté une seule fois, sur cet écran.
@@ -78,7 +84,17 @@ def child_columns(request, person=None):
         column.absence = absent.for_person(column.person.pk)
         column.school = school_today.get(column.person.pk)
         column.tomorrow = tomorrow_hint(school_tomorrow.get(column.person.pk))
+        if is_study_day(column.school) and not column.absence:
+            # Jour d'étude : devoirs en tête, et question avant la routine.
+            column.tasks.sort(key=lambda task: not task.is_homework)
+            column.ask_homework = column.person.pk not in answered and any(
+                task.is_homework and not task.is_done for task in column.tasks
+            )
     return columns
+
+
+def is_study_day(school_day) -> bool:
+    return bool(school_day and school_day.study and school_day.has_school)
 
 
 def tomorrow_hint(day) -> str:
@@ -198,6 +214,30 @@ def toggle(request, person_pk, task_pk):
     if request.headers.get("HX-Request") != "true":
         return redirect("display:board")
     return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})
+
+
+@require_POST
+@shared_display_required
+def homework_check(request, person_pk):
+    """Réponse à « As-tu fini tes devoirs à l'étude ? » depuis la colonne d'un enfant.
+
+    Seulement un jour d'étude de cet enfant (404 sinon) ; un compte enfant ne
+    répond que pour lui-même (403). « Oui » coche ses devoirs du jour, « Non »
+    ne change rien ; dans les deux cas la question ne revient pas ce jour-là.
+    """
+    today = timezone.localdate()
+    child = get_object_or_404(Person.objects.for_family(request.family).children(), pk=person_pk)
+    if not can_tick(request, child):
+        raise PermissionDenied("Un enfant ne répond que pour lui-même.")
+    if not is_study_day(school_days_for(request.family, today, people=[child]).get(child.pk)):
+        raise Http404
+    if absences_on(request.family, today).is_absent(child.pk):
+        raise Http404
+    finished = request.POST.get("finished") == "oui"
+    by = request.user if request.user.is_authenticated else None
+    if answer_homework_check(child, today, finished, by=by) and finished:
+        award_day_star(child, today)
+    return redirect("display:board")
 
 
 @require_POST
