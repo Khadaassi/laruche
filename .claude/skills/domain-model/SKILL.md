@@ -60,6 +60,7 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 | `school` | `SchoolDayOverride` | Exception pour une **date** : mêmes champs, remplace la semaine type ce jour-là. Unique `(person, date)`. |
 | `household` | `HouseholdChore` | Tâche de ménage : `title`, `assignee` (toute `Person`, parent compris), `alternate` (facultatif : alternance hebdomadaire avec une autre personne, seulement si `interval_weeks = 1`, contrainte en base), `weekdays` (masque), `interval_weeks` (1 ou 2), `start_date`. Porte `family` directement. |
 | `household` | `ChoreSwap` | Échange des rôles d'une tâche en alternance à partir de la semaine du lundi `week`. Unique `(chore, week)`. |
+| `tasks` | `HomeworkCheck` | Réponse d'un enfant, un jour d'étude, à « As-tu fini tes devoirs à l'étude ? » : `person`, `date`, `finished`. Unique `(person, date)`. |
 | `household` | `ChoreCompletion` | « Fait » pour une tâche de ménage à une date. Unique `(chore, date)`. |
 | `celebrations` | `Celebration` | Fête datée (`name`, `date`), `recurs_yearly` (chaque année), `previous` (occurrence de l'année d'avant, OneToOne). |
 | `celebrations` | `CelebrationTodo` | Préparatif unique : `title`, `assignee` (facultatif), `done`. |
@@ -176,6 +177,19 @@ sélecteur de personne) :
 - fête demain, avec le nombre de préparatifs restants.
 Sur l'écran partagé, chaque colonne affiche un rappel court (« Demain : sandwich »).
 Cette section n'existait pas avant la Phase 2 : elle est créée ici.
+
+## Devoirs les jours d'étude
+
+- Une tâche enfant est « devoirs » si son intitulé contient « devoir » (accents et casse
+  ignorés, `Task.is_homework`) : aucun réglage en plus, la case « Étude le soir » de
+  l'école suffit.
+- Jour d'étude de l'enfant (étude cochée **et** école ce jour-là, pas absent) : sur sa
+  colonne de l'écran partagé, les devoirs passent **en tête** de la liste et, tant qu'ils
+  ne sont pas cochés, la question « As-tu fini tes devoirs à l'étude ? » est posée **avant
+  la routine** (période où se trouvent les devoirs, en pratique le soir).
+  « Oui » coche ses devoirs du jour (et donne l'étoile si la journée est complète) ;
+  « Pas encore » ne change rien. Une seule réponse par jour (`HomeworkCheck`), la question
+  ne revient pas.
 
 ## Ménage et semainier (`household/`)
 

@@ -16,6 +16,11 @@ urlpatterns = [
         views.toggle_chore,
         name="toggle_chore",
     ),
+    path(
+        "affichage/enfants/<int:person_pk>/devoirs-etude/",
+        views.homework_check,
+        name="homework_check",
+    ),
     path("affichage/semaine/", views.week, name="week"),
     path("affichage/fetes/", views.celebrations, name="celebrations"),
     path("affichage/menu/", views.menu, name="menu"),
