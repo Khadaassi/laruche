@@ -9,6 +9,7 @@ que les compteurs (hx-swap-oob). En cas de refus, app.js recoche la case.
         class="task-row group flex min-h-14 items-center gap-space-4 rounded-md border border-border bg-surface-100 px-space-4 py-3 has-[:checked]:border-sage">
     {% csrf_token %}
     {% if selected %}<input type="hidden" name="personne" value="{{ selected.pk }}">{% endif %}
+    {% if not is_today %}<input type="hidden" name="jour" value="{{ day|date:'Y-m-d' }}">{% endif %}
     <span class="relative flex shrink-0">
       <input type="checkbox" name="done" id="task-{{ task.pk }}"
              class="h-7 w-7 shrink-0 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage"

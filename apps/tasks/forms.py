@@ -124,8 +124,11 @@ class TaskForm(ScheduleFieldsMixin, forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = ["title", "period"]
-        labels = {"title": "Tâche"}
+        fields = ["title", "period", "catch_up"]
+        labels = {"title": "Tâche", "catch_up": "Rattrapable le lendemain"}
+        help_texts = {
+            "catch_up": "Ex. devoirs, lecture : si elle est oubliée, elle revient le lendemain."
+        }
 
     def __init__(self, *args, family, **kwargs):
         super().__init__(*args, **kwargs)
@@ -144,6 +147,7 @@ class TaskForm(ScheduleFieldsMixin, forms.ModelForm):
     def _apply(self, task):
         task.weekdays, task.start_date, task.end_date = self.schedule
         task.title, task.period = self.cleaned_data["title"], self.cleaned_data["period"]
+        task.catch_up = self.cleaned_data.get("catch_up", False)
 
     @transaction.atomic
     def save(self, commit=True):

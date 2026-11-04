@@ -12,6 +12,11 @@ urlpatterns = [
         name="toggle",
     ),
     path(
+        "affichage/enfants/<int:person_pk>/taches/<int:task_pk>/rattraper/",
+        views.catch_up,
+        name="catch_up",
+    ),
+    path(
         "affichage/enfants/<int:person_pk>/menage/<int:chore_pk>/fait/",
         views.toggle_chore,
         name="toggle_chore",
