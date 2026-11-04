@@ -30,6 +30,39 @@ def award_day_star(person, day: datetime.date) -> bool:
     return created
 
 
+CATCH_UP_DAYS = 7  # jours passés réexaminés par `award_missing_day_stars`
+
+
+def award_missing_day_stars(family, today: datetime.date, people=None) -> int:
+    """Donne les étoiles oubliées des derniers jours (aujourd'hui compris).
+
+    L'étoile n'est normalement calculée qu'au cochage. Une journée peut
+    pourtant devenir complète autrement : tâche restante supprimée ou
+    déplacée, ménage réassigné, cochage par un parent depuis une autre vue.
+    Réexamine donc chaque jour sans étoile des `CATCH_UP_DAYS` derniers jours.
+    Idempotent (contrainte unique). Renvoie le nombre d'étoiles créées.
+    """
+    from apps.families.models import Person
+
+    children = Person.objects.for_family(family).children()
+    if people is not None:
+        children = children.filter(pk__in=[p.pk for p in people])
+    children = list(children)
+    since = today - datetime.timedelta(days=CATCH_UP_DAYS)
+    already = set(
+        DayStar.objects.filter(person__in=children, date__gte=since).values_list(
+            "person_id", "date"
+        )
+    )
+    created = 0
+    for offset in range(CATCH_UP_DAYS + 1):
+        day = today - datetime.timedelta(days=offset)
+        for child in children:
+            if (child.pk, day) not in already and award_day_star(child, day):
+                created += 1
+    return created
+
+
 class OpeningBalanceError(Exception):
     """Solde de départ refusé (pas un enfant, montant nul, déjà enregistré)."""
 

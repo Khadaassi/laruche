@@ -43,6 +43,12 @@ PERIOD_STARTS = (
 )
 
 
+def earlier_periods(period: Period) -> list[Period]:
+    """Périodes déjà passées dans la journée, avant `period` (matin avant midi avant soir)."""
+    order = [p for _, p in PERIOD_STARTS]
+    return order[: order.index(period)]
+
+
 def period_at(moment: datetime.time) -> Period:
     """Période correspondant à une heure locale."""
     current = Period.EVENING  # avant 04:00 : la soirée de la veille continue
