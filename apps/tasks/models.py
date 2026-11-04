@@ -65,6 +65,11 @@ class Task(models.Model):
         "du", null=True, blank=True, help_text="Vide = sans date de début."
     )
     end_date = models.DateField("au", null=True, blank=True, help_text="Vide = sans date de fin.")
+    catch_up = models.BooleanField(
+        "rattrapable",
+        default=False,
+        help_text="Non faite, elle revient le lendemain ; la rattraper rend l'étoile de la veille.",
+    )
     position = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -9,3 +9,11 @@
   {% for error in form.period.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
 </fieldset>
 {% include "parent/_schedule_fields.html" %}
+<label class="flex min-h-11 cursor-pointer items-start gap-space-4 rounded-sm border border-border-strong p-space-4">
+  <input type="checkbox" name="{{ form.catch_up.html_name }}" id="{{ form.catch_up.id_for_label }}"
+         class="mt-0.5 h-6 w-6 shrink-0 cursor-pointer accent-sage" {% if form.catch_up.value %}checked{% endif %}>
+  <span>
+    <span class="block font-medium">{{ form.catch_up.label }}</span>
+    <span class="block text-sm text-ink-soft">{{ form.catch_up.help_text }}</span>
+  </span>
+</label>

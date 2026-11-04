@@ -39,6 +39,21 @@ def tasks_for_day(family, day: datetime.date, *, people=None, period=None) -> li
     return list(tasks)
 
 
+def catch_up_for(family, today: datetime.date, *, people=None) -> list[Task]:
+    """Tâches rattrapables oubliées **la veille**, à proposer aujourd'hui.
+
+    Mêmes règles que `tasks_for_day` pour la veille (jour prévu, période de dates,
+    absence) : seules les tâches `catch_up` non cochées hier. Une seule journée de
+    grâce : au-delà, ce qui n'est pas fait n'est plus proposé.
+    """
+    yesterday = today - datetime.timedelta(days=1)
+    return [
+        task
+        for task in tasks_for_day(family, yesterday, people=people)
+        if task.catch_up and not task.is_done
+    ]
+
+
 def count_remaining(tasks) -> int:
     return sum(1 for task in tasks if not task.is_done)
 

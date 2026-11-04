@@ -292,6 +292,18 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
   réexaminé avec `award_day_star` (tâche restante supprimée, déplacée, ménage réassigné…).
   Idempotent grâce à la contrainte unique.
 
+### Rattrapage et correction des jours passés
+
+- **Tâche rattrapable** (`Task.catch_up`, case « Rattrapable le lendemain ») : non cochée
+  la veille (jour prévu, personne non absente), elle apparaît le lendemain sur l'écran
+  partagé dans « À rattraper d'hier » (`tasks.selectors.catch_up_for`). Une seule journée
+  de grâce. La cocher crée la validation **à la date d'hier** (`display:catch_up`) ; si la
+  journée d'hier devient complète, son étoile est rendue, annoncée dans la colonne
+  (« Hier rattrapé : +1 étoile ! »), sans plein écran (`celebrated` mis à vrai).
+- **Correction parent** : l'accueil parent accepte `?jour=AAAA-MM-JJ` sur les
+  `CORRECTION_DAYS` (7) derniers jours ; `tasks:toggle` reçoit le même champ `jour` et
+  donne l'étoile du jour corrigé. Au-delà ou dans le futur : 404.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée

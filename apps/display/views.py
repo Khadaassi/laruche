@@ -26,6 +26,7 @@ from apps.saturday.models import PlanStatus, SaturdayPlan
 from apps.saturday.views import draw_context, perform_spin
 from apps.school.models import Lunch
 from apps.school.selectors import school_days_for
+from apps.stars.models import DayStar
 from apps.stars.selectors import balances
 from apps.stars.services import (
     award_day_star,
@@ -40,7 +41,7 @@ from apps.tasks.periods import (
     earlier_periods,
     seconds_until_next_period,
 )
-from apps.tasks.selectors import group_by_person, tasks_for_day
+from apps.tasks.selectors import catch_up_for, group_by_person, tasks_for_day
 from apps.tasks.services import answer_homework_check, set_done
 
 from .access import (
@@ -76,6 +77,8 @@ def child_columns(request, person=None):
     # l'étoile) ne peut plus être complétée depuis la tablette.
     past = set(earlier_periods(period))
     overdue = [t for t in day_tasks if t.period in past and not t.is_done]
+    # Rattrapables oubliés hier : les faire aujourd'hui rend l'étoile de la veille.
+    catch_up = catch_up_for(request.family, today, people=children)
     school_today = school_days_for(request.family, today, people=children)
     school_tomorrow = school_days_for(request.family, tomorrow, people=children)
     chores_today = chores_by_day(request.family, today, 1)[today]
@@ -89,6 +92,7 @@ def child_columns(request, person=None):
     )
     for column in columns:
         column.overdue = [t for t in overdue if t.person_id == column.person.pk]
+        column.catch_up = [t for t in catch_up if t.person_id == column.person.pk]
         column.stars = stars.get(column.person.pk)
         # Nouveau palier atteint : fêté une seule fois, sur cet écran.
         column.celebrate_tier = claim_tier_celebration(column.stars) if column.stars else None
@@ -231,6 +235,38 @@ def toggle(request, person_pk, task_pk):
     if request.headers.get("HX-Request") != "true":
         return redirect("display:board")
     return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})
+
+
+@require_POST
+@shared_display_required
+def catch_up(request, person_pk, task_pk):
+    """Rattrape une tâche oubliée hier depuis la colonne de l'enfant.
+
+    Seulement une tâche **rattrapable** de cet enfant, prévue hier, alors qu'il
+    n'était pas absent (404 sinon) ; un compte enfant ne rattrape que pour
+    lui-même (403). Coche la tâche **à la date d'hier** : si la journée d'hier
+    devient complète, son étoile est rendue (annoncée dans la colonne).
+    """
+    today = timezone.localdate()
+    yesterday = today - datetime.timedelta(days=1)
+    child = get_object_or_404(Person.objects.for_family(request.family).children(), pk=person_pk)
+    if not can_tick(request, child):
+        raise PermissionDenied("Un enfant ne rattrape que pour lui-même.")
+    task = get_object_or_404(child.tasks.scheduled_on(yesterday).filter(catch_up=True), pk=task_pk)
+    if absences_on(request.family, yesterday).is_absent(child.pk):
+        raise Http404
+    by = request.user if request.user.is_authenticated else None
+    done = request.POST.get("done") == "on"
+    set_done(task, yesterday, done, by=by)
+    recovered = done and award_day_star(child, yesterday)
+    if recovered:
+        # Annoncée ici, dans la colonne : pas de plein écran « Journée terminée ! ».
+        DayStar.objects.filter(person=child, date=yesterday).update(celebrated=True)
+    if request.headers.get("HX-Request") != "true":
+        return redirect("display:board")
+    column = child_columns(request, child)[0]
+    column.recovered_star = recovered
+    return render(request, "shared/_column_oob.html", {"column": column})
 
 
 @require_POST

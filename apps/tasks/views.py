@@ -1,3 +1,6 @@
+import datetime
+from urllib.parse import urlencode
+
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -35,6 +38,24 @@ def selected_person(request, raw):
     return get_object_or_404(Person.objects.for_family(request.family), pk=raw)
 
 
+DAY_PARAM = "jour"
+CORRECTION_DAYS = 7  # un parent peut corriger les cochages des 7 derniers jours
+
+
+def selected_day(raw, today: datetime.date) -> datetime.date:
+    """Jour choisi (?jour=AAAA-MM-JJ) : aujourd'hui par défaut, sinon un des
+    `CORRECTION_DAYS` derniers jours (404 au-delà ou dans le futur)."""
+    if not raw:
+        return today
+    try:
+        day = datetime.date.fromisoformat(raw)
+    except ValueError as error:
+        raise Http404 from error
+    if not today - datetime.timedelta(days=CORRECTION_DAYS) <= day <= today:
+        raise Http404
+    return day
+
+
 def is_htmx(request) -> bool:
     return request.headers.get("HX-Request") == "true"
 
@@ -51,8 +72,9 @@ def home(request):
         return redirect("display:board")
     person = selected_person(request, request.GET.get(PERSON_PARAM))
     now = timezone.localtime()
+    day = selected_day(request.GET.get(DAY_PARAM), now.date())
     people = [person] if person else None
-    tasks = tasks_for_day(request.family, now.date(), people=people)
+    tasks = tasks_for_day(request.family, day, people=people)
     children = Person.objects.for_family(request.family).children()
     if person:
         children = children.filter(pk=person.pk)
@@ -72,7 +94,16 @@ def home(request):
             "today": now.date(),
             "people": Person.objects.for_family(request.family),
             "selected": person,
-            "groups": group_by_period(tasks, current=current),
+            "groups": group_by_period(tasks, current=current if day == now.date() else None),
+            # Correction des jours passés (un parent coche/décoche après coup).
+            "day": day,
+            "is_today": day == now.date(),
+            "previous_day": (
+                day - datetime.timedelta(days=1)
+                if day > now.date() - datetime.timedelta(days=CORRECTION_DAYS)
+                else None
+            ),
+            "next_day": day + datetime.timedelta(days=1) if day < now.date() else None,
             "remaining": count_remaining(tasks),
             "school_today": [(c, school[c.pk]) for c in children if c.pk in school],
             "tomorrow": tomorrow_items(request.family, now.date(), people=people),
@@ -93,7 +124,7 @@ def toggle(request, pk):
 
     Les enfants cochent depuis l'écran partagé (display:toggle).
     """
-    today = timezone.localdate()
+    today = selected_day(request.POST.get(DAY_PARAM), timezone.localdate())
     task = get_object_or_404(Task.objects.for_family(request.family).scheduled_on(today), pk=pk)
     if absences_on(request.family, today).is_absent(task.person_id):
         raise Http404  # tâche suspendue (vacances, malade)
@@ -105,8 +136,11 @@ def toggle(request, pk):
     # borné à la famille par selected_person().
     person = selected_person(request, request.POST.get(PERSON_PARAM))
     if not is_htmx(request):
-        url = reverse("tasks:home")
-        return redirect(f"{url}?{PERSON_PARAM}={person.pk}" if person else url)
+        params = {PERSON_PARAM: person.pk} if person else {}
+        if today != timezone.localdate():
+            params[DAY_PARAM] = today.isoformat()
+        query = f"?{urlencode(params)}" if params else ""
+        return redirect(f"{reverse('tasks:home')}{query}")
     tasks = tasks_for_day(request.family, today, people=[person] if person else None)
     period_tasks = [t for t in tasks if t.period == task.period]
     return render(
