@@ -68,15 +68,22 @@ class PersonColumn:
 
     `chores` contient des occurrences de ménage (`is_done`), comptées comme
     les tâches dans « X tâches restantes » et dans la progression.
+    `overdue` : tâches non faites des périodes déjà passées de la journée
+    (écran partagé), toujours cochables et comptées dans la progression.
     """
 
     person: object
     tasks: list[Task] = field(default_factory=list)
     chores: list = field(default_factory=list)
+    overdue: list[Task] = field(default_factory=list)
 
     @property
     def progress(self) -> list[bool]:
-        return [t.is_done for t in self.tasks] + [c.is_done for c in self.chores]
+        return (
+            [t.is_done for t in self.overdue]
+            + [t.is_done for t in self.tasks]
+            + [c.is_done for c in self.chores]
+        )
 
     @property
     def total(self) -> int:

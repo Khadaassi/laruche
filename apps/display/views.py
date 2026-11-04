@@ -27,9 +27,19 @@ from apps.saturday.views import draw_context, perform_spin
 from apps.school.models import Lunch
 from apps.school.selectors import school_days_for
 from apps.stars.selectors import balances
-from apps.stars.services import award_day_star, claim_day_celebration, claim_tier_celebration
+from apps.stars.services import (
+    award_day_star,
+    award_missing_day_stars,
+    claim_day_celebration,
+    claim_tier_celebration,
+)
 from apps.tasks.models import HomeworkCheck
-from apps.tasks.periods import PERIOD_PHRASES, current_period, seconds_until_next_period
+from apps.tasks.periods import (
+    PERIOD_PHRASES,
+    current_period,
+    earlier_periods,
+    seconds_until_next_period,
+)
 from apps.tasks.selectors import group_by_person, tasks_for_day
 from apps.tasks.services import answer_homework_check, set_done
 
@@ -60,7 +70,12 @@ def child_columns(request, person=None):
     children = Person.objects.for_family(request.family).children()
     if person is not None:
         children = children.filter(pk=person.pk)
-    tasks = tasks_for_day(request.family, today, people=children, period=period)
+    day_tasks = tasks_for_day(request.family, today, people=children)
+    tasks = [t for t in day_tasks if t.period == period]
+    # Oubliés des périodes passées : restent visibles, sinon la journée (donc
+    # l'étoile) ne peut plus être complétée depuis la tablette.
+    past = set(earlier_periods(period))
+    overdue = [t for t in day_tasks if t.period in past and not t.is_done]
     school_today = school_days_for(request.family, today, people=children)
     school_tomorrow = school_days_for(request.family, tomorrow, people=children)
     chores_today = chores_by_day(request.family, today, 1)[today]
@@ -73,6 +88,7 @@ def child_columns(request, person=None):
         )
     )
     for column in columns:
+        column.overdue = [t for t in overdue if t.person_id == column.person.pk]
         column.stars = stars.get(column.person.pk)
         # Nouveau palier atteint : fêté une seule fois, sur cet écran.
         column.celebrate_tier = claim_tier_celebration(column.stars) if column.stars else None
@@ -117,6 +133,7 @@ def board(request):
     period = current_period()
     today = timezone.localdate()
     close_past_plans(request.family, today)
+    award_missing_day_stars(request.family, today)
     plan = current_plan(request.family, today)
     return render(
         request,

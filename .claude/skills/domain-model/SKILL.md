@@ -281,6 +281,17 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
   plus haute) si plusieurs paliers sont franchis d'un coup. Un palier atteint ailleurs
   (parent qui coche sur son téléphone) est fêté au prochain affichage de l'écran partagé.
 
+### Étoiles manquantes (correctif)
+
+- **Oublis des périodes passées** : l'écran partagé montre la période en cours **plus**,
+  en tête de colonne (« Encore à faire plus tôt »), les tâches non faites des périodes déjà
+  passées du jour. Sans ça, une tâche du matin oubliée disparaissait à 11h et la journée
+  (donc l'étoile) ne pouvait plus être complétée depuis la tablette.
+- **Rattrapage des étoiles** (`award_missing_day_stars`) : à l'ouverture de l'écran partagé
+  et de l'accueil parent, chaque jour sans étoile des `CATCH_UP_DAYS` (7) derniers jours est
+  réexaminé avec `award_day_star` (tâche restante supprimée, déplacée, ménage réassigné…).
+  Idempotent grâce à la contrainte unique.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée
