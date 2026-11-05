@@ -6,6 +6,8 @@
 - Favoris d'abord (tirés deux fois plus souvent) ; on évite les recettes servies
   les 14 derniers jours ou déjà au menu de la semaine. Pas assez de recettes : on
   reprend les moins récemment servies.
+- **Soirs chargés** (un rendez-vous qui finit après 17 h, ou au moins deux dans la
+  journée) : le dîner est pris parmi les recettes **rapides** (≤ 30 min) s'il y en a.
 - Tirage reproductible pour une famille et une semaine (même proposition si on
   recommence sur une semaine vide).
 """
@@ -16,10 +18,27 @@ import random
 from django.db import transaction
 from django.utils import timezone
 
+from apps.agenda.grid import events_by_day
+
 from .models import Meal, MealKind, MealSlot, Recipe
 
 LUNCH_WEEKDAYS = (2, 5, 6)  # mercredi, samedi, dimanche
 RECENT_DAYS = 14
+QUICK_MINUTES = 30
+EVENING = datetime.time(17, 0)
+
+
+def busy_evenings(family, monday: datetime.date) -> set[datetime.date]:
+    """Jours de la semaine où le soir est chargé (agenda de la famille)."""
+    busy = set()
+    for day, events in events_by_day(family, monday, 7).items():
+        if len(events) >= 2 or any(e.end_time > EVENING for e in events):
+            busy.add(day)
+    return busy
+
+
+def is_quick(recipe) -> bool:
+    return recipe.prep_minutes is not None and recipe.prep_minutes <= QUICK_MINUTES
 
 
 def target_slots(monday: datetime.date, today: datetime.date) -> list[tuple[datetime.date, str]]:
@@ -66,11 +85,15 @@ def suggest_week(family, monday: datetime.date) -> list[MealSlot]:
     stale = sorted(
         (r for r in recipes if r.pk in last_served), key=lambda r: (last_served[r.pk], r.pk)
     )
+    busy = busy_evenings(family, monday)
     created = []
     for day, meal in slots:
-        if fresh:
-            weights = [2 if r.is_favorite else 1 for r in fresh]
-            recipe = rng.choices(fresh, weights=weights)[0]
+        pool = fresh
+        if meal == Meal.DINNER and day in busy:
+            pool = [r for r in fresh if is_quick(r)] or fresh
+        if pool:
+            weights = [2 if r.is_favorite else 1 for r in pool]
+            recipe = rng.choices(pool, weights=weights)[0]
             fresh.remove(recipe)
         else:
             recipe = stale.pop(0)

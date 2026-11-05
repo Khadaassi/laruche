@@ -30,6 +30,7 @@
           {{ day.date|date:"l j F"|capfirst }}
           {% if day.is_today %}<span class="rounded-sm bg-honey px-space-2 py-0.5 text-xs font-semibold text-ink">Aujourd'hui</span>{% endif %}
         </h2>
+        {% if day.busy_evening %}<p class="-mt-1 mb-space-2 flex items-center gap-1 text-sm text-ink-soft">{% include "components/_icon.html" with name="time" %}Soirée chargée : un dîner rapide (30 min max)</p>{% endif %}
         <ul class="divide-y divide-border">
           {% for meal, slot in day.meals %}
             <li>
