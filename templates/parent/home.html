@@ -78,6 +78,7 @@
   {% include "components/_moments_banner.html" with for_parents=True %}
   {% if is_saturday %}<div class="mb-space-4">{% include "parent/_saturday_card.html" with prominent=True %}</div>{% endif %}
   <div class="mb-space-4">{% include "parent/_dinner_card.html" %}</div>
+  {% if event_preps %}<div class="mb-space-4">{% include "parent/_event_preps.html" %}</div>{% endif %}
   {% if school_today or tomorrow %}
     <div class="mb-space-4 space-y-space-4">
       {% if school_today %}

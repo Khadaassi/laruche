@@ -43,6 +43,8 @@
     </fieldset>
 
     {% include "components/_field.html" with field=form.location %}
+    {% include "components/_field.html" with field=form.driver %}
+    {% include "components/_field.html" with field=form.preps_text %}
     <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
   </form>
 

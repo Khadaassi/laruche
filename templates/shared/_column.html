@@ -17,6 +17,18 @@
     </div>
   {% endif %}
 
+  {% if column.event_preps %}
+    {# À préparer pour une activité (sac de piscine…) : rappel, sans case (les parents cochent). #}
+    <ul class="space-y-1">
+      {% for occ in column.event_preps %}
+        <li class="flex items-start gap-space-2 font-medium text-ink-soft">
+          {% include "components/_icon.html" with name="time" icon_size="mt-1 h-5 w-5" %}
+          <span>{% if occ.date == today %}Aujourd'hui{% else %}Demain{% endif %} {{ occ.event.title }} : {% for prep, done in occ.preps %}{% if done %}<span class="line-through">{{ prep.title|lower }}</span>{% else %}{{ prep.title|lower }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
   {% if column.absence %}
     {# Tâches suspendues : un simple état, jamais culpabilisant. #}
     <p class="flex items-center gap-space-2 rounded-md border border-border-strong bg-surface-100 p-space-4 text-lg font-medium">

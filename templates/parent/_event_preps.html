@@ -1,0 +1,49 @@
+{% comment %}
+Rendez-vous d'aujourd'hui et de demain : qui accompagne, et les préparatifs à cocher
+(cochage optimiste, 204). « Je m'en occupe » : le parent connecté accompagne ce jour-là.
+{% endcomment %}
+<section class="rounded-md border border-border-strong bg-surface-0 p-space-4" aria-labelledby="event-preps-title">
+  <h2 id="event-preps-title" class="mb-space-2 flex items-center gap-space-2 text-lg">
+    <span class="hex flex h-7 w-7 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="time" %}</span>
+    Rendez-vous à préparer
+  </h2>
+  <ul class="divide-y divide-border">
+    {% for occ in event_preps %}
+      <li class="py-space-2">
+        <p class="font-medium">{% if occ.date == today %}Aujourd'hui{% else %}Demain{% endif %} {{ occ.event.time_display }} · {{ occ.event.title }}{% for p in occ.event.people.all %}{% if forloop.first %} ({% endif %}{{ p.name }}{% if not forloop.last %}, {% else %}){% endif %}{% endfor %}</p>
+        <div class="mt-1 flex flex-wrap items-center gap-space-2 text-sm">
+          <span class="text-ink-soft">Accompagne : <span class="font-medium text-ink">{% if occ.driver %}{{ occ.driver.name }}{% else %}personne de prévu{% endif %}</span>{% if occ.taken_over %} (pour ce jour){% endif %}</span>
+          {% if occ.driver.pk != request.user.person.pk %}
+            <form method="post" action="{% url 'agenda:take_over' occ.event.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="date" value="{{ occ.date|date:'Y-m-d' }}">
+              <button type="submit" class="min-h-9 rounded-sm border border-border-strong px-space-2 font-medium">Je m'en occupe</button>
+            </form>
+          {% endif %}
+        </div>
+        {% if occ.preps %}
+          <ul class="mt-space-2 space-y-1">
+            {% for prep, done in occ.preps %}
+              <li>
+                <form method="post" action="{% url 'agenda:prep_toggle' prep.pk %}" data-task-form hx-sync="this:queue last"
+                      hx-post="{% url 'agenda:prep_toggle' prep.pk %}" hx-trigger="change" hx-swap="none"
+                      class="task-row group flex min-h-11 items-center gap-space-2">
+                  {% csrf_token %}
+                  <input type="hidden" name="date" value="{{ occ.date|date:'Y-m-d' }}">
+                  <span class="relative flex shrink-0">
+                    <input type="checkbox" name="done" id="prep-{{ prep.pk }}-{{ occ.date|date:'Ymd' }}"
+                           class="h-6 w-6 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage"
+                           {% if done %}checked{% endif %}>
+                    <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
+                  </span>
+                  <label for="prep-{{ prep.pk }}-{{ occ.date|date:'Ymd' }}" class="flex-1 cursor-pointer group-has-[:checked]:text-ink-soft group-has-[:checked]:line-through">{{ prep.title }}</label>
+                  <noscript><button type="submit" class="rounded-sm border px-space-2 text-sm">OK</button></noscript>
+                </form>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</section>

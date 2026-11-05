@@ -9,6 +9,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.absences.models import Absence
 from apps.absences.selectors import absences_on
+from apps.agenda.preparation import upcoming as upcoming_preparations
 from apps.core.preparation import tomorrow_items
 from apps.families.access import family_member_required, parent_required
 from apps.families.models import Person
@@ -110,6 +111,7 @@ def home(request):
             "saturday_plan": saturday_plan,
             "is_saturday": now.date().weekday() == SATURDAY,
             "dinner": dinner_of(request.family, now.date()),
+            "event_preps": upcoming_preparations(request.family, now.date(), people=people),
             # Mon année (privé) : petits pas du jour de la personne connectée seulement.
             "my_steps": today_steps_for(request.user, now.date()),
             # Revue du dimanche : proposée du vendredi au dimanche tant qu'elle n'est pas faite.

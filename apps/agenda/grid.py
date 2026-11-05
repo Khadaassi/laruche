@@ -70,7 +70,12 @@ def layout_day(events) -> tuple[list[Block], int]:
 def events_by_day(family, start: datetime.date, days: int = 7) -> dict:
     """{date: [Event]} sur [start, start + days[, en deux requêtes."""
     end = start + datetime.timedelta(days=days - 1)
-    events = list(Event.objects.for_family(family).between(start, end).prefetch_related("people"))
+    events = list(
+        Event.objects.for_family(family)
+        .between(start, end)
+        .select_related("driver")
+        .prefetch_related("people", "preps")
+    )
     return {
         start + datetime.timedelta(days=i): [
             e for e in events if e.occurs_on(start + datetime.timedelta(days=i))
