@@ -31,3 +31,21 @@ class PwaTests(SecureClientMixin, TestCase):
         csp = response["Content-Security-Policy"]
         self.assertIn("manifest-src 'self'", csp)
         self.assertIn("worker-src 'self'", csp)
+
+
+class TemplateCommentTests(TestCase):
+    """Un commentaire {# … #} sur plusieurs lignes s'afficherait tel quel à l'écran."""
+
+    def test_no_multiline_short_comments(self):
+        import pathlib
+        import re
+
+        from django.conf import settings
+
+        offenders = [
+            str(path)
+            for path in pathlib.Path(settings.BASE_DIR, "templates").rglob("*.html")
+            for match in re.finditer(r"\{#(.*?)#\}", path.read_text(), re.S)
+            if "\n" in match.group(1)
+        ]
+        self.assertEqual(offenders, [])
