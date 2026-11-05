@@ -27,7 +27,8 @@ class ShoppingFlowTests(SecureClientMixin, TestCase):
         self.plan(self.tajine, 2)
 
     def recipe(self, name, *ingredients):
-        recipe = Recipe.objects.create(family=self.family, name=name)
+        # Pour 1 : famille d'une personne, quantités non adaptées (voir test_presence).
+        recipe = Recipe.objects.create(family=self.family, name=name, servings=1)
         for ing, quantity, unit in ingredients:
             RecipeIngredient.objects.create(recipe=recipe, name=ing, quantity=quantity, unit=unit)
         return recipe

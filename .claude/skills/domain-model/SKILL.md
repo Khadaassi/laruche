@@ -433,6 +433,16 @@ pas (404), rien sur la tablette. Toute requête passe par `Goal.objects.mine(use
 `.github/workflows/backup.yml` : `pg_dump` chiffré chaque dimanche, artefact 90 jours.
 Mise en place et restauration : `docs/sauvegarde.md`.
 
+### Convives et portions (`meals/presence.py`)
+
+- `Recipe.servings` (défaut 4 : les recettes de la bibliothèque sont pour 4).
+- `presence_range(family, start, days)` → `{(date, repas): Presence}` : toute la famille,
+  moins les absents ; le **midi**, moins les enfants qui ont école et mangent à la cantine,
+  au sandwich ou ailleurs. `MealSlot.guests` (facultatif) remplace le calcul (invités).
+- Transfert vers les courses : quantité × convives / portions ; pièces, boîtes, paquets
+  arrondis à l'unité supérieure, cuillères à la demi. Personne compté → ×1.
+- Le menu affiche « N à table » ; la fiche du repas explique le calcul.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée

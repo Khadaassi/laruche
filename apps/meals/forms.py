@@ -31,16 +31,18 @@ class RecipeForm(forms.ModelForm):
 
     class Meta:
         model = Recipe
-        fields = ["name", "prep_minutes", "is_favorite"]
+        fields = ["name", "prep_minutes", "servings", "is_favorite"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Couscous, gratin de pâtes…"}),
             "prep_minutes": forms.NumberInput(attrs={"inputmode": "numeric", "min": 0}),
+            "servings": forms.NumberInput(attrs={"inputmode": "numeric", "min": 1, "max": 30}),
             "is_favorite": forms.CheckboxInput(attrs={"class": CHECKBOX_CLASSES}),
         }
 
     def __init__(self, *args, family, **kwargs):
         super().__init__(*args, **kwargs)
         self.instance.family = family
+        self.fields["servings"].required = False
         if self.instance.pk and not self.is_bound:
             self.initial["steps_text"] = "\n".join(s.text for s in self.instance.steps.all())
         style(self)
@@ -51,6 +53,9 @@ class RecipeForm(forms.ModelForm):
         if any(len(step) > 500 for step in steps):
             raise forms.ValidationError("Une étape ne doit pas dépasser 500 caractères.")
         return steps
+
+    def clean_servings(self):
+        return self.cleaned_data.get("servings") or 4
 
     def save(self, commit=True):
         recipe = super().save()
@@ -88,10 +93,22 @@ class MealSlotForm(forms.Form):
         required=False,
         help_text="Restes du couscous, chez mamie, pizza… (obligatoire pour « Autre »).",
     )
+    guests = forms.IntegerField(
+        label="Combien à table ?",
+        required=False,
+        min_value=1,
+        max_value=30,
+        help_text="Laissez vide : calculé avec la cantine et les absences.",
+    )
 
     def __init__(self, *args, family, slot=None, **kwargs):
         if slot is not None:
-            kwargs["initial"] = {"kind": slot.kind, "recipe": slot.recipe_id, "note": slot.note}
+            kwargs["initial"] = {
+                "kind": slot.kind,
+                "recipe": slot.recipe_id,
+                "note": slot.note,
+                "guests": slot.guests,
+            }
         else:
             kwargs["initial"] = {"kind": NOTHING}
         super().__init__(*args, **kwargs)
@@ -124,6 +141,7 @@ class MealSlotForm(forms.Form):
                 "kind": kind,
                 "recipe": self.cleaned_data["recipe"],
                 "note": self.cleaned_data["note"].strip(),
+                "guests": self.cleaned_data.get("guests"),
             },
         )
         return slot

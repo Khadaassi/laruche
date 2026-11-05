@@ -17,6 +17,8 @@
       <p class="text-sm text-ink-soft">Aucune recette : <a href="{% url 'meals:recipes' %}" class="font-medium text-ink underline">en créer une</a>.</p>
     {% endif %}
     {% include "components/_field.html" with field=form.note %}
+    {% include "components/_field.html" with field=form.guests %}
+    {% if presence %}<p class="-mt-space-2 text-sm text-ink-soft">Calcul du jour : {{ presence.count }} personne{{ presence.count|pluralize }} ({{ presence.explanation }}).</p>{% endif %}
     <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
   </form>
 {% endblock %}
