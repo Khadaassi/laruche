@@ -1,0 +1,24 @@
+{% comment %}
+Une ligne FlyLady cochable (optimiste, réponse 204). Paramètres : line, detail (facultatif).
+{% endcomment %}
+<li>
+  <form method="post" action="{% url 'flylady:toggle' %}" data-task-form hx-post="{% url 'flylady:toggle' %}" hx-trigger="change" hx-swap="none"
+        class="task-row group flex min-h-14 items-center gap-space-4 rounded-md border border-border bg-surface-100 px-space-4 py-3 has-[:checked]:border-sage">
+    {% csrf_token %}
+    <input type="hidden" name="key" value="{{ line.key }}">
+    <span class="relative flex shrink-0">
+      <input type="checkbox" name="done" id="fly-{{ line.key|slugify }}"
+             class="h-7 w-7 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage"
+             {% if line.done %}checked{% endif %}>
+      <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
+    </span>
+    <label for="fly-{{ line.key|slugify }}" class="flex-1 cursor-pointer">
+      <span class="block group-has-[:checked]:text-ink-soft group-has-[:checked]:line-through">{{ line.title }}</span>
+      {% if detail %}<span class="text-sm text-ink-soft">{{ detail }}</span>{% endif %}
+    </label>
+    <span class="task-badge hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey text-surface-0 group-has-[:checked]:bg-sage" aria-hidden="true">
+      <span class="hidden group-has-[:checked]:block">{% include "components/_check.html" %}</span>
+    </span>
+    <noscript><button type="submit" class="rounded-sm border border-border-strong px-space-2 text-sm">OK</button></noscript>
+  </form>
+</li>

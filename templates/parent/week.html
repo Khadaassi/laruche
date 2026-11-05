@@ -7,6 +7,11 @@
 
 {% block content %}
   {% include "parent/_week_nav.html" with base_url_name="household:week" %}
+  <a href="{% url 'flylady:today' %}" class="mb-space-4 flex min-h-14 items-center gap-space-4 rounded-md border border-border bg-surface-0 px-space-4 py-3 font-medium">
+    <span class="hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="chore" icon_size="h-5 w-5" %}</span>
+    <span class="flex-1">Ménage FlyLady<span class="block text-sm font-normal text-ink-soft">Routines, zone de la semaine, 15 minutes par jour</span></span>
+    <span aria-hidden="true">→</span>
+  </a>
 
   {# Les 7 jours côte à côte, avec les heures : rien à faire défiler de côté. #}
   {% include "components/_week_grid.html" with link_days=True editable=True %}

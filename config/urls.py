@@ -18,5 +18,6 @@ urlpatterns = [
     path("", include("apps.absences.urls")),
     path("", include("apps.holidays.urls")),
     path("", include("apps.progress.urls")),
+    path("", include("apps.flylady.urls")),
     path("", include("apps.agenda.urls")),
 ]

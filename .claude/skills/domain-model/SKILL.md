@@ -330,6 +330,22 @@ Page parent `/progres/?mois=AAAA-MM` (lien depuis l'accueil). Par enfant :
   tâche (hors absences et hors vacances quand la tâche y est facultative), 5 moins suivies.
 Nombre de requêtes constant (jamais une par jour).
 
+### Ménage FlyLady (`flylady/`, parents)
+
+Page `/menage/flylady/` (lien depuis Semaine) et réglages `/reglages/flylady/`.
+- `FlyRoutineItem` (`kind` matin / soir / bénédiction hebdo, `title`, `position`),
+  `FlyZone` (1 à 5, unique par famille, nom), `FlyMission` (zone, mission de 15 min).
+  Contenu de départ créé à la première visite (`services.ensure_defaults`, `defaults.py`).
+- **Zone de la semaine** : n-ième lundi du mois → zone n (5e semaine → zone 5).
+  **Mission du jour** : missions de la zone en rotation selon le jour de la semaine.
+  Chaque jour aussi un **hot spot** (2 min) ; chaque semaine la **bénédiction** (7 tâches)
+  et le **27 objets**.
+- `FlyCheck` (`family`, `date`, `key`) : coches **partagées** par les parents ; clés
+  `routine:<id>`, `mission:<id>`, `hotspot`, `fling`. L'hebdomadaire est daté du lundi.
+  `flylady:toggle` n'accepte que les clés du programme du jour de la famille (404 sinon).
+- Minuteur 15 min (`minuteur`, Alpine) avec petite fanfare à la fin.
+- Indépendant du ménage assigné (`household`), qui reste la répartition des corvées.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée

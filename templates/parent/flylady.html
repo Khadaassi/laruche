@@ -1,0 +1,62 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Ménage FlyLady — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'household:week' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Semaine</a>
+  {% include "parent/_header.html" with title="Ménage FlyLady" subtitle=plan.day|date:"l j F"|capfirst %}
+{% endblock %}
+
+{% block content %}
+  <p class="mb-space-4 text-ink-soft">Pas de grand ménage : de petites routines, 15 minutes par jour. Pas besoin que ce soit parfait, l'important c'est de le faire.</p>
+
+  <div class="page-grid">
+    <div class="space-y-space-4">
+      <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="fly-morning">
+        <h2 id="fly-morning" class="mb-space-2 text-lg">Routine du matin</h2>
+        <ul class="space-y-space-2">{% for line in plan.morning %}{% include "parent/_fly_line.html" %}{% endfor %}</ul>
+      </section>
+
+      {% if plan.zone %}
+        <section class="rounded-md border border-honey-dark bg-surface-0 p-space-4" aria-labelledby="fly-zone">
+          <p class="text-sm font-semibold text-ink-soft">Zone de la semaine</p>
+          <h2 id="fly-zone" class="mb-space-2 text-lg">Zone {{ plan.zone.number }} · {{ plan.zone.name }}</h2>
+          {% if plan.mission %}
+            <ul class="space-y-space-2">{% include "parent/_fly_line.html" with line=plan.mission detail="Mission du jour : 15 minutes, pas une de plus." %}</ul>
+          {% endif %}
+          {# Minuteur 15 min : on s'arrête quand il sonne, même si ce n'est pas fini. #}
+          <div x-data="minuteur" data-seconds="{{ timer_seconds }}" class="mt-space-4 flex items-center gap-space-4">
+            <p class="font-display text-3xl font-semibold tabular-nums" x-text="display" aria-live="polite">15:00</p>
+            <button type="button" x-on:click="toggle" x-text="label"
+                    class="min-h-11 flex-1 rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark">Lancer 15 minutes</button>
+            <button type="button" x-on:click="reset" class="min-h-11 rounded-lg border border-border-strong px-space-4 font-medium" aria-label="Remettre le minuteur à zéro">↺</button>
+          </div>
+        </section>
+      {% endif %}
+
+      <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="fly-hotspot">
+        <h2 id="fly-hotspot" class="mb-space-2 text-lg">Hot spot</h2>
+        <ul class="space-y-space-2">{% include "parent/_fly_line.html" with line=plan.hotspot detail="Plan de travail, table, meuble de l'entrée : là où tout s'accumule." %}</ul>
+      </section>
+
+      <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="fly-evening">
+        <h2 id="fly-evening" class="mb-space-2 text-lg">Routine du soir</h2>
+        <ul class="space-y-space-2">{% for line in plan.evening %}{% include "parent/_fly_line.html" %}{% endfor %}</ul>
+      </section>
+    </div>
+
+    <div class="space-y-space-4">
+      <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="fly-blessing">
+        <h2 id="fly-blessing" class="text-lg">Bénédiction de la semaine</h2>
+        <p class="mb-space-2 text-sm text-ink-soft">Une heure dans la semaine, en 7 petites tâches d'environ 10 minutes. À cocher quand vous voulez cette semaine.</p>
+        <ul class="space-y-space-2">{% for line in plan.blessing %}{% include "parent/_fly_line.html" %}{% endfor %}</ul>
+      </section>
+
+      <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="fly-fling">
+        <h2 id="fly-fling" class="text-lg">Désencombrement</h2>
+        <ul class="mt-space-2 space-y-space-2">{% include "parent/_fly_line.html" with line=plan.fling detail="Une fois dans la semaine : un sac, 27 objets dont on n'a plus besoin." %}</ul>
+      </section>
+
+      <a href="{% url 'flylady:manage' %}" class="flex min-h-11 items-center justify-between rounded-md border border-border bg-surface-0 px-space-4 font-medium underline">Modifier routines, zones et missions <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+{% endblock %}
