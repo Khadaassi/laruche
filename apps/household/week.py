@@ -12,7 +12,6 @@ from django.utils import timezone
 from apps.absences.selectors import absences_range
 from apps.agenda.grid import HOURS, SLOTS, events_by_day, layout_day
 from apps.celebrations.models import Celebration
-from apps.celebrations.services import roll_over_recurring
 from apps.families.models import Person
 from apps.meals.models import Meal, MealSlot
 from apps.school.selectors import school_days_range
@@ -50,7 +49,6 @@ def build_week(family, monday: datetime.date, selected: datetime.date | None = N
     week_days = [monday + datetime.timedelta(days=i) for i in range(7)]
     if selected not in week_days:
         selected = today if today in week_days else monday
-    roll_over_recurring(family, today)
     children = list(Person.objects.for_family(family).children())
     chores = chores_by_day(family, monday, 7)
     school = school_days_range(family, monday, 7, people=children)

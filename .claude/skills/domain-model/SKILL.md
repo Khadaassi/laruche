@@ -256,6 +256,14 @@ Cette section n'existait pas avant la Phase 2 : elle est créée ici.
 - Suppression d'une fête : page de confirmation (pas de `confirm()` JS), supprime aussi
   ses préparatifs, cadeaux et recettes.
 
+## Pas d'écriture à l'affichage (GET) — maintenance quotidienne
+
+Les pages consultées n'écrivent **jamais** en base. Les traitements de « rattrapage »
+(samedis passés clôturés, étoiles oubliées des 7 derniers jours, fêtes annuelles reportées)
+sont faits par `core.maintenance.run_daily`, appelé par la tâche planifiée
+(`/taches-planifiees/`, jeton `CRON_TOKEN`, chaque nuit vers 3 h et à 15 h). Idempotent.
+Les lectures restent justes sans elle (au pire, rattrapage à l'exécution suivante).
+
 ## Étoiles (`stars/`) — socle posé en Phase 3
 
 Le brief de la Phase 3 supposait un système d'étoiles existant ; il n'y avait que
@@ -287,8 +295,8 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
   en tête de colonne (« Encore à faire plus tôt »), les tâches non faites des périodes déjà
   passées du jour. Sans ça, une tâche du matin oubliée disparaissait à 11h et la journée
   (donc l'étoile) ne pouvait plus être complétée depuis la tablette.
-- **Rattrapage des étoiles** (`award_missing_day_stars`) : à l'ouverture de l'écran partagé
-  et de l'accueil parent, chaque jour sans étoile des `CATCH_UP_DAYS` (7) derniers jours est
+- **Rattrapage des étoiles** (`award_missing_day_stars`) : chaque nuit (maintenance
+  quotidienne, `core.maintenance.run_daily`), chaque jour sans étoile des `CATCH_UP_DAYS` (7) derniers jours est
   réexaminé avec `award_day_star` (tâche restante supprimée, déplacée, ménage réassigné…).
   Idempotent grâce à la contrainte unique.
 

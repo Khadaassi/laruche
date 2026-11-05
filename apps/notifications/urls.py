@@ -9,5 +9,7 @@ urlpatterns = [
     path("notifications/abonnement/", views.subscribe, name="subscribe"),
     path("notifications/desabonnement/", views.unsubscribe, name="unsubscribe"),
     path("notifications/test/", views.test, name="test"),
-    path("taches-planifiees/notifications/", views.cron, name="cron"),
+    path("taches-planifiees/", views.cron, name="cron"),
+    # Ancienne adresse, gardée pour les appels déjà programmés.
+    path("taches-planifiees/notifications/", views.cron),
 ]

@@ -15,10 +15,10 @@ from apps.families.models import Person
 from apps.goals.views import today_steps_for
 from apps.meals.week import dinner_of
 from apps.review.selectors import REVIEW_FROM_WEEKDAY, is_done, review_monday
-from apps.saturday.draw import close_past_plans, current_plan
+from apps.saturday.draw import current_plan
 from apps.school.selectors import school_days_for
 from apps.stars.selectors import balances, pot
-from apps.stars.services import award_day_star, award_missing_day_stars
+from apps.stars.services import award_day_star
 
 from .forms import TaskForm
 from .models import Task
@@ -81,8 +81,6 @@ def home(request):
     if person:
         children = children.filter(pk=person.pk)
     school = school_days_for(request.family, now.date(), people=children)
-    close_past_plans(request.family, now.date())
-    award_missing_day_stars(request.family, now.date())
     saturday_plan = current_plan(request.family, now.date())
     current = period_at(now.time())
     return render(

@@ -6,6 +6,7 @@ from unittest import mock
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.core.maintenance import run_daily
 from apps.families.tests.factories import SecureClientMixin, join, make_family
 from apps.stars.models import DayStar
 from apps.stars.services import CATCH_UP_DAYS, award_missing_day_stars
@@ -80,14 +81,17 @@ class CatchUpTests(SecureClientMixin, TestCase):
         award_missing_day_stars(self.family, MONDAY)
         self.assertFalse(DayStar.objects.filter(person=self.lina, date=old).exists())
 
-    def test_opening_the_board_runs_the_catch_up(self, _now):
+    def test_opening_pages_writes_nothing(self, _now):
+        """Les GET restent sans effet de bord : le rattrapage est fait la nuit."""
         self.left.delete()
         self.client.force_login(self.kid)
         self.get(reverse("display:board"))
-        self.assertTrue(DayStar.objects.filter(person=self.lina, date=self.yesterday).exists())
-
-    def test_parent_home_runs_the_catch_up(self, _now):
-        self.left.delete()
         self.client.force_login(self.parent)
         self.get(reverse("tasks:home"))
+        self.assertFalse(DayStar.objects.exists())
+
+    def test_nightly_maintenance_runs_the_catch_up(self, _now):
+        self.left.delete()
+        self.assertEqual(run_daily(MONDAY)["stars"], 1)
         self.assertTrue(DayStar.objects.filter(person=self.lina, date=self.yesterday).exists())
+        self.assertEqual(run_daily(MONDAY)["stars"], 0)  # idempotent

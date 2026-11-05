@@ -1,9 +1,8 @@
 """Récurrence annuelle des fêtes.
 
-Pas de tâche planifiée (l'offre gratuite de Render n'en a pas) : le report
-est paresseux. `roll_over_recurring` est appelé par les vues qui listent des
-fêtes (accueil, fêtes, semainier, écran partagé). Il est idempotent : une
-occurrence n'a qu'une seule suite (`previous` est un OneToOne).
+`roll_over_recurring` est appelé chaque nuit par la maintenance quotidienne
+(`core.maintenance.run_daily`), jamais par l'affichage d'une page. Il est
+idempotent : une occurrence n'a qu'une seule suite (`previous` est un OneToOne).
 """
 
 import datetime

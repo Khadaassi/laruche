@@ -125,7 +125,12 @@ class NotificationTests(SecureClientMixin, TestCase):
         self.assertEqual(self.post(url, headers={"Authorization": "Bearer faux"}).status_code, 404)
         ok = self.post(url, headers={"Authorization": "Bearer jeton-secret"})
         self.assertEqual(ok.status_code, 200)
-        self.assertEqual(set(ok.json()), {"dinner", "review"})
+        self.assertEqual(set(ok.json()), {"dinner", "review", "maintenance"})
+        self.assertEqual(ok.json()["maintenance"]["families"], 1)
+        old_url = self.post(
+            "/taches-planifiees/notifications/", headers={"Authorization": "Bearer jeton-secret"}
+        )
+        self.assertEqual(old_url.status_code, 200)
 
     def test_cron_disabled_without_token(self, _push):
         self.assertEqual(self.post(reverse("notifications:cron")).status_code, 404)

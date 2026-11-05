@@ -174,7 +174,7 @@ def cancel(plan: SaturdayPlan) -> None:
 def close_past_plans(family, today: datetime.date) -> None:
     """Samedi passé : plan validé → historique ; tirage non validé → abandonné.
 
-    Appelé paresseusement par les vues (pas de tâche planifiée sur Render gratuit).
+    Appelé chaque nuit par la maintenance (`core.maintenance.run_daily`).
     """
     past = SaturdayPlan.objects.for_family(family).filter(date__lt=today)
     for plan in past.filter(status=PlanStatus.PLANNED):

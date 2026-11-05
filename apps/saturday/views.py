@@ -17,7 +17,6 @@ from .draw import (
     DrawError,
     accept,
     cancel,
-    close_past_plans,
     current_plan,
     draw,
     eligible_activities,
@@ -43,7 +42,6 @@ def draw_context(family, **extra) -> dict:
     d'entrée (parent : saturday:*, écran partagé : display:saturday_*).
     """
     today = timezone.localdate()
-    close_past_plans(family, today)
     plan = current_plan(family, today)
     return {
         "saturday": target_saturday(today),
