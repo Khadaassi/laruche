@@ -32,5 +32,11 @@
 {# Le cookie CSRF est HttpOnly : HTMX reçoit le jeton ici, pas via document.cookie. #}
 <body class="{% block body_class %}min-h-dvh{% endblock %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   {% block layout %}{% endblock %}
+  {# Échec d'enregistrement (réseau, serveur) : message + « Réessayer » (static/js/app.js). #}
+  <div id="save-error" class="fixed inset-x-space-4 bottom-24 z-50 mx-auto hidden max-w-md items-center gap-space-2 rounded-md bg-ink px-space-4 py-2 text-surface-0 shadow-lg md:bottom-space-6" role="alert">
+    <span class="flex-1">Modification non enregistrée : vérifiez la connexion.</span>
+    <button type="button" data-save-retry class="min-h-11 rounded-sm bg-honey px-space-4 font-medium text-ink">Réessayer</button>
+    <button type="button" data-save-dismiss class="min-h-11 px-space-2 text-xl" aria-label="Fermer le message">×</button>
+  </div>
 </body>
 </html>

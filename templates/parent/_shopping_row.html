@@ -4,7 +4,7 @@ L'origine (menu / habituel / ajouté) est dite en texte, jamais par la couleur s
 {% endcomment %}
 {% url 'shopping:toggle' item.pk as toggle_url %}
 <li class="group/row flex items-center gap-space-2 py-space-2">
-  <form method="post" action="{{ toggle_url }}" data-task-form hx-post="{{ toggle_url }}" hx-trigger="change" hx-swap="none"
+  <form method="post" action="{{ toggle_url }}" data-task-form hx-sync="this:queue last" hx-post="{{ toggle_url }}" hx-trigger="change" hx-swap="none"
         class="task-row group flex min-w-0 flex-1 items-center gap-space-4">
     {% csrf_token %}
     <span class="relative flex shrink-0">

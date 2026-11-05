@@ -2,7 +2,7 @@
 {% with chore=occurrence.chore %}
 {% url 'household:toggle' chore.pk occurrence.date|date:'Y-m-d' as toggle_url %}
 <li>
-  <form method="post" action="{{ toggle_url }}" data-task-form hx-post="{{ toggle_url }}" hx-trigger="change" hx-swap="none"
+  <form method="post" action="{{ toggle_url }}" data-task-form hx-sync="this:queue last" hx-post="{{ toggle_url }}" hx-trigger="change" hx-swap="none"
         class="task-row group flex min-h-14 items-center gap-space-4 py-space-2">
     {% csrf_token %}
     <span class="relative flex shrink-0">

@@ -2,7 +2,7 @@
 Une ligne FlyLady cochable (optimiste, réponse 204). Paramètres : line, detail (facultatif).
 {% endcomment %}
 <li>
-  <form method="post" action="{% url 'flylady:toggle' %}" data-task-form hx-post="{% url 'flylady:toggle' %}" hx-trigger="change" hx-swap="none"
+  <form method="post" action="{% url 'flylady:toggle' %}" data-task-form hx-sync="this:queue last" hx-post="{% url 'flylady:toggle' %}" hx-trigger="change" hx-swap="none"
         class="task-row group flex min-h-14 items-center gap-space-4 rounded-md border border-border bg-surface-100 px-space-4 py-3 has-[:checked]:border-sage">
     {% csrf_token %}
     <input type="hidden" name="key" value="{{ line.key }}">
