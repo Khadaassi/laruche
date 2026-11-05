@@ -1,0 +1,62 @@
+name: Sauvegarde hebdomadaire
+
+# Chaque dimanche à 3 h (UTC) et à la demande : copie complète de la base Neon,
+# chiffrée (AES-256, phrase secrète), conservée 90 jours comme artefact privé du dépôt.
+# Secrets requis (Settings → Secrets and variables → Actions) :
+#   BACKUP_DATABASE_URL : URL Neon **directe** (sans « -pooler »), lecture suffit
+#   BACKUP_PASSPHRASE   : phrase secrète de chiffrement (à garder hors du dépôt !)
+# Restauration : docs/sauvegarde.md
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: pg_dump chiffré
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Vérifier les secrets
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$PASSPHRASE" ]; then
+            echo "::error::Secrets BACKUP_DATABASE_URL et BACKUP_PASSPHRASE requis (voir docs/sauvegarde.md)."
+            exit 1
+          fi
+
+      - name: Copie de la base (pg_dump 17, format custom)
+        run: |
+          stamp=$(date -u +%Y-%m-%d)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          docker run --rm -e DATABASE_URL -v "$PWD:/out" postgres:17 \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL" -f /out/laruche.dump'
+          size=$(stat -c %s laruche.dump)
+          echo "Taille : $size octets"
+          # Une base La Ruche vide fait déjà plusieurs dizaines de Ko : en dessous, c'est suspect.
+          if [ "$size" -lt 20000 ]; then echo "::error::Sauvegarde anormalement petite."; exit 1; fi
+          docker run --rm -v "$PWD:/out" postgres:17 pg_restore --list /out/laruche.dump | grep -c "TABLE DATA" \
+            | xargs -I{} echo "Tables sauvegardées : {}"
+
+      - name: Chiffrement (AES-256)
+        run: |
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" \
+            --symmetric --cipher-algo AES256 -o "laruche-$STAMP.dump.gpg" laruche.dump
+          shred -u laruche.dump
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: laruche-sauvegarde-${{ env.STAMP }}
+          path: laruche-${{ env.STAMP }}.dump.gpg
+          retention-days: 90
+          if-no-files-found: error
