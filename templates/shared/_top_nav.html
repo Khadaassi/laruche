@@ -4,7 +4,10 @@
       {% include "components/_logo.html" with size="h-12 w-12" %}
       <span class="font-display text-2xl font-semibold">{{ request.family.name }}</span>
     </div>
-    <p class="text-lg text-ink-soft">{{ today|date:"l j F"|capfirst }}</p>
+    <p class="flex items-center gap-space-2 text-lg text-ink-soft">
+      {% if theme_moment == "ramadan" or theme_moment == "eid" %}{% include "components/_icon.html" with name="crescent" icon_size="h-6 w-6" %}{% elif theme_season %}{% include "components/_icon.html" with name="season_"|add:theme_season icon_size="h-6 w-6" %}{% endif %}
+      {{ today|date:"l j F"|capfirst }}{% if moments.season_label %} · {{ moments.season_label }}{% endif %}
+    </p>
     {% if period %}<p class="rounded-sm bg-honey px-space-4 py-1 font-display text-lg font-semibold text-ink">{{ period.label }}</p>{% endif %}
     {% url 'display:board' as board_url %}{% url 'display:week' as week_url %}{% url 'display:celebrations' as celebrations_url %}{% url 'display:saturday' as saturday_url %}{% url 'display:menu' as menu_url %}
     <ul class="flex gap-space-2" aria-label="Pages de l'écran partagé">

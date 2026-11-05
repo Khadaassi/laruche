@@ -7,6 +7,7 @@ from django.db.models import Exists, OuterRef
 
 from apps.absences.selectors import absences_on
 from apps.holidays.selectors import holiday_on
+from apps.moments.selectors import relaxed_reason
 
 from .models import HolidayMode, Task, TaskCompletion
 from .periods import Period
@@ -41,9 +42,12 @@ def tasks_for_day(family, day: datetime.date, *, people=None, period=None) -> li
     if absent.people:
         tasks = tasks.exclude(person_id__in=absent.people.keys())
     tasks = list(tasks)
-    holiday = holiday_on(family, day)
+    # Vacances scolaires, Aïd, ou Ramadan (rythme allégé) : seul l'obligatoire compte.
+    relaxed = bool(tasks) and (
+        holiday_on(family, day) is not None or bool(relaxed_reason(family, day))
+    )
     for task in tasks:
-        task.optional = holiday is not None and task.holiday_mode != HolidayMode.REQUIRED
+        task.optional = relaxed and task.holiday_mode != HolidayMode.REQUIRED
     return tasks
 
 

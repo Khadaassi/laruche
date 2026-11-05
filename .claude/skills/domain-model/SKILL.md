@@ -315,7 +315,7 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
   Migration 0006 : prière → obligatoire, devoirs → objectif ×3 pour les tâches existantes.
 - `tasks_for_day` pose `task.optional` (vacances et pas `required`). Une tâche facultative
   ne compte ni dans « restantes », ni dans la progression, ni pour l'étoile du jour, et
-  n'est pas rattrapable. La tablette l'affiche toute la journée dans « Bonus vacances »
+  n'est pas rattrapable. La tablette l'affiche toute la journée dans « Bonus du jour »
   (objectif : « 1/3 cette semaine », jours cochés depuis lundi). Bannière vacances en tête.
 - Le ménage reste compté normalement pendant les vacances.
 
@@ -368,6 +368,26 @@ Page `/menage/flylady/` (lien depuis Semaine) et réglages `/reglages/flylady/`.
 recette (ou toute une cuisine) dans la famille via `services.import_library`, sans doublon
 de nom. Les copies sont des `Recipe` ordinaires : modifiables, utilisées par le menu
 assisté et la liste de courses.
+
+### Moments particuliers (`moments/`)
+
+La famille ne fête **ni les fêtes commerciales ni les fêtes chrétiennes** : aucun contenu
+de départ n'y fait référence (vacances « d'automne » et « de fin d'année », pas de marché
+de Noël au catalogue du samedi ; migrations de renommage pour l'existant). On fête l'Aïd.
+- `calendar.py` (sans base) : saison astronomique ; Ramadan et Aïd al-Fitr / al-Adha via
+  `hijridate` (Umm al-Qura), dates **estimées**. `MomentSettings` (une par famille, valeurs
+  par défaut sans ligne) : `hijri_shift` (−2…+2 jours, observation de la lune),
+  `eid_days` (1…3 jours de fête), `ramadan_light` (défaut vrai).
+- `selectors.moments_for(family, day)` → `DayMoments` : vendredi (« Joumou'a Moubarak »
+  + rappels), Ramadan (jour n / N, bonne action du jour pour les enfants, compte à rebours
+  de l'Aïd), Aïd (« Aïd Moubarak ! »), Aïd à moins de 30 jours, anniversaires du jour et
+  des 7 prochains jours (`PersonBirthday`, une date par personne ; 29/02 → 28/02).
+- **Tâches allégées** : jour d'Aïd, et Ramadan si `ramadan_light`, comme les vacances
+  scolaires : seules les tâches `holiday_mode = required` comptent (`relaxed_reason`).
+- **Thème** : context processor `moments.theme` → `<html data-season=… data-moment=…>`
+  (moment : aïd > ramadan > vendredi). Bannière `components/_moments_banner.html` sur la
+  tablette (grand format, pluie d'alvéoles une fois pour l'Aïd et l'anniversaire) et
+  l'accueil parent (+ rappels d'anniversaires à venir). Réglages `/reglages/moments/`.
 
 ### Étoile du jour (`stars/services.py`, Phase 5)
 

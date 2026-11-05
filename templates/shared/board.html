@@ -7,6 +7,7 @@
 {% block main_attrs %}x-data="periodClock" data-reload-in="{{ reload_in }}"{% endblock %}
 
 {% block before_columns %}
+  {% include "components/_moments_banner.html" with large=True %}
   {% if holiday %}
     <section class="mb-space-6 flex items-center gap-space-4 rounded-md border border-honey-dark bg-surface-0 p-space-4" aria-label="Mode vacances">
       <span class="hex flex h-12 w-12 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="absence_vacation" icon_size="h-7 w-7" %}</span>

@@ -1,7 +1,7 @@
 """Catalogue de départ : la roue n'est pas vide à la création d'une famille.
 
 Types d'activités génériques (pas d'adresse), pensés pour une famille de la
-région lilloise : musées, parcs, marchés de Noël, stade, ducasse…
+région lilloise : musées, parcs, stade, ducasse… (ni fêtes commerciales ni fêtes chrétiennes)
 Les coûts en étoiles concernent quelques sorties « événement ».
 """
 
@@ -26,7 +26,7 @@ DEFAULT_ACTIVITIES = [
     ("Balade en forêt et ramassage de feuilles", Season.AUTUMN, Place.OUTING, True, None, 0),
     ("Match de foot au stade", Season.AUTUMN, Place.OUTING, False, Decimal("30"), 40),
     ("Cirque", Season.WINTER, Place.OUTING, False, Decimal("25"), 30),
-    ("Marché de Noël", Season.WINTER, Place.OUTING, True, None, 0),
+    ("Bowling", Season.WINTER, Place.OUTING, False, Decimal("8"), 0),
     ("Patinoire", Season.WINTER, Place.OUTING, False, Decimal("10"), 15),
     ("Cabane en couvertures et lecture", Season.WINTER, Place.HOME, True, None, 0),
 ]

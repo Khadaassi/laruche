@@ -1,0 +1,42 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Moments particuliers — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'families:settings' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Réglages</a>
+  {% include "parent/_header.html" with title="Moments particuliers" %}
+{% endblock %}
+
+{% block content %}
+<form method="post" class="page-grid" novalidate>
+  {% csrf_token %}
+  <section class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="islamic-title">
+    <h2 id="islamic-title" class="text-lg">Ramadan et Aïd</h2>
+    <p class="text-sm text-ink-soft">Dates calculées automatiquement (calendrier hégirien), à confirmer avec l'annonce officielle :</p>
+    <ul class="space-y-1 text-sm">
+      {% if ramadan %}<li><span class="font-medium">Ramadan</span> · du {{ ramadan.start|date:"j F Y" }} au {{ ramadan.end|date:"j F Y" }}</li>{% endif %}
+      {% for eid in eids %}<li><span class="font-medium">{{ eid.name }}</span> · {{ eid.date|date:"l j F Y" }}</li>{% endfor %}
+    </ul>
+    {% include "components/_field.html" with field=form.hijri_shift %}
+    {% include "components/_field.html" with field=form.eid_days %}
+    <label class="flex min-h-11 cursor-pointer items-start gap-space-4 rounded-sm border border-border-strong p-space-4">
+      <input type="checkbox" name="{{ form.ramadan_light.html_name }}" class="mt-0.5 h-6 w-6 shrink-0 cursor-pointer accent-sage" {% if form.ramadan_light.value %}checked{% endif %}>
+      <span><span class="block font-medium">{{ form.ramadan_light.label|capfirst }}</span><span class="block text-sm text-ink-soft">{{ form.ramadan_light.help_text }} Les jours d'Aïd, c'est toujours le cas.</span></span>
+    </label>
+  </section>
+
+  <section class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="birthdays-title">
+    <h2 id="birthdays-title" class="text-lg">Anniversaires</h2>
+    <p class="text-sm text-ink-soft">Le jour J, un message de fête s'affiche sur la tablette et sur l'accueil ; une semaine avant, un rappel pour les parents.</p>
+    {% for person, value, error in people %}
+      <div>
+        <label for="naissance-{{ person.pk }}" class="mb-1 flex items-center gap-space-2 font-medium">{% include "components/_avatar.html" %}{{ person.name }}</label>
+        <input type="date" id="naissance-{{ person.pk }}" name="naissance-{{ person.pk }}" value="{{ value|date:'Y-m-d'|default:value|default_if_none:'' }}"
+               class="min-h-11 w-full rounded-sm border border-border-strong bg-surface-0 px-space-4" {% if error %}aria-invalid="true" aria-describedby="naissance-{{ person.pk }}-error"{% endif %}>
+        {% if error %}<p id="naissance-{{ person.pk }}-error" class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endif %}
+      </div>
+    {% endfor %}
+  </section>
+
+  <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark md:col-span-2">Enregistrer</button>
+</form>
+{% endblock %}

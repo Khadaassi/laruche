@@ -11,6 +11,11 @@ Samedi a sa propre variable `stars` (liste des soldes).
     <p class="font-display text-xl font-semibold leading-tight">{{ title|default:"La Ruche" }}</p>
     {% if subtitle %}<p class="text-sm text-ink-soft">{{ subtitle }}</p>{% endif %}
   </div>
+  {% if theme_season %}
+    <span class="hex flex h-9 w-9 shrink-0 items-center justify-center bg-surface-0 text-ink-soft" title="{{ moments.season_label|default:'' }}">
+      {% if theme_moment == "ramadan" or theme_moment == "eid" %}{% include "components/_icon.html" with name="crescent" icon_size="h-5 w-5" %}{% else %}{% include "components/_icon.html" with name="season_"|add:theme_season icon_size="h-5 w-5" %}{% endif %}
+    </span>
+  {% endif %}
   {% if header_stars is not None and header_stars != "" %}
     <p class="inline-flex shrink-0 items-center gap-1 rounded-sm bg-honey py-1 pl-space-2 pr-space-2 font-semibold text-ink">
       {% include "components/_icon.html" with name="celebration" icon_size="h-4 w-4" %}

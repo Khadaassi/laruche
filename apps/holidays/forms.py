@@ -13,7 +13,7 @@ class SchoolHolidayForm(forms.ModelForm):
             "start_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "end_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
-        help_texts = {"name": "Ex. Vacances de Noël, pont de mai…"}
+        help_texts = {"name": "Ex. Vacances de fin d'année, pont de mai…"}
 
     def __init__(self, *args, family, **kwargs):
         super().__init__(*args, **kwargs)
