@@ -26,6 +26,7 @@ urlpatterns = [
     path("menu/proposer/", views.suggest, name="suggest"),
     path("menu/<str:day>/<meal:meal>/", views.slot_edit, name="slot_edit"),
     path("recettes/", views.recipes, name="recipes"),
+    path("recettes/bibliotheque/", views.library, name="library"),
     path("recettes/<int:pk>/", views.recipe_detail, name="recipe_detail"),
     path("recettes/<int:pk>/modifier/", views.recipe_edit, name="recipe_edit"),
     path("recettes/<int:pk>/favori/", views.recipe_favorite, name="recipe_favorite"),

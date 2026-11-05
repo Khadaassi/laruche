@@ -7,6 +7,11 @@
   {% include "parent/_kitchen_tabs.html" %}
 <div class="page-grid">
   <section aria-labelledby="recipes-title">
+    <a href="{% url 'meals:library' %}" class="mb-space-4 flex min-h-14 items-center gap-space-4 rounded-md border border-honey-dark bg-surface-0 px-space-4 py-3 font-medium">
+      <span class="hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="recipe" icon_size="h-5 w-5" %}</span>
+      <span class="flex-1">Bibliothèque de recettes<span class="block text-sm font-normal text-ink-soft">Marocaines, françaises, italiennes, légères : simples, pour 4</span></span>
+      <span aria-hidden="true">→</span>
+    </a>
     <div class="mb-space-2 flex items-center gap-space-2">
       <h2 id="recipes-title" class="flex-1 text-lg">Recettes</h2>
       <a href="{% url 'meals:recipes' %}" class="inline-flex min-h-11 items-center rounded-sm border px-space-4 text-sm font-medium {% if not favorites_only %}border-ink bg-ink text-surface-0{% else %}border-border-strong bg-surface-0{% endif %}" {% if not favorites_only %}aria-current="true"{% endif %}>Toutes</a>
