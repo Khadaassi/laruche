@@ -1,0 +1,61 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Bibliothèque de recettes — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'meals:recipes' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Mes recettes</a>
+  {% include "parent/_header.html" with title="Bibliothèque de recettes" %}
+{% endblock %}
+
+{% block content %}
+  <p class="mb-space-4 text-ink-soft">{{ total }} recettes simples et rapides pour 4 personnes, sans porc ni alcool. « Ajouter » en fait une copie dans vos recettes : modifiable, utilisable dans le menu et la liste de courses.</p>
+
+  <nav aria-label="Cuisine" class="-mx-space-4 mb-space-4 overflow-x-auto px-space-4">
+    <ul class="flex gap-space-2">
+      <li><a href="{% url 'meals:library' %}" class="flex h-11 items-center whitespace-nowrap rounded-sm border px-space-4 font-medium {% if not cuisine %}border-ink bg-ink text-surface-0{% else %}border-border-strong bg-surface-0{% endif %}" {% if not cuisine %}aria-current="true"{% endif %}>Toutes</a></li>
+      {% for key, label in cuisines %}
+        <li><a href="?cuisine={{ key }}" class="flex h-11 items-center whitespace-nowrap rounded-sm border px-space-4 font-medium {% if cuisine == key %}border-ink bg-ink text-surface-0{% else %}border-border-strong bg-surface-0{% endif %}" {% if cuisine == key %}aria-current="true"{% endif %}>{{ label }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+
+  {% if missing %}
+    <form method="post" class="mb-space-4">
+      {% csrf_token %}
+      <input type="hidden" name="tout" value="1">
+      <button type="submit" class="min-h-11 w-full rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark">Ajouter les {{ missing }} recette{{ missing|pluralize }} {% if cuisine %}de cette cuisine{% else %}de la bibliothèque{% endif %}</button>
+    </form>
+  {% endif %}
+
+  <ul class="grid gap-space-4 md:grid-cols-2">
+    {% for recipe, owned in recipes %}
+      <li id="{{ recipe.key }}" class="scroll-mt-space-4 rounded-md border border-border bg-surface-0 p-space-4">
+        <div class="flex items-start gap-space-2">
+          <div class="min-w-0 flex-1">
+            <h2 class="text-lg">{{ recipe.name }}</h2>
+            <p class="text-sm text-ink-soft">{{ recipe.cuisine_label }} · {{ recipe.minutes }} min{% for tag in recipe.tags %} · {{ tag }}{% endfor %}</p>
+          </div>
+          {% if owned %}
+            <span class="flex shrink-0 items-center gap-1 rounded-sm bg-sage px-space-2 py-1 text-sm font-semibold text-surface-0">{% include "components/_check.html" %}Ajoutée</span>
+          {% else %}
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="cle" value="{{ recipe.key }}">
+              <button type="submit" class="min-h-11 shrink-0 rounded-lg border border-border-strong px-space-4 font-medium" aria-label="Ajouter {{ recipe.name }} à mes recettes">Ajouter</button>
+            </form>
+          {% endif %}
+        </div>
+        <details class="mt-space-2">
+          <summary class="flex min-h-11 cursor-pointer items-center font-medium underline">Ingrédients et étapes</summary>
+          <h3 class="mt-space-2 font-display text-base">Ingrédients</h3>
+          <ul class="mt-1 list-disc pl-space-6 text-sm">
+            {% for name, quantity, unit in recipe.ingredients %}<li>{{ name }}{% if quantity %} · {{ quantity }} {% if unit == "piece" %}{% elif unit == "tbsp" %}c. à soupe{% elif unit == "tsp" %}c. à café{% elif unit == "pack" %}paquet{% elif unit == "can" %}boîte{% else %}{{ unit }}{% endif %}{% endif %}</li>{% endfor %}
+          </ul>
+          <h3 class="mt-space-2 font-display text-base">Étapes</h3>
+          <ol class="mt-1 list-decimal space-y-1 pl-space-6 text-sm">
+            {% for step in recipe.steps %}<li>{{ step }}</li>{% endfor %}
+          </ol>
+        </details>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

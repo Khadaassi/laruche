@@ -18,8 +18,11 @@ from apps.household.models import monday_of
 from apps.household.views import WEEK_PARAM, requested_monday
 
 from .forms import IngredientForm, MealSlotForm, RecipeForm
+from .library import BY_KEY, CUISINES, LIBRARY
 from .models import MealSlot, Recipe, RecipeIngredient
+from .services import family_recipe_names, import_library
 from .suggest import empty_slots, suggest_week
+from .units import normalize_name
 from .week import build_menu_week
 
 FAVORITES_PARAM = "favoris"
@@ -91,6 +94,42 @@ def slot_edit(request, day, meal):
             "menu_url": _menu_url(date),
         },
         status=400 if form.is_bound and form.errors else 200,
+    )
+
+
+# --- Bibliothèque de recettes -----------------------------------------------
+
+
+@require_http_methods(["GET", "POST"])
+@parent_required
+def library(request):
+    """Bibliothèque toute prête : parcourir par cuisine, ajouter une ou plusieurs recettes.
+
+    POST `cle` : une recette ; POST `tout` : toutes celles de la cuisine affichée.
+    """
+    cuisine = request.GET.get("cuisine") or ""
+    if cuisine and cuisine not in CUISINES:
+        raise Http404
+    shown = [r for r in LIBRARY if not cuisine or r.cuisine == cuisine]
+    if request.method == "POST":
+        keys = [r.key for r in shown] if request.POST.get("tout") else [request.POST.get("cle", "")]
+        import_library(request.family, keys)
+        query = f"?cuisine={cuisine}" if cuisine else ""
+        anchor = f"#{request.POST['cle']}" if request.POST.get("cle") in BY_KEY else ""
+        return redirect(f"{reverse('meals:library')}{query}{anchor}")
+    owned = family_recipe_names(request.family)
+    return render(
+        request,
+        "parent/recipe_library.html",
+        {
+            "nav_active": "kitchen",
+            "kitchen_tab": "recipes",
+            "cuisines": CUISINES.items(),
+            "cuisine": cuisine,
+            "recipes": [(r, normalize_name(r.name) in owned) for r in shown],
+            "missing": sum(1 for r in shown if normalize_name(r.name) not in owned),
+            "total": len(LIBRARY),
+        },
     )
 
 

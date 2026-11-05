@@ -359,6 +359,16 @@ Page `/menage/flylady/` (lien depuis Semaine) et réglages `/reglages/flylady/`.
   est prête » → `WeeklyReview` (unique famille + lundi). Carte sur l'accueil du vendredi au
   dimanche tant que la revue n'est pas faite.
 
+### Bibliothèque de recettes (`meals/library.py`)
+
+44 recettes simples pour 4 personnes (12 marocaines, 12 françaises, 10 italiennes,
+10 légères), **sans porc ni alcool** (vérifié par un test), étiquettes « sans gluten » /
+« sans lactose » quand elles le sont naturellement. Données en code (pas en base) : la page
+`meals:library` (Cuisine → Recettes → Bibliothèque) les montre ; « Ajouter » copie une
+recette (ou toute une cuisine) dans la famille via `services.import_library`, sans doublon
+de nom. Les copies sont des `Recipe` ordinaires : modifiables, utilisées par le menu
+assisté et la liste de courses.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée
