@@ -153,7 +153,7 @@ class DayStarScreenTests(SecureClientMixin, TestCase):
         self.assertContains(last, OVERLAY)
         self.assertContains(last, "Journée terminée !")
         self.assertContains(last, "Bravo Lina, tout est fait aujourd'hui !")
-        self.assertContains(last, "+1 étoile · 1 étoile")
+        self.assertContains(last, 'data-from="0" data-to="1"')
         self.assertContains(last, "1 étoile")
         # Décocher / recocher, recharger l'écran : ni nouvelle étoile ni nouvelle fête.
         self.assertNotContains(self.tick(self.evening, done=False), "Journée terminée")

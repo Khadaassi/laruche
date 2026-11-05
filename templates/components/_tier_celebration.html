@@ -1,0 +1,23 @@
+{% comment %}
+Palier d'étoiles franchi (tous les 10) : plein écran, une seule fois (le serveur ne
+l'envoie qu'au franchissement). Badge géant qui arrive en tournoyant, rayons, pluie
+d'alvéoles, fanfare. Paramètres : person, tier. Mouvement réduit : carte immobile.
+{% endcomment %}
+<div x-data="celebrationOverlay" data-sound="tier" x-show="open" x-on:keydown.escape.window="close"
+     class="day-overlay fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-space-4"
+     role="dialog" aria-modal="true" aria-labelledby="tier-celebration-{{ person.pk }}">
+  <div class="rain" aria-hidden="true">{% for _ in "123456789012345678901234567890123456" %}<span class="hex"></span>{% endfor %}</div>
+  <div class="day-card relative w-full max-w-2xl overflow-hidden rounded-lg border-4 border-honey bg-surface-100 p-space-8 text-center">
+    <div class="day-rays" aria-hidden="true"></div>
+    <div class="relative">
+      <span class="tier-giant hex mx-auto flex h-48 w-48 flex-col items-center justify-center bg-honey text-ink" aria-hidden="true">
+        {% include "components/_icon.html" with name="celebration" icon_size="h-16 w-16" %}
+        <span class="font-display text-5xl font-semibold">{% widthratio tier 1 10 %}</span>
+      </span>
+      <p id="tier-celebration-{{ person.pk }}" class="day-title mt-space-6 font-display text-6xl font-semibold">Palier {{ tier }} !</p>
+      <p class="day-sub mt-space-2 text-2xl">Bravo {{ person.name }}, {% widthratio tier 1 10 %} étoiles gagnées depuis le début !</p>
+      <button type="button" x-ref="close" x-on:click="close"
+              class="day-sub mt-space-6 w-full rounded-lg bg-ink px-space-6 py-4 font-display text-2xl font-semibold text-surface-0">Génial !</button>
+    </div>
+  </div>
+</div>

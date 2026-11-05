@@ -38,6 +38,7 @@ from apps.stars.services import (
 from apps.tasks.models import HolidayMode, HomeworkCheck, TaskCompletion
 from apps.tasks.periods import (
     PERIOD_PHRASES,
+    Period,
     current_period,
     earlier_periods,
     seconds_until_next_period,
@@ -259,7 +260,25 @@ def toggle(request, person_pk, task_pk):
         award_day_star(child, today)
     if request.headers.get("HX-Request") != "true":
         return redirect("display:board")
-    return render(request, "shared/_column_oob.html", {"column": child_columns(request, child)[0]})
+    column = child_columns(request, child)[0]
+    column.period_done = period_done_message(task, column) if done else ""
+    return render(request, "shared/_column_oob.html", {"column": column})
+
+
+PERIOD_DONE = {
+    Period.MORNING: "Routine du matin terminée !",
+    Period.NOON: "Routine du midi terminée !",
+    Period.EVENING: "Routine du soir terminée !",
+}
+
+
+def period_done_message(task, column) -> str:
+    """Message si ce cochage vient de finir toutes les tâches de la période en cours."""
+    if getattr(task, "optional", False) or task.period != current_period():
+        return ""
+    if column.tasks and all(t.is_done for t in column.tasks):
+        return PERIOD_DONE[Period(task.period)]
+    return ""
 
 
 @require_POST
