@@ -1,0 +1,21 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Lien de réinitialisation — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'families:settings' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Réglages</a>
+  {% include "parent/_header.html" with title="Nouveau mot de passe" %}
+{% endblock %}
+
+{% block content %}
+<section class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" x-data="copyLink">
+  <p>Envoyez ce lien à <span class="font-medium">{{ who }}</span> (SMS, WhatsApp…). Il permet de choisir un nouveau mot de passe, <span class="font-medium">une seule fois</span>, pendant {{ hours }} heures.</p>
+  <label for="reset-link" class="sr-only">Lien de réinitialisation</label>
+  <input id="reset-link" type="text" readonly value="{{ link }}" x-ref="link"
+         class="min-h-11 w-full rounded-sm border border-border-strong bg-surface-100 px-space-4 text-sm">
+  <div class="flex flex-wrap gap-space-2">
+    <button type="button" x-on:click="copy" class="min-h-11 rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark" x-text="copied ? 'Lien copié !' : 'Copier le lien'">Copier le lien</button>
+    <button type="button" x-show="canShare" x-on:click="share" class="min-h-11 rounded-lg border border-border-strong px-space-6 font-medium">Partager…</button>
+  </div>
+  <p class="text-sm text-ink-soft">Ce lien donne accès au compte : ne l'envoyez qu'à la bonne personne. Il n'est pas conservé ; pour en avoir un autre, revenez dans les réglages.</p>
+</section>
+{% endblock %}

@@ -1,14 +1,24 @@
 from django.contrib.auth import login
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordChangeView, PasswordResetConfirmView
 from django.db import transaction
 from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods
+from django.views.generic import TemplateView
 
 from apps.core.ratelimit import BLOCKED_MESSAGE, JOIN_FAMILY, LOGIN
 from apps.families.services import create_family, join_family
 
-from .forms import MODE_CREATE, MODE_JOIN, LoginForm, SignupForm, resolve_login
+from .forms import (
+    MODE_CREATE,
+    MODE_JOIN,
+    LoginForm,
+    SignupForm,
+    StyledPasswordChangeForm,
+    StyledSetPasswordForm,
+    resolve_login,
+)
 from .models import User
 
 TOO_MANY_REQUESTS = 429
@@ -78,3 +88,25 @@ def signup(request):
         if form.invalid_code:
             JOIN_FAMILY.record_failure(request)
     return render(request, "accounts/signup.html", {"form": form})
+
+
+# --- Mot de passe ------------------------------------------------------------
+# Pas d'e-mail : un parent génère, depuis ses réglages, un lien à usage unique pour un
+# autre membre (families.views.reset_link). Le lien expire (PASSWORD_RESET_TIMEOUT) et
+# devient invalide dès que le mot de passe change (jeton Django standard).
+
+
+class ResetPasswordView(PasswordResetConfirmView):
+    template_name = "accounts/password_reset.html"
+    form_class = StyledSetPasswordForm
+    success_url = reverse_lazy("accounts:password_reset_done")
+
+
+class ResetPasswordDoneView(TemplateView):
+    template_name = "accounts/password_reset_done.html"
+
+
+class ChangePasswordView(PasswordChangeView):
+    template_name = "accounts/password_change.html"
+    form_class = StyledPasswordChangeForm
+    success_url = reverse_lazy("families:settings")

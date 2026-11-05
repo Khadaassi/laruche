@@ -15,5 +15,6 @@ urlpatterns = [
         name="update_login_name",
     ),
     path("reglages/ecran-partage/compte/", views.create_display, name="create_display"),
+    path("reglages/comptes/<int:user_pk>/lien-mot-de-passe/", views.reset_link, name="reset_link"),
     path("reglages/ecran-partage/compte/supprimer/", views.delete_display, name="delete_display"),
 ]

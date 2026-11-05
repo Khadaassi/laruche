@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import password_validation
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
 
 from apps.families.models import Family, normalize_invite_code
 
@@ -152,3 +152,11 @@ class SignupForm(StyledFormMixin, forms.Form):
             except forms.ValidationError as error:
                 self.add_error("password", error)
         return cleaned
+
+
+class StyledSetPasswordForm(StyledFormMixin, SetPasswordForm):
+    """Nouveau mot de passe (lien de réinitialisation)."""
+
+
+class StyledPasswordChangeForm(StyledFormMixin, PasswordChangeForm):
+    """Changer son propre mot de passe (ancien + nouveau)."""
