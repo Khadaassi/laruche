@@ -1,0 +1,57 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Vacances scolaires — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'families:settings' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Réglages</a>
+  {% include "parent/_header.html" with title="Vacances scolaires" %}
+{% endblock %}
+
+{% block content %}
+<div class="page-grid">
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="mode-title">
+    <h2 id="mode-title" class="mb-space-2 text-lg">Mode vacances</h2>
+    <p class="text-sm text-ink-soft">Pendant les vacances scolaires, la tablette reste active : seules les tâches marquées <strong>« Obligatoire »</strong> en vacances comptent pour l'étoile du jour (ex. prière). Les tâches en <strong>« Objectif de la semaine »</strong> (ex. devoirs 3 fois) et en <strong>« Bonus »</strong> restent proposées, sans rien bloquer. Réglage tâche par tâche dans Réglages → Tâches.</p>
+    <p class="mt-space-2 text-sm text-ink-soft">Départ en voyage ou enfant malade : déclarez plutôt une <a href="{% url 'absences:manage' %}" class="font-medium underline">absence</a> (tout est mis en pause).</p>
+    <form method="post" action="{% url 'holidays:prefill' %}" class="mt-space-4">
+      {% csrf_token %}
+      <button type="submit" class="w-full rounded-lg border border-border-strong bg-surface-0 px-space-6 py-3 font-medium">Ajouter le calendrier officiel zone B 2026-2027</button>
+    </form>
+  </section>
+
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="list-title">
+    <h2 id="list-title" class="mb-space-2 text-lg">En cours et à venir</h2>
+    <ul class="divide-y divide-border">
+      {% for holiday in current %}
+        <li class="flex items-center gap-space-2 py-space-2">
+          <span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="absence_vacation" %}</span>
+          <div class="min-w-0 flex-1">
+            <p class="font-medium">{{ holiday.name }}</p>
+            <p class="text-sm text-ink-soft">{{ holiday.dates_display }}{% if holiday.start_date <= today %} · en cours{% endif %}</p>
+          </div>
+          <form method="post" action="{% url 'holidays:delete' holiday.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong" aria-label="Supprimer {{ holiday.name }}">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </form>
+        </li>
+      {% empty %}
+        <li class="py-space-2 text-ink-soft">Aucune période. Ajoutez le calendrier zone B ci-dessus ou une période à la main.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="add-title">
+    <h2 id="add-title" class="mb-space-2 text-lg">Ajouter une période</h2>
+    <form method="post" class="space-y-space-4" novalidate>
+      {% csrf_token %}
+      {% include "components/_field.html" with field=form.name %}
+      <div class="grid grid-cols-2 gap-space-2">
+        {% include "components/_field.html" with field=form.start_date %}
+        {% include "components/_field.html" with field=form.end_date %}
+      </div>
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

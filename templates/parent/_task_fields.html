@@ -9,6 +9,16 @@
   {% for error in form.period.errors %}<p class="text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
 </fieldset>
 {% include "parent/_schedule_fields.html" %}
+<fieldset class="group/holiday">
+  <legend class="mb-1 font-medium">{{ form.holiday_mode.label }}</legend>
+  <div class="grid grid-cols-3 gap-space-2">
+    {% for radio in form.holiday_mode %}<label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center text-sm has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+  </div>
+  <p class="mt-1 text-sm text-ink-soft">Obligatoire : compte pour l'étoile (ex. prière). Sinon la tâche reste proposée sans rien bloquer.</p>
+  <div class="mt-space-2 hidden group-has-[[value=weekly]:checked]/holiday:block">
+    {% include "components/_field.html" with field=form.weekly_target %}
+  </div>
+</fieldset>
 <label class="flex min-h-11 cursor-pointer items-start gap-space-4 rounded-sm border border-border-strong p-space-4">
   <input type="checkbox" name="{{ form.catch_up.html_name }}" id="{{ form.catch_up.id_for_label }}"
          class="mt-0.5 h-6 w-6 shrink-0 cursor-pointer accent-sage" {% if form.catch_up.value %}checked{% endif %}>

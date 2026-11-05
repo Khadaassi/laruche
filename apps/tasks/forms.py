@@ -5,7 +5,15 @@ from django.db.models import Max
 from apps.accounts.forms import FIELD_CLASSES
 from apps.families.models import Person
 
-from .models import ALL_WEEKDAYS, SCHOOL_DAYS, WEEKDAY_LABELS, WEEKEND, Task, weekdays_to_mask
+from .models import (
+    ALL_WEEKDAYS,
+    SCHOOL_DAYS,
+    WEEKDAY_LABELS,
+    WEEKEND,
+    HolidayMode,
+    Task,
+    weekdays_to_mask,
+)
 from .periods import Period
 
 
@@ -122,9 +130,20 @@ class TaskForm(ScheduleFieldsMixin, forms.ModelForm):
         widget=forms.RadioSelect(attrs={"class": "sr-only"}),
     )
 
+    holiday_mode = forms.ChoiceField(
+        label="Pendant les vacances scolaires",
+        choices=HolidayMode.choices,
+        initial=HolidayMode.BONUS,
+        required=False,
+        widget=forms.RadioSelect(attrs={"class": "sr-only"}),
+    )
+    weekly_target = forms.IntegerField(
+        label="Fois par semaine", min_value=1, max_value=7, initial=3, required=False
+    )
+
     class Meta:
         model = Task
-        fields = ["title", "period", "catch_up"]
+        fields = ["title", "period", "catch_up", "holiday_mode", "weekly_target"]
         labels = {"title": "Tâche", "catch_up": "Rattrapable le lendemain"}
         help_texts = {
             "catch_up": "Ex. devoirs, lecture : si elle est oubliée, elle revient le lendemain."
@@ -141,6 +160,7 @@ class TaskForm(ScheduleFieldsMixin, forms.ModelForm):
                 self.instance.weekdays, self.instance.start_date, self.instance.end_date
             )
         self.fields["title"].widget.attrs["class"] = FIELD_CLASSES
+        self.fields["weekly_target"].widget.attrs["class"] = FIELD_CLASSES
         for name in ("start_date", "end_date"):
             self.fields[name].widget.attrs["class"] = FIELD_CLASSES
 
@@ -148,6 +168,9 @@ class TaskForm(ScheduleFieldsMixin, forms.ModelForm):
         task.weekdays, task.start_date, task.end_date = self.schedule
         task.title, task.period = self.cleaned_data["title"], self.cleaned_data["period"]
         task.catch_up = self.cleaned_data.get("catch_up", False)
+        # Champs absents (ancien formulaire) : la tâche garde ses valeurs.
+        task.holiday_mode = self.cleaned_data.get("holiday_mode") or task.holiday_mode
+        task.weekly_target = self.cleaned_data.get("weekly_target") or task.weekly_target
 
     @transaction.atomic
     def save(self, commit=True):

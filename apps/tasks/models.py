@@ -29,6 +29,14 @@ def mask_to_weekdays(mask: int) -> list[int]:
     return [day for day in range(7) if mask & (1 << day)]
 
 
+class HolidayMode(models.TextChoices):
+    """Comportement d'une tâche pendant les vacances scolaires (mode vacances)."""
+
+    REQUIRED = "required", "Obligatoire"
+    WEEKLY = "weekly", "Objectif de la semaine"
+    BONUS = "bonus", "Bonus"
+
+
 class TaskQuerySet(models.QuerySet):
     def for_family(self, family):
         """Point d'entrée obligatoire des vues : tâches de la famille uniquement."""
@@ -70,6 +78,18 @@ class Task(models.Model):
         default=False,
         help_text="Non faite, elle revient le lendemain ; la rattraper rend l'étoile de la veille.",
     )
+    holiday_mode = models.CharField(
+        "en vacances",
+        max_length=10,
+        choices=HolidayMode.choices,
+        default=HolidayMode.BONUS,
+        help_text="Obligatoire : compte pour l'étoile ; sinon proposée sans rien bloquer.",
+    )
+    weekly_target = models.PositiveSmallIntegerField(
+        "fois par semaine",
+        default=3,
+        help_text="Pour « Objectif de la semaine » : nombre de jours visés.",
+    )
     position = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -88,6 +108,10 @@ class Task(models.Model):
                 | models.Q(end_date__isnull=True)
                 | models.Q(end_date__gte=models.F("start_date")),
                 name="task_dates_ordered",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(weekly_target__gte=1, weekly_target__lte=7),
+                name="task_weekly_target_valid",
             ),
         ]
 

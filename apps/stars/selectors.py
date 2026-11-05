@@ -70,7 +70,8 @@ def day_progress(person, day: datetime.date) -> tuple[int, int]:
     """
     tasks = tasks_for_day(person.family, day, people=[person])
     chores = [o for o in chores_by_day(person.family, day, 1)[day] if o.person.pk == person.pk]
-    states = [t.is_done for t in tasks] + [o.is_done for o in chores]
+    # Mode vacances : les tâches facultatives (bonus, objectif) ne bloquent pas l'étoile.
+    states = [t.is_done for t in tasks if not t.optional] + [o.is_done for o in chores]
     return sum(states), len(states)
 
 
