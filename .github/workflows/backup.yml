@@ -40,7 +40,8 @@ jobs:
         run: |
           stamp=$(date -u +%Y-%m-%d)
           echo "STAMP=$stamp" >> "$GITHUB_ENV"
-          docker run --rm -e DATABASE_URL -v "$PWD:/out" postgres:18 \
+          # --user : le fichier appartient au runner (sinon root, impossible à effacer ensuite).
+          docker run --rm --user "$(id -u):$(id -g)" -e DATABASE_URL -v "$PWD:/out" postgres:18 \
             sh -c 'pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL" -f /out/laruche.dump'
           size=$(stat -c %s laruche.dump)
           echo "Taille : $size octets"
