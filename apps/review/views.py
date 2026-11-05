@@ -10,6 +10,9 @@ from django.utils.formats import date_format
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.families.access import parent_required
+from apps.goals.models import Goal
+from apps.goals.selectors import goal_states
+from apps.goals.services import default_year
 from apps.household.models import monday_of
 
 from .models import WeeklyReview
@@ -38,6 +41,11 @@ def week(request):
         {
             "nav_active": "week",
             "monday_label": date_format(monday, "j F"),
+            # Mon année (privé) : point sur les objectifs de la personne connectée.
+            "goal_states": goal_states(
+                Goal.objects.mine(request.user, default_year(timezone.localdate())),
+                timezone.localdate(),
+            ),
             **review_context(request.family, monday),
         },
     )

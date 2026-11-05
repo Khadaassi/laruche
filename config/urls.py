@@ -21,5 +21,6 @@ urlpatterns = [
     path("", include("apps.flylady.urls")),
     path("", include("apps.review.urls")),
     path("", include("apps.moments.urls")),
+    path("", include("apps.goals.urls")),
     path("", include("apps.agenda.urls")),
 ]

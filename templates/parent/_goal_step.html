@@ -1,0 +1,31 @@
+{% comment %}
+Un petit pas du jour. Paramètres : s (StepState), next (« objectif » pour revenir au détail).
+Case à cocher (optimiste, 204) ou nombre (envoi au changement).
+{% endcomment %}
+{% with step=s.step %}
+<li>
+  <form method="post" action="{% url 'goals:log_step' step.pk %}" {% if not step.is_counted %}data-task-form{% endif %}
+        hx-post="{% url 'goals:log_step' step.pk %}" hx-trigger="change" hx-swap="none"
+        class="task-row group flex min-h-11 items-center gap-space-2 rounded-sm border border-vision-gold/40 bg-vision-paper px-space-2 py-1 text-vision-wine-dark has-[:checked]:border-vision-gold">
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="suivant" value="{{ next }}">{% endif %}
+    {% if step.is_counted %}
+      <label for="step-{{ step.pk }}" class="min-w-0 flex-1 text-sm">{{ step.title }}</label>
+      <input type="number" inputmode="numeric" min="0" max="999" name="value" id="step-{{ step.pk }}" value="{{ s.today_value }}"
+             class="h-9 w-16 rounded-sm border border-vision-gold bg-surface-0 px-1 text-center font-medium">
+      <span class="w-14 text-xs">/ {{ step.daily_target }} {{ step.unit }}</span>
+      <noscript><button type="submit" class="rounded-sm border px-space-2 text-sm">OK</button></noscript>
+    {% else %}
+      <span class="relative flex shrink-0">
+        <input type="checkbox" name="done" id="step-{{ step.pk }}"
+               class="h-6 w-6 cursor-pointer appearance-none rounded-sm border-2 border-vision-gold bg-surface-0 checked:border-vision-wine checked:bg-vision-wine"
+               {% if s.done_today %}checked{% endif %}>
+        <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-vision-paper group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
+      </span>
+      <label for="step-{{ step.pk }}" class="min-w-0 flex-1 cursor-pointer text-sm group-has-[:checked]:line-through">{{ step.title }}</label>
+      <noscript><button type="submit" class="rounded-sm border px-space-2 text-sm">OK</button></noscript>
+    {% endif %}
+    {% if not step.is_daily %}<span class="shrink-0 text-xs">{{ s.week_days }}/{{ s.week_target }} sem.</span>{% endif %}
+  </form>
+</li>
+{% endwith %}

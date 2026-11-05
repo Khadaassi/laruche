@@ -7,6 +7,8 @@
   {% endwith %}
 {% endblock %}
 
+{% block head %}{% include "parent/_goal_fonts.html" %}{% endblock %}
+
 {% block content %}
   {# Sélecteur : toute la famille ou une personne. Filtre d'affichage seulement. #}
   <nav aria-label="Choisir un membre" class="-mx-space-4 mb-space-4 overflow-x-auto px-space-4">
@@ -44,6 +46,21 @@
       <span aria-hidden="true">→</span>
     </a>
   {% endif %}
+  {# Mon année : privé (seulement les petits pas de la personne connectée). #}
+  <section class="vision-page mb-space-4 rounded-md p-space-4" aria-labelledby="my-steps-title">
+    <div class="mb-space-2 flex items-center gap-space-2">
+      <h2 id="my-steps-title" class="flex-1 font-script text-2xl font-semibold">Mes petits pas du jour</h2>
+      <a href="{% url 'goals:board' %}" class="text-sm font-medium underline">Mon vision board →</a>
+    </div>
+    {% if my_steps %}
+      <ul class="space-y-1">
+        {% for goal, s in my_steps|slice:":6" %}{% include "parent/_goal_step.html" %}{% endfor %}
+      </ul>
+      {% if my_steps|length > 6 %}<p class="mt-1 text-xs">Et {{ my_steps|length|add:"-6" }} autre{{ my_steps|length|add:"-6"|pluralize }} sur le vision board.</p>{% endif %}
+    {% else %}
+      <p class="text-sm">Vos objectifs de l'année, en petits pas : un peu chaque jour. <a href="{% url 'goals:board' %}" class="font-medium underline">Commencer</a></p>
+    {% endif %}
+  </section>
   <a href="{% url 'progress:overview' %}" class="mb-space-4 flex min-h-14 items-center gap-space-4 rounded-md border border-border bg-surface-0 px-space-4 py-3 font-medium">
     <span class="hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="celebration" icon_size="h-5 w-5" %}</span>
     <span class="flex-1">Progrès des enfants<span class="block text-sm font-normal text-ink-soft">Mois par mois, semaine après semaine</span></span>

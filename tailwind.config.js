@@ -43,10 +43,20 @@ module.exports = {
       },
       terracotta: '#B34F39', // accent « à faire » / enfants (texte blanc dessus)
       sage: '#3F6B47', // état validé (texte blanc dessus, toujours avec icône)
+      // Espace « Mon année » uniquement (ambiance vision board) — voir design-system.
+      vision: {
+        wine: '#5B1A24', // fond bordeaux (texte papier dessus)
+        'wine-dark': '#3A0F16', // ombres, bordures, texte fort sur papier
+        paper: '#F2E4CB', // papier crème des étiquettes et cartes
+        gold: '#B98A3E', // filets, icônes, progression
+      },
     },
     fontFamily: {
       display: ['Fredoka', 'ui-rounded', 'system-ui', 'sans-serif'],
       sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      // Espace « Mon année » uniquement.
+      serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+      script: ['Caveat', 'cursive'],
     },
     // Seules les graisses réellement chargées depuis Google Fonts.
     fontWeight: {

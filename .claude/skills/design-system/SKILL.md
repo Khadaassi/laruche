@@ -276,6 +276,19 @@ minimal, `layouts/public.html` : une carte centrée, sans navigation.
 Le choix mobile / tablette ne dépend jamais du user-agent : deux URL distinctes, et
 les adaptations de largeur passent par les breakpoints Tailwind.
 
+## Espace « Mon année » (vision board) — ambiance à part
+
+Seul endroit où la palette change, à la demande de l'utilisatrice (son vision board) :
+tokens **`vision-wine` `#5B1A24`** (toile bordeaux, texte papier dessus),
+**`vision-wine-dark` `#3A0F16`** (ombres, texte fort sur papier), **`vision-paper` `#F2E4CB`**
+(papier crème), **`vision-gold` `#B98A3E`** (filets, icônes, progression) ; polices
+**`font-serif`** (Cormorant Garamond 500/600, titres) et **`font-script`** (Caveat 500/600,
+étiquettes manuscrites), chargées **seulement** sur ces pages (`parent/_goal_fonts.html`).
+Composants (`app.css`) : `.vision-page` (toile), `.vision-paper`, `.vision-torn` (bords
+déchirés, clip-path), `.vision-card` (photo collée, ruban adhésif, légère rotation),
+`.vision-scene` (fond sombre + halo doré), `.vision-rule`, `.vision-level-*` (calendrier).
+Interdit ailleurs dans l'app. Aucune animation propre.
+
 ## Saisons et moments (thème)
 
 `<html data-season="autumn|winter|spring|summer">` et `data-moment="eid|ramadan|friday"`

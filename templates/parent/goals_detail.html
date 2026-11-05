@@ -1,0 +1,118 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}{{ goal.title }} — Mon année{% endblock %}
+{% block head %}{% include "parent/_goal_fonts.html" %}{% endblock %}
+
+{% block header %}
+  <a href="{% url 'goals:board' %}?annee={{ goal.year }}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Vision board {{ goal.year }}</a>
+{% endblock %}
+
+{% block content %}
+<div class="vision-page -mx-space-4 rounded-lg px-space-4 pb-space-8 pt-space-6 md:mx-0 md:px-space-8">
+  <header class="mb-space-6 flex items-center gap-space-4">
+    <span class="vision-scene flex h-20 w-20 shrink-0 items-center justify-center rounded-md">{% include "parent/_goal_illustration.html" with icon=goal.icon size="h-14 w-14" %}</span>
+    <div class="min-w-0 flex-1">
+      <h1 class="font-script text-4xl font-semibold leading-tight">{{ goal.title }}</h1>
+      <p class="text-sm">Cette semaine : {{ state.week_percent }} %</p>
+    </div>
+    <a href="{% url 'goals:edit' goal.pk %}" class="inline-flex min-h-11 items-center rounded-sm border border-vision-gold px-space-4 text-sm font-medium">Modifier</a>
+  </header>
+
+  <div class="grid gap-space-6 lg:grid-cols-2">
+    <div class="space-y-space-6">
+      <section class="vision-card p-space-4" aria-labelledby="steps-title">
+        <h2 id="steps-title" class="mb-space-2 font-serif text-2xl font-semibold">Petits pas d'aujourd'hui</h2>
+        <ul class="space-y-1">{% for s in state.steps %}{% include "parent/_goal_step.html" with next="objectif" %}{% endfor %}</ul>
+        <ul class="mt-space-4 space-y-1 text-sm">
+          {% for s in state.steps %}
+            <li class="flex justify-between gap-space-2"><span>{{ s.step.title }}</span><span class="font-medium">{{ s.week_days }} / {{ s.week_target }} jour{{ s.week_target|pluralize }} cette semaine</span></li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      {% if goal.savings_target or goal.journal_label %}
+        <section class="vision-card p-space-4" aria-labelledby="journal-title">
+          <h2 id="journal-title" class="mb-space-2 font-serif text-2xl font-semibold">{% if goal.savings_target %}Tirelire{% else %}{{ goal.journal_label }}{% endif %}</h2>
+          {% if goal.savings_target %}
+            <p class="font-script text-3xl">{{ state.saved|floatformat:0 }} € sur {{ goal.savings_target|floatformat:0 }} €</p>
+            <div class="mt-1 h-3 overflow-hidden rounded-sm bg-vision-gold/25" role="img" aria-label="{{ state.savings_percent }} % de l'objectif d'épargne">
+              <div class="h-full {{ state.savings_bar }} bg-vision-gold"></div>
+            </div>
+          {% endif %}
+          <form method="post" action="{% url 'goals:add_entry' goal.pk %}" class="mt-space-4 flex flex-wrap gap-space-2">
+            {% csrf_token %}
+            <label for="{{ entry_form.text.id_for_label }}" class="sr-only">Note</label>
+            <input type="text" name="text" id="{{ entry_form.text.id_for_label }}" maxlength="200" placeholder="{% if goal.savings_target %}Ex. virement du mois{% else %}{{ goal.journal_label }}…{% endif %}"
+                   class="min-h-11 min-w-0 flex-1 rounded-sm border border-vision-gold bg-surface-0 px-space-4 text-ink">
+            {% if entry_form.amount %}
+              <label for="{{ entry_form.amount.id_for_label }}" class="sr-only">Montant en euros</label>
+              <input type="number" name="amount" id="{{ entry_form.amount.id_for_label }}" step="0.01" min="0" placeholder="€" class="min-h-11 w-24 rounded-sm border border-vision-gold bg-surface-0 px-space-2 text-ink">
+            {% endif %}
+            <button type="submit" class="min-h-11 rounded-lg bg-vision-wine px-space-4 font-medium text-vision-paper">Ajouter</button>
+          </form>
+          <ul class="mt-space-4 divide-y divide-vision-gold/30">
+            {% for entry in entries %}
+              <li class="flex items-center gap-space-2 py-space-2 text-sm">
+                <span class="w-14 shrink-0 text-xs">{{ entry.date|date:"d/m" }}</span>
+                <span class="min-w-0 flex-1">{{ entry.text }}{% if entry.amount %} <span class="font-semibold">+{{ entry.amount|floatformat:2 }} €</span>{% endif %}</span>
+                <form method="post" action="{% url 'goals:delete_entry' entry.pk %}">{% csrf_token %}
+                  <button type="submit" class="inline-flex h-9 w-9 items-center justify-center rounded-sm border border-vision-gold/50" aria-label="Supprimer la note du {{ entry.date|date:'j F' }}">×</button>
+                </form>
+              </li>
+            {% empty %}<li class="py-space-2 text-sm">Rien pour l'instant.</li>{% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      {% if goal.has_contacts %}
+        <section class="vision-card p-space-4" aria-labelledby="contacts-title">
+          <h2 id="contacts-title" class="mb-space-2 font-serif text-2xl font-semibold">Mes proches</h2>
+          <ul class="divide-y divide-vision-gold/30">
+            {% for contact in contacts %}
+              <li class="flex items-center gap-space-2 py-space-2">
+                <span class="min-w-0 flex-1">
+                  <span class="block font-medium">{{ contact.name }}</span>
+                  <span class="block text-xs">{% if contact.last_contact %}Dernières nouvelles : {{ contact.last_contact|date:"j F" }}{% else %}Pas encore de nouvelles notées{% endif %} · tous les {{ contact.every_days }} jours</span>
+                </span>
+                <form method="post" action="{% url 'goals:contact_done' contact.pk %}">{% csrf_token %}
+                  <button type="submit" class="min-h-11 rounded-lg bg-vision-wine px-space-4 text-sm font-medium text-vision-paper">C'est fait</button>
+                </form>
+                <form method="post" action="{% url 'goals:delete_contact' contact.pk %}">{% csrf_token %}
+                  <button type="submit" class="inline-flex h-11 w-9 items-center justify-center" aria-label="Retirer {{ contact.name }}">×</button>
+                </form>
+              </li>
+            {% empty %}<li class="py-space-2 text-sm">Ajoutez les proches à qui donner des nouvelles.</li>{% endfor %}
+          </ul>
+          <form method="post" action="{% url 'goals:add_contact' goal.pk %}" class="mt-space-2 flex gap-space-2">
+            {% csrf_token %}
+            <label for="contact-name" class="sr-only">Prénom</label>
+            <input id="contact-name" name="name" maxlength="60" required placeholder="Mamie, tante Samira…" class="min-h-11 min-w-0 flex-1 rounded-sm border border-vision-gold bg-surface-0 px-space-4 text-ink">
+            <label for="contact-every" class="sr-only">Tous les combien de jours</label>
+            <input id="contact-every" name="every_days" type="number" min="1" value="14" class="min-h-11 w-16 rounded-sm border border-vision-gold bg-surface-0 px-1 text-center text-ink">
+            <button type="submit" class="min-h-11 rounded-lg bg-vision-wine px-space-4 font-medium text-vision-paper">Ajouter</button>
+          </form>
+        </section>
+      {% endif %}
+    </div>
+
+    <section class="vision-card p-space-4" aria-labelledby="year-title">
+      <h2 id="year-title" class="mb-space-2 font-serif text-2xl font-semibold">Mon année, jour après jour</h2>
+      <p class="mb-space-4 text-xs">Plus la case est foncée, plus les petits pas du jour sont faits.</p>
+      <div class="grid grid-cols-2 gap-space-4 sm:grid-cols-3">
+        {% for m in months %}
+          <table class="w-full table-fixed border-separate border-spacing-0.5 text-center text-xs">
+            <caption class="mb-1 text-left font-script text-lg">{{ m.month|date:"F Y"|capfirst }}</caption>
+            <thead class="sr-only"><tr>{% for i in weekday_initials %}<th scope="col">{{ i }}</th>{% endfor %}</tr></thead>
+            <tbody>
+              {% for week in m.weeks %}
+                <tr>{% for day, level in week %}
+                  {% if day %}<td><span class="block aspect-square rounded {{ level }}" aria-hidden="true"></span><span class="sr-only">{{ day|date:"j F" }} : {% if level == 'vision-level-full' %}tout fait{% elif level == 'vision-level-mid' %}plus de la moitié{% elif level == 'vision-level-low' %}un peu{% elif level == 'vision-level-empty' %}rien{% else %}à venir{% endif %}</span></td>{% else %}<td></td>{% endif %}
+                {% endfor %}</tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
