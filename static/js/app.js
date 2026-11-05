@@ -61,6 +61,46 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
+  // Minuteur FlyLady (15 min) : démarrer / pause / remise à zéro, petite fanfare à la fin.
+  Alpine.data('minuteur', () => ({
+    total: 0,
+    left: 0,
+    running: false,
+    init() {
+      this.total = Number(this.$el.dataset.seconds) || 900;
+      this.left = this.total;
+    },
+    get display() {
+      const m = Math.floor(this.left / 60);
+      const s = this.left % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    },
+    get label() {
+      if (this.running) return 'Pause';
+      if (this.left === 0) return 'Terminé, bravo !';
+      return this.left === this.total ? 'Lancer 15 minutes' : 'Reprendre';
+    },
+    toggle() {
+      if (this.left === 0) return;
+      this.running = !this.running;
+      if (!this.running) { clearInterval(this.tick); return; }
+      this.tick = setInterval(() => {
+        this.left -= 1;
+        if (this.left <= 0) {
+          this.left = 0;
+          this.running = false;
+          clearInterval(this.tick);
+          playFanfare('day');
+        }
+      }, 1000);
+    },
+    reset() {
+      clearInterval(this.tick);
+      this.running = false;
+      this.left = this.total;
+    },
+  }));
+
   // Compteur d'étoiles qui monte (ex. 11 → 12) après l'arrivée de l'étoile.
   // Mouvement réduit : la valeur finale reste affichée telle quelle.
   Alpine.data('countUp', () => ({

@@ -1,0 +1,71 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Réglages FlyLady — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'flylady:today' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Ménage FlyLady</a>
+  {% include "parent/_header.html" with title="Routines et zones" %}
+{% endblock %}
+
+{% block content %}
+<div class="page-grid">
+  <div class="space-y-space-4">
+  {% for kind, label, items in routines %}
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="routine-{{ kind }}">
+      <h2 id="routine-{{ kind }}" class="mb-space-2 text-lg">{{ label }}</h2>
+      <ul class="divide-y divide-border">
+        {% for item in items %}
+          <li class="flex items-center gap-space-2 py-space-2">
+            <span class="flex-1">{{ item.title }}</span>
+            <form method="post">{% csrf_token %}
+              <input type="hidden" name="action" value="delete_item"><input type="hidden" name="pk" value="{{ item.pk }}">
+              <button type="submit" class="inline-flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong" aria-label="Supprimer {{ item.title }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+      <form method="post" class="mt-space-2 flex gap-space-2">{% csrf_token %}
+        <input type="hidden" name="action" value="add_item"><input type="hidden" name="kind" value="{{ kind }}">
+        <label for="add-{{ kind }}" class="sr-only">Nouvelle étape</label>
+        <input id="add-{{ kind }}" name="title" maxlength="120" required placeholder="Nouvelle étape…" class="min-h-11 flex-1 rounded-sm border border-border-strong bg-surface-0 px-space-4">
+        <button type="submit" class="min-h-11 rounded-lg bg-honey px-space-4 font-medium text-ink hover:bg-honey-dark">Ajouter</button>
+      </form>
+    </section>
+  {% endfor %}
+  </div>
+
+  <div class="space-y-space-4">
+  {% for zone in zones %}
+    <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="zone-{{ zone.pk }}">
+      <h2 id="zone-{{ zone.pk }}" class="mb-space-2 text-lg">Zone {{ zone.number }} <span class="text-sm font-normal text-ink-soft">· {{ zone.number }}<sup>e</sup> semaine du mois</span></h2>
+      <form method="post" class="mb-space-2 flex gap-space-2">{% csrf_token %}
+        <input type="hidden" name="action" value="rename_zone"><input type="hidden" name="pk" value="{{ zone.pk }}">
+        <label for="zone-name-{{ zone.pk }}" class="sr-only">Nom de la zone {{ zone.number }}</label>
+        <input id="zone-name-{{ zone.pk }}" name="title" value="{{ zone.name }}" maxlength="60" required class="min-h-11 flex-1 rounded-sm border border-border-strong bg-surface-0 px-space-4 font-medium">
+        <button type="submit" class="min-h-11 rounded-lg border border-border-strong px-space-4 font-medium">Renommer</button>
+      </form>
+      <ul class="divide-y divide-border">
+        {% for mission in zone.missions.all %}
+          <li class="flex items-center gap-space-2 py-space-2">
+            <span class="flex-1">{{ mission.title }}</span>
+            <form method="post">{% csrf_token %}
+              <input type="hidden" name="action" value="delete_mission"><input type="hidden" name="pk" value="{{ mission.pk }}">
+              <button type="submit" class="inline-flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong" aria-label="Supprimer {{ mission.title }}">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+      <form method="post" class="mt-space-2 flex gap-space-2">{% csrf_token %}
+        <input type="hidden" name="action" value="add_mission"><input type="hidden" name="pk" value="{{ zone.pk }}">
+        <label for="mission-{{ zone.pk }}" class="sr-only">Nouvelle mission pour la zone {{ zone.number }}</label>
+        <input id="mission-{{ zone.pk }}" name="title" maxlength="120" required placeholder="Nouvelle mission de 15 min…" class="min-h-11 flex-1 rounded-sm border border-border-strong bg-surface-0 px-space-4">
+        <button type="submit" class="min-h-11 rounded-lg bg-honey px-space-4 font-medium text-ink hover:bg-honey-dark">Ajouter</button>
+      </form>
+    </section>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}
