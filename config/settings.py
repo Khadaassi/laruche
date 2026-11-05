@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     "apps.review",
     "apps.moments",
     "apps.goals",
+    "apps.notifications",
     "apps.agenda",
 ]
 
@@ -111,6 +112,13 @@ ASGI_APPLICATION = "config.asgi.application"
 
 # L'admin peut être déplacé hors de /admin/ pour réduire le bruit des scanners.
 ADMIN_URL = os.environ.get("DJANGO_ADMIN_URL", "admin/")
+
+# --- Notifications push --------------------------------------------------------
+# Clés VAPID dérivées de SECRET_KEY par défaut (apps/notifications/keys.py).
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "https://laruche.onrender.com")
+# Jeton de la tâche planifiée (GitHub Actions) ; vide = rappels programmés désactivés.
+CRON_TOKEN = os.environ.get("CRON_TOKEN", "")
 
 TEMPLATES = [
     {

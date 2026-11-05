@@ -27,6 +27,10 @@ def award_day_star(person, day: datetime.date) -> bool:
     if due == 0 or done < due:
         return False
     _, created = DayStar.objects.get_or_create(person=person, date=day)
+    if created:
+        from apps.notifications.services import notify_day_done  # import tardif (cycle)
+
+        notify_day_done(person, day)
     return created
 
 

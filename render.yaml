@@ -19,3 +19,6 @@ services:
         sync: false
       - key: DJANGO_BEHIND_PROXY
         value: "true"
+      # Rappels programmés (notifications) : même valeur que le secret GitHub CRON_TOKEN.
+      - key: CRON_TOKEN
+        sync: false
