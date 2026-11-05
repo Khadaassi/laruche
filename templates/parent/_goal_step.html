@@ -5,7 +5,7 @@ Case à cocher (optimiste, 204) ou nombre (envoi au changement).
 {% with step=s.step %}
 <li>
   <form method="post" action="{% url 'goals:log_step' step.pk %}" {% if not step.is_counted %}data-task-form{% endif %}
-        hx-post="{% url 'goals:log_step' step.pk %}" hx-trigger="change" hx-swap="none"
+        hx-post="{% url 'goals:log_step' step.pk %}" hx-trigger="change" hx-swap="none" hx-sync="this:queue last"
         class="task-row group flex min-h-11 items-center gap-space-2 rounded-sm border border-vision-gold/40 bg-vision-paper px-space-2 py-1 text-vision-wine-dark has-[:checked]:border-vision-gold">
     {% csrf_token %}
     {% if next %}<input type="hidden" name="suivant" value="{{ next }}">{% endif %}

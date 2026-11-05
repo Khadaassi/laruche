@@ -66,9 +66,12 @@ document.addEventListener('alpine:init', () => {
     total: 0,
     left: 0,
     running: false,
+    endAt: 0,
     init() {
       this.total = Number(this.$el.dataset.seconds) || 900;
       this.left = this.total;
+      // Retour dans l'appli : le navigateur a pu ralentir le minuteur, on recalcule.
+      document.addEventListener('visibilitychange', () => this.sync());
     },
     get display() {
       const m = Math.floor(this.left / 60);
@@ -80,19 +83,27 @@ document.addEventListener('alpine:init', () => {
       if (this.left === 0) return 'Terminé, bravo !';
       return this.left === this.total ? 'Lancer 15 minutes' : 'Reprendre';
     },
+    // Temps restant = heure de fin − maintenant (jamais « une seconde de moins par tic »).
+    sync() {
+      if (!this.running) return;
+      this.left = Math.max(0, Math.ceil((this.endAt - Date.now()) / 1000));
+      if (this.left === 0) {
+        this.running = false;
+        clearInterval(this.tick);
+        playFanfare('day');
+      }
+    },
     toggle() {
       if (this.left === 0) return;
-      this.running = !this.running;
-      if (!this.running) { clearInterval(this.tick); return; }
-      this.tick = setInterval(() => {
-        this.left -= 1;
-        if (this.left <= 0) {
-          this.left = 0;
-          this.running = false;
-          clearInterval(this.tick);
-          playFanfare('day');
-        }
-      }, 1000);
+      if (this.running) {
+        this.sync();
+        this.running = false;
+        clearInterval(this.tick);
+        return;
+      }
+      this.running = true;
+      this.endAt = Date.now() + this.left * 1000;
+      this.tick = setInterval(() => this.sync(), 500);
     },
     reset() {
       clearInterval(this.tick);
@@ -226,17 +237,57 @@ document.addEventListener('alpine:init', () => {
   }));
 });
 
-// Cases à cocher des tâches : l'état change tout de suite côté client
-// (optimiste) et HTMX le confirme. Si le serveur refuse ou ne répond pas,
-// on remet la case dans son état précédent.
-function revertTaskCheckbox(event) {
-  const form = event.detail.elt;
-  if (!form || !form.matches('[data-task-form]')) return;
-  const checkbox = form.querySelector('input[type="checkbox"]');
-  if (checkbox) checkbox.checked = !checkbox.checked;
+// Cases à cocher (et petits pas chiffrés) : l'état change tout de suite côté client
+// (optimiste) et HTMX l'enregistre. `hx-sync="this:queue last"` sur ces formulaires :
+// des clics rapprochés n'envoient que le dernier état. En cas d'échec (réseau ou
+// serveur), la case revient à son état précédent et un message propose de réessayer.
+let failedForm = null;
+
+function saveError() { return document.getElementById('save-error'); }
+
+function showSaveError(form) {
+  failedForm = form;
+  const box = saveError();
+  if (box) { box.classList.remove('hidden'); box.classList.add('flex'); }
 }
-document.addEventListener('htmx:responseError', revertTaskCheckbox);
-document.addEventListener('htmx:sendError', revertTaskCheckbox);
+
+function hideSaveError() {
+  failedForm = null;
+  const box = saveError();
+  if (box) { box.classList.add('hidden'); box.classList.remove('flex'); }
+}
+
+document.addEventListener('htmx:beforeRequest', (event) => {
+  const form = event.detail.elt;
+  if (!form || !form.matches || !form.matches('form[hx-post]')) return;
+  const checkbox = form.querySelector('input[type="checkbox"]');
+  if (checkbox) form.dataset.wanted = checkbox.checked ? 'on' : 'off';
+});
+
+function onSaveFailure(event) {
+  const form = event.detail.elt;
+  if (!form || !form.matches || !form.matches('form[hx-post]')) return;
+  const checkbox = form.querySelector('input[type="checkbox"]');
+  if (checkbox && form.dataset.wanted) checkbox.checked = form.dataset.wanted !== 'on';
+  showSaveError(form);
+}
+document.addEventListener('htmx:responseError', onSaveFailure);
+document.addEventListener('htmx:sendError', onSaveFailure);
+document.addEventListener('htmx:timeout', onSaveFailure);
+
+document.addEventListener('htmx:afterRequest', (event) => {
+  if (event.detail.successful && event.detail.elt === failedForm) hideSaveError();
+});
+
+document.addEventListener('click', (event) => {
+  if (event.target.closest('[data-save-dismiss]')) hideSaveError();
+  if (event.target.closest('[data-save-retry]') && failedForm) {
+    const form = failedForm;
+    const checkbox = form.querySelector('input[type="checkbox"]');
+    if (checkbox && form.dataset.wanted) checkbox.checked = form.dataset.wanted === 'on';
+    if (window.htmx) window.htmx.trigger(form, 'change');
+  }
+});
 
 // Mouvement réduit : préférence système ou interrupteur (data-motion="reduced").
 function reducedMotion() {
