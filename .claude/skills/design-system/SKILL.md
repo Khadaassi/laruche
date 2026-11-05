@@ -290,6 +290,15 @@ réussite quotidienne et mérite une vraie fête. En mouvement réduit, toutes
 deviennent un état statique (résultat / encart sans mouvement : l'état final est l'état par
 défaut, les animations partent de `backwards`). L'interrupteur des réglages n'existe
 pas encore dans l'interface : le CSS et le JS honorent déjà `data-motion="reduced"`.
+**Renforcées (retour : « trop discrètes »)** : la journée terminée passe en grand format
+tablette (carte `max-w-2xl`, étoile 192 px, titre 6xl), avec une **pluie d'alvéoles sur tout
+l'écran** (`.rain`, 36 pièces, une chute), le **compteur d'étoiles qui monte** (`countUp`,
+ex. 11 → 12) et une **fanfare** courte synthétisée en Web Audio (`playFanfare`, aucun
+fichier, coupée en mouvement réduit). Le **palier** n'est plus un encart mais un plein écran
+à part entière (`_tier_celebration.html` : badge géant avec le total, fanfare plus longue).
+Nouveau palier intermédiaire : **routine de la période terminée** (« Routine du matin
+terminée ! », bandeau sauge + coche qui éclate, sans plein écran ni son). À la coche, une
+petite gerbe d'alvéoles autour du badge (`.sparkle`, 450 ms, geste uniquement).
 Aussi : le rebond du badge à la coche (`hex-pop`, 150 ms, `assets/css/app.css`),
 limité au geste de l'utilisateur et désactivé en mouvement réduit (système ou
 `data-motion="reduced"`). Toute animation ajoutée ensuite doit respecter :
