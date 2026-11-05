@@ -319,6 +319,17 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
   (objectif : « 1/3 cette semaine », jours cochés depuis lundi). Bannière vacances en tête.
 - Le ménage reste compté normalement pendant les vacances.
 
+### Progrès (`progress/`, lecture seule, sans modèle)
+
+Page parent `/progres/?mois=AAAA-MM` (lien depuis l'accueil). Par enfant :
+- **calendrier du mois** : étoile (journée complète, `DayStar`), en partie (au moins une
+  validation), rien coché, absent, à venir ; jours de vacances soulignés. Le « prévu »
+  d'un jour passé n'est **pas** recalculé (les tâches ont pu changer) ;
+- **étoiles par semaine** sur 8 semaines (hauteurs de barre en classes, pas de style inline) ;
+- **à encourager** : sur les 30 jours avant aujourd'hui, jours cochés / jours prévus par
+  tâche (hors absences et hors vacances quand la tâche y est facultative), 5 moins suivies.
+Nombre de requêtes constant (jamais une par jour).
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée
