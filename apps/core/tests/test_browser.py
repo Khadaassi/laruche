@@ -177,4 +177,4 @@ class BrowserJourneyTests(StaticLiveServerTestCase):
         # Onglet « Rendez-vous » : champs date et heure affichés.
         self.page.get_by_label("Ajout rapide").click()
         self.page.get_by_role("tab", name="Rendez-vous").click()
-        self.assertTrue(self.page.locator("input[name=time]").is_visible())
+        self.page.locator("input[name=time]").wait_for(state="visible")
