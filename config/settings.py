@@ -176,6 +176,9 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "tasks:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
+# Parcours navigateur (Playwright) exclus par défaut : `manage.py test --tag browser`.
+TEST_RUNNER = "apps.core.test_runner.LaRucheRunner"
+
 # Lien de réinitialisation créé par un parent : valable 24 h, usage unique.
 PASSWORD_RESET_TIMEOUT = 24 * 3600
 
