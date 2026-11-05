@@ -6,9 +6,11 @@ import json
 from django.conf import settings
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.core.maintenance import run_daily
 from apps.families.access import parent_required
 
 from .keys import public_key_b64
@@ -90,12 +92,14 @@ def test(request):
 @csrf_exempt
 @require_POST
 def cron(request):
-    """Rappels programmés, appelés par la tâche planifiée GitHub (jeton `CRON_TOKEN`).
+    """Tâche planifiée GitHub (jeton `CRON_TOKEN`) : maintenance quotidienne + rappels.
 
     Sans jeton configuré : la route n'existe pas (404). Mauvais jeton : 404 aussi.
+    Tout est idempotent : plusieurs appels par jour ne font rien de plus.
     """
     expected = getattr(settings, "CRON_TOKEN", "")
     given = request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
     if not expected or not hmac.compare_digest(given.encode(), expected.encode()):
         raise Http404
-    return JsonResponse(run_scheduled())
+    maintenance = run_daily(timezone.localdate())
+    return JsonResponse({**run_scheduled(), "maintenance": maintenance})

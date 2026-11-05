@@ -3,9 +3,11 @@ from unittest import mock
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.celebrations.models import Celebration, CelebrationTodo, GiftItem, RecipeIdea
 from apps.celebrations.services import next_date, roll_over_recurring
+from apps.core.maintenance import run_daily
 from apps.families.tests.factories import SecureClientMixin, join, make_family
 
 MONDAY_8AM = datetime.datetime(2026, 9, 28, 6, 0, tzinfo=datetime.UTC)
@@ -103,13 +105,14 @@ class RecurrenceViewsTests(SecureClientMixin, TestCase):
         )
         self.assertTrue(Celebration.objects.get().recurs_yearly)
 
-    def test_listing_rolls_over_and_shows_next_occurrence(self, _now):
+    def test_nightly_maintenance_rolls_over_and_listing_shows_next_occurrence(self, _now):
         Celebration.objects.create(
             family=self.family,
             name="Anniversaire",
             date=datetime.date(2026, 9, 1),
             recurs_yearly=True,
         )
+        run_daily(timezone.localdate())  # la nuit, pas à l'affichage
         self.client.force_login(self.parent)
         response = self.get(reverse("celebrations:index"))
         upcoming = response.context["upcoming"]
@@ -118,13 +121,14 @@ class RecurrenceViewsTests(SecureClientMixin, TestCase):
         )
         self.assertContains(response, "chaque année")
 
-    def test_shared_screen_also_rolls_over(self, _now):
+    def test_shared_screen_shows_the_rolled_over_occurrence(self, _now):
         Celebration.objects.create(
             family=self.family,
             name="Anniversaire",
             date=datetime.date(2026, 9, 1),
             recurs_yearly=True,
         )
+        run_daily(timezone.localdate())
         self.client.force_login(self.kid)
         self.assertContains(self.get(reverse("display:celebrations")), "Anniversaire")
 

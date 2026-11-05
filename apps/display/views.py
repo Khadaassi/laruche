@@ -12,7 +12,6 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.absences.selectors import absences_on
 from apps.accounts.forms import LoginForm
 from apps.celebrations.models import Celebration
-from apps.celebrations.services import roll_over_recurring
 from apps.core.ratelimit import BLOCKED_MESSAGE
 from apps.families.access import get_membership, parent_required
 from apps.families.models import Person
@@ -22,7 +21,7 @@ from apps.household.selectors import chores_by_day, set_chore_done
 from apps.household.views import requested_monday
 from apps.household.week import build_week
 from apps.meals.week import build_menu_week
-from apps.saturday.draw import DrawError, accept, close_past_plans, current_plan
+from apps.saturday.draw import DrawError, accept, current_plan
 from apps.saturday.models import PlanStatus, SaturdayPlan
 from apps.saturday.views import draw_context, perform_spin
 from apps.school.models import Lunch
@@ -31,7 +30,6 @@ from apps.stars.models import DayStar
 from apps.stars.selectors import balances
 from apps.stars.services import (
     award_day_star,
-    award_missing_day_stars,
     claim_day_celebration,
     claim_tier_celebration,
 )
@@ -161,8 +159,6 @@ def board(request):
     """Affichage partagé : une colonne par enfant, tâches de la période en cours."""
     period = current_period()
     today = timezone.localdate()
-    close_past_plans(request.family, today)
-    award_missing_day_stars(request.family, today)
     plan = current_plan(request.family, today)
     return render(
         request,
@@ -220,7 +216,6 @@ def celebrations(request):
     La liste de cadeaux n'est jamais montrée sur l'écran partagé : les
     enfants la verraient, surprise gâchée.
     """
-    roll_over_recurring(request.family, timezone.localdate())
     upcoming = (
         Celebration.objects.for_family(request.family)
         .filter(date__gte=timezone.localdate())

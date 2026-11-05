@@ -1,14 +1,17 @@
-name: Rappels programmés
+name: Tâches planifiées
 
-# Déclenche les rappels push de La Ruche (le serveur décide quoi envoyer, sans doublon) :
-# - chaque jour vers 15 h (heure de Paris) : « dîner pas encore prévu » ;
-# - le dimanche vers 17 h : « revue de la semaine ».
+# Appelle La Ruche (le serveur décide quoi faire, tout est idempotent) :
+# - chaque nuit vers 3 h (heure de Paris) : maintenance quotidienne (samedis passés,
+#   étoiles oubliées, fêtes annuelles reportées) — jamais faite à l'affichage d'une page ;
+# - chaque jour vers 15 h : rappel « dîner pas encore prévu » (+ maintenance) ;
+# - le dimanche vers 17 h : rappel « revue de la semaine ».
 # Deux horaires UTC à chaque fois pour couvrir l'heure d'été et d'hiver.
 # Peu d'appels par jour : Render et Neon (offres gratuites) ne sont réveillés que pour ça.
 # Secret requis : CRON_TOKEN (même valeur que la variable CRON_TOKEN sur Render).
 
 on:
   schedule:
+    - cron: "10 1,2 * * *"
     - cron: "5 13,14 * * *"
     - cron: "5 15,16 * * 0"
   workflow_dispatch:
@@ -32,4 +35,4 @@ jobs:
           fi
           # Render gratuit peut mettre ~1 min à se réveiller : délai long et nouvel essai.
           curl --fail --silent --show-error --max-time 120 --retry 2 --retry-delay 20 \
-            -X POST -H "Authorization: Bearer $CRON_TOKEN" "$APP_URL/taches-planifiees/notifications/"
+            -X POST -H "Authorization: Bearer $CRON_TOKEN" "$APP_URL/taches-planifiees/"
