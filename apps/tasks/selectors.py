@@ -6,8 +6,9 @@ from dataclasses import dataclass, field
 from django.db.models import Exists, OuterRef
 
 from apps.absences.selectors import absences_on
+from apps.holidays.selectors import holiday_on
 
-from .models import Task, TaskCompletion
+from .models import HolidayMode, Task, TaskCompletion
 from .periods import Period
 
 
@@ -15,6 +16,9 @@ def tasks_for_day(family, day: datetime.date, *, people=None, period=None) -> li
     """Tâches prévues ce jour-là pour la famille, annotées `is_done`.
 
     Les tâches d'une personne absente ce jour-là (vacances, malade) sont exclues.
+    Chaque tâche porte `optional` : vrai pendant les vacances scolaires pour une
+    tâche qui n'est pas « obligatoire en vacances » (bonus ou objectif de la
+    semaine). Une tâche facultative ne compte ni dans « restantes » ni pour l'étoile.
 
     `people` restreint à certaines personnes (déjà filtrées par famille par
     l'appelant) ; `period` à une période.
@@ -36,7 +40,11 @@ def tasks_for_day(family, day: datetime.date, *, people=None, period=None) -> li
         return []
     if absent.people:
         tasks = tasks.exclude(person_id__in=absent.people.keys())
-    return list(tasks)
+    tasks = list(tasks)
+    holiday = holiday_on(family, day)
+    for task in tasks:
+        task.optional = holiday is not None and task.holiday_mode != HolidayMode.REQUIRED
+    return tasks
 
 
 def catch_up_for(family, today: datetime.date, *, people=None) -> list[Task]:
@@ -50,12 +58,13 @@ def catch_up_for(family, today: datetime.date, *, people=None) -> list[Task]:
     return [
         task
         for task in tasks_for_day(family, yesterday, people=people)
-        if task.catch_up and not task.is_done
+        if task.catch_up and not task.is_done and not task.optional
     ]
 
 
 def count_remaining(tasks) -> int:
-    return sum(1 for task in tasks if not task.is_done)
+    """Tâches obligatoires non faites (les facultatives des vacances ne comptent pas)."""
+    return sum(1 for task in tasks if not task.is_done and not getattr(task, "optional", False))
 
 
 @dataclass
@@ -96,7 +105,7 @@ class PersonColumn:
     def progress(self) -> list[bool]:
         return (
             [t.is_done for t in self.overdue]
-            + [t.is_done for t in self.tasks]
+            + [t.is_done for t in self.tasks if not getattr(t, "optional", False)]
             + [c.is_done for c in self.chores]
         )
 

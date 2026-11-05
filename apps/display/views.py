@@ -2,7 +2,7 @@ import datetime
 
 from django.contrib.auth import login, logout
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -16,6 +16,7 @@ from apps.celebrations.services import roll_over_recurring
 from apps.core.ratelimit import BLOCKED_MESSAGE
 from apps.families.access import get_membership, parent_required
 from apps.families.models import Person
+from apps.holidays.selectors import holiday_on
 from apps.household.models import HouseholdChore
 from apps.household.selectors import chores_by_day, set_chore_done
 from apps.household.views import requested_monday
@@ -34,7 +35,7 @@ from apps.stars.services import (
     claim_day_celebration,
     claim_tier_celebration,
 )
-from apps.tasks.models import HomeworkCheck
+from apps.tasks.models import HolidayMode, HomeworkCheck, TaskCompletion
 from apps.tasks.periods import (
     PERIOD_PHRASES,
     current_period,
@@ -72,11 +73,14 @@ def child_columns(request, person=None):
     if person is not None:
         children = children.filter(pk=person.pk)
     day_tasks = tasks_for_day(request.family, today, people=children)
-    tasks = [t for t in day_tasks if t.period == period]
+    tasks = [t for t in day_tasks if t.period == period and not t.optional]
     # Oubliés des périodes passées : restent visibles, sinon la journée (donc
     # l'étoile) ne peut plus être complétée depuis la tablette.
     past = set(earlier_periods(period))
-    overdue = [t for t in day_tasks if t.period in past and not t.is_done]
+    overdue = [t for t in day_tasks if t.period in past and not t.is_done and not t.optional]
+    # Mode vacances : bonus et objectifs de la semaine, proposés toute la journée.
+    bonus = [t for t in day_tasks if t.optional]
+    week_counts = weekly_done_counts(bonus, today)
     # Rattrapables oubliés hier : les faire aujourd'hui rend l'étoile de la veille.
     catch_up = catch_up_for(request.family, today, people=children)
     school_today = school_days_for(request.family, today, people=children)
@@ -93,6 +97,12 @@ def child_columns(request, person=None):
     for column in columns:
         column.overdue = [t for t in overdue if t.person_id == column.person.pk]
         column.catch_up = [t for t in catch_up if t.person_id == column.person.pk]
+        column.bonus = [t for t in bonus if t.person_id == column.person.pk]
+        for task in column.bonus:
+            task.label = task.title
+            if task.holiday_mode == HolidayMode.WEEKLY:
+                done = week_counts.get(task.pk, 0)
+                task.label = f"{task.title} · {done}/{task.weekly_target} cette semaine"
         column.stars = stars.get(column.person.pk)
         # Nouveau palier atteint : fêté une seule fois, sur cet écran.
         column.celebrate_tier = claim_tier_celebration(column.stars) if column.stars else None
@@ -111,6 +121,20 @@ def child_columns(request, person=None):
                 task.is_homework and not task.is_done for task in column.tasks
             )
     return columns
+
+
+def weekly_done_counts(tasks, today: datetime.date) -> dict[int, int]:
+    """{task_id: jours cochés depuis lundi} pour les objectifs de la semaine."""
+    ids = [t.pk for t in tasks if t.holiday_mode == HolidayMode.WEEKLY]
+    if not ids:
+        return {}
+    monday = today - datetime.timedelta(days=today.weekday())
+    rows = (
+        TaskCompletion.objects.filter(task_id__in=ids, date__gte=monday, date__lte=today)
+        .values("task_id")
+        .annotate(n=Count("pk"))
+    )
+    return {row["task_id"]: row["n"] for row in rows}
 
 
 def is_study_day(school_day) -> bool:
@@ -143,6 +167,7 @@ def board(request):
         request,
         "shared/board.html",
         {
+            "holiday": holiday_on(request.family, today),
             "saturday_plan": plan if plan and plan.status == PlanStatus.PLANNED else None,
             "columns": child_columns(request),
             "period": period,

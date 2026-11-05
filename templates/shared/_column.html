@@ -23,7 +23,7 @@
       <span class="hex flex h-10 w-10 shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="absence_"|add:column.absence.kind icon_size="h-5 w-5" %}</span>
       {{ column.absence.label }} : pas de tâches aujourd'hui.
     </p>
-  {% elif column.tasks or column.overdue or column.catch_up %}
+  {% elif column.tasks or column.overdue or column.catch_up or column.bonus %}
     {% if column.catch_up %}
       {# Rattrapables oubliés hier : les faire aujourd'hui rend l'étoile d'hier. #}
       <div class="rounded-md border border-honey-dark bg-surface-100 p-space-4">
@@ -71,6 +71,19 @@
     </ul>
   {% elif not column.chores %}
     <p class="text-lg text-ink-soft">Rien de prévu {{ period_phrase }}.</p>
+  {% endif %}
+
+  {% if column.bonus and not column.absence %}
+    {# Mode vacances : proposé, jamais bloquant pour l'étoile. #}
+    <div class="rounded-md border border-border p-space-4">
+      <h3 class="mb-space-2 flex items-center gap-space-2 font-display text-lg">{% include "components/_icon.html" with name="absence_vacation" icon_size="h-5 w-5" %}Bonus vacances</h3>
+      <ul class="space-y-space-2">
+        {% for task in column.bonus %}
+          {% url 'display:toggle' person.pk task.pk as toggle_url %}
+          {% include "shared/_tick_row.html" with url=toggle_url input_prefix="shared-bonus-" item_pk=task.pk title=task.label is_done=task.is_done %}
+        {% endfor %}
+      </ul>
+    </div>
   {% endif %}
 
   {% if column.chores %}

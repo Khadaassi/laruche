@@ -304,6 +304,21 @@ ici, au plus simple et fidèle à ce que l'interface promettait déjà :
   `CORRECTION_DAYS` (7) derniers jours ; `tasks:toggle` reçoit le même champ `jour` et
   donne l'étoile du jour corrigé. Au-delà ou dans le futur : 404.
 
+### Mode vacances (`holidays/`)
+
+- **`SchoolHoliday`** (`family`, `name`, `start_date` ≤ `end_date`, bornes incluses) :
+  vacances scolaires où les enfants sont **à la maison**. Distinct d'`Absence` (voyage,
+  malade), qui met tout en pause. Bouton « calendrier officiel zone B » (`zone_b.py`,
+  `services.add_zone_b`, idempotent par dates) ; à compléter chaque année.
+- **`Task.holiday_mode`** : `required` (compte pour l'étoile, ex. prière), `weekly`
+  (objectif `weekly_target` jours par semaine, ex. devoirs ×3), `bonus` (défaut).
+  Migration 0006 : prière → obligatoire, devoirs → objectif ×3 pour les tâches existantes.
+- `tasks_for_day` pose `task.optional` (vacances et pas `required`). Une tâche facultative
+  ne compte ni dans « restantes », ni dans la progression, ni pour l'étoile du jour, et
+  n'est pas rattrapable. La tablette l'affiche toute la journée dans « Bonus vacances »
+  (objectif : « 1/3 cette semaine », jours cochés depuis lundi). Bannière vacances en tête.
+- Le ménage reste compté normalement pendant les vacances.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée
