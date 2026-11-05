@@ -1,0 +1,50 @@
+{% comment %}
+Saisie rapide : bouton « + » flottant (au-dessus de la barre du bas sur téléphone) et
+panneau avec trois onglets. Sans JS, le panneau reste accessible (<details>).
+{% endcomment %}
+{% if show %}
+<div x-data="quickAdd" class="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-space-4 z-40 md:bottom-space-6 md:right-space-6">
+  {% if request.GET.ajoute %}
+    <p class="mb-space-2 flex items-center gap-space-2 rounded-md bg-sage px-space-4 py-space-2 text-sm font-medium text-surface-0 shadow-lg" role="status" x-show="!dismissed">
+      {% include "components/_check.html" %}{% if request.GET.ajoute == "course" %}Ajouté à la liste de courses{% elif request.GET.ajoute == "rdv" %}Rendez-vous ajouté{% else %}Tâche ajoutée pour aujourd'hui{% endif %}
+    </p>
+  {% endif %}
+  <details class="group/quick" x-ref="panel">
+    <summary class="ml-auto flex h-14 w-14 cursor-pointer list-none items-center justify-center rounded-lg bg-ink text-surface-0 shadow-lg [&::-webkit-details-marker]:hidden" aria-label="Ajout rapide">
+      <svg class="h-7 w-7 transition-transform group-open/quick:rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+    </summary>
+    <div class="absolute bottom-16 right-0 w-[min(22rem,calc(100vw-2rem))] rounded-md border border-border-strong bg-surface-0 p-space-4 shadow-lg">
+      <p class="mb-space-2 font-display text-lg font-semibold">Ajout rapide</p>
+      <div class="mb-space-4 grid grid-cols-3 gap-1" role="tablist">
+        <button type="button" role="tab" x-on:click="pick" data-kind="course" x-bind:aria-selected="kind === 'course'" class="min-h-11 rounded-sm border border-border-strong text-sm font-medium aria-selected:border-ink aria-selected:bg-ink aria-selected:text-surface-0">Course</button>
+        <button type="button" role="tab" x-on:click="pick" data-kind="rdv" x-bind:aria-selected="kind === 'rdv'" class="min-h-11 rounded-sm border border-border-strong text-sm font-medium aria-selected:border-ink aria-selected:bg-ink aria-selected:text-surface-0">Rendez-vous</button>
+        <button type="button" role="tab" x-on:click="pick" data-kind="tache" x-bind:aria-selected="kind === 'tache'" class="min-h-11 rounded-sm border border-border-strong text-sm font-medium aria-selected:border-ink aria-selected:bg-ink aria-selected:text-surface-0">Tâche</button>
+      </div>
+      <form method="post" action="{% url 'core:quick_add' %}" class="space-y-space-2">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="kind" x-bind:value="kind" value="course">
+        <label for="quick-title" class="sr-only">Quoi</label>
+        <input id="quick-title" name="title" required maxlength="120" x-ref="title" x-bind:placeholder="placeholder" placeholder="Lait, pain…"
+               class="min-h-11 w-full rounded-sm border border-border-strong bg-surface-0 px-space-4">
+        <div x-show="kind === 'rdv'" class="grid grid-cols-2 gap-space-2">
+          <label class="text-sm">Le<input type="date" name="date" class="mt-1 min-h-11 w-full rounded-sm border border-border-strong bg-surface-0 px-space-2"></label>
+          <label class="text-sm">À<input type="time" name="time" class="mt-1 min-h-11 w-full rounded-sm border border-border-strong bg-surface-0 px-space-2"></label>
+        </div>
+        <label x-show="kind === 'rdv'" class="block text-sm">Pour
+          <select name="person" x-bind:disabled="kind !== 'rdv'" class="mt-1 min-h-11 w-full rounded-sm border border-border-strong bg-surface-0 px-space-2">
+            <option value="">Toute la famille</option>
+            {% for person in people %}<option value="{{ person.pk }}">{{ person.name }}</option>{% endfor %}
+          </select>
+        </label>
+        <label x-show="kind === 'tache'" class="block text-sm">Pour (aujourd'hui seulement)
+          <select name="person" x-bind:disabled="kind !== 'tache'" class="mt-1 min-h-11 w-full rounded-sm border border-border-strong bg-surface-0 px-space-2">
+            {% for child in children %}<option value="{{ child.pk }}">{{ child.name }}</option>{% endfor %}
+          </select>
+        </label>
+        <button type="submit" class="min-h-11 w-full rounded-lg bg-honey font-medium text-ink hover:bg-honey-dark">Ajouter</button>
+      </form>
+    </div>
+  </details>
+</div>
+{% endif %}

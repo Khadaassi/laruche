@@ -163,3 +163,18 @@ class BrowserJourneyTests(StaticLiveServerTestCase):
         self.page.locator("#save-error").wait_for(state="hidden")
         self.assertTrue(box.is_checked())
         self.assertEqual(TaskCompletion.objects.count(), 1)
+
+    # --- 6. Saisie rapide ------------------------------------------------------
+
+    def test_quick_add_a_shopping_item_from_home(self):
+        self.login()
+        self.page.get_by_label("Ajout rapide").click()
+        self.page.fill("#quick-title", "Lait d'amande")
+        self.page.get_by_role("button", name="Ajouter", exact=True).click()
+        self.page.wait_for_url("**/?ajoute=course")
+        self.page.get_by_text("Ajouté à la liste de courses").wait_for(state="visible")
+        self.assertTrue(ShoppingItem.objects.filter(name="Lait d'amande").exists())
+        # Onglet « Rendez-vous » : champs date et heure affichés.
+        self.page.get_by_label("Ajout rapide").click()
+        self.page.get_by_role("tab", name="Rendez-vous").click()
+        self.assertTrue(self.page.locator("input[name=time]").is_visible())
