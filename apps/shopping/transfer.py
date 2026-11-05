@@ -28,6 +28,7 @@ from apps.meals.models import MealKind, MealSlot, RecipeIngredient
 from apps.meals.presence import eaters, presence_range
 from apps.meals.units import dimension, format_quantity, from_base, normalize_name, to_base
 
+from .aisles import guess_aisle
 from .models import Origin, ShoppingItem, ShoppingTransfer, Status
 
 KEEP, REBUY = "keep", "rebuy"
@@ -197,6 +198,7 @@ def apply_transfer(family, monday: datetime.date, decisions: dict) -> TransferPl
             origin=Origin.MENU,
             merge_key=need.key,
             recipes=need.recipes_label,
+            aisle=guess_aisle(need.name),  # bulk_create n'appelle pas save()
         )
         for need in plan.added
     )

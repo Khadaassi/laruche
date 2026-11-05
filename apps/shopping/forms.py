@@ -10,7 +10,7 @@ class ShoppingItemForm(forms.ModelForm):
 
     class Meta:
         model = ShoppingItem
-        fields = ["name", "quantity", "unit", "recurring"]
+        fields = ["name", "quantity", "unit", "aisle", "recurring"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Lait, pain, lessive…"}),
             "quantity": forms.NumberInput(attrs={"inputmode": "decimal", "step": "any", "min": 0}),

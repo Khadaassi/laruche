@@ -1,0 +1,33 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}En magasin — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'shopping:index' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Liste de courses</a>
+  {% include "parent/_header.html" with title="En magasin" subtitle="Par rayon, dans l'ordre du parcours" %}
+{% endblock %}
+
+{% block content %}
+  {% if groups %}
+    <div class="space-y-space-4">
+      {% for label, items in groups %}
+        <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="aisle-{{ forloop.counter }}">
+          <h2 id="aisle-{{ forloop.counter }}" class="mb-space-2 flex items-center justify-between text-lg">{{ label }}<span class="text-sm font-normal text-ink-soft">{{ items|length }}</span></h2>
+          <ul class="divide-y divide-border">
+            {% for item in items %}{% include "parent/_shopping_row.html" with store=True %}{% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="flex items-center gap-space-2 rounded-md border border-sage bg-surface-0 p-space-4 font-medium text-sage">{% include "components/_check.html" %}Tout est dans le panier !</p>
+  {% endif %}
+
+  {% if in_cart %}
+    <details class="mt-space-6 rounded-md border border-border bg-surface-0">
+      <summary class="flex min-h-14 cursor-pointer list-none items-center px-space-4 font-medium [&::-webkit-details-marker]:hidden">Dans le panier ({{ in_cart|length }})</summary>
+      <ul class="divide-y divide-border px-space-4 pb-space-2">
+        {% for item in in_cart %}{% include "parent/_shopping_row.html" with store=True %}{% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+{% endblock %}
