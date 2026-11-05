@@ -1,0 +1,35 @@
+name: Rappels programmés
+
+# Déclenche les rappels push de La Ruche (le serveur décide quoi envoyer, sans doublon) :
+# - chaque jour vers 15 h (heure de Paris) : « dîner pas encore prévu » ;
+# - le dimanche vers 17 h : « revue de la semaine ».
+# Deux horaires UTC à chaque fois pour couvrir l'heure d'été et d'hiver.
+# Peu d'appels par jour : Render et Neon (offres gratuites) ne sont réveillés que pour ça.
+# Secret requis : CRON_TOKEN (même valeur que la variable CRON_TOKEN sur Render).
+
+on:
+  schedule:
+    - cron: "5 13,14 * * *"
+    - cron: "5 15,16 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
+      APP_URL: https://laruche.onrender.com
+    steps:
+      - name: Appeler La Ruche
+        run: |
+          if [ -z "$CRON_TOKEN" ]; then
+            echo "::warning::Secret CRON_TOKEN absent : rappels programmés désactivés."
+            exit 0
+          fi
+          # Render gratuit peut mettre ~1 min à se réveiller : délai long et nouvel essai.
+          curl --fail --silent --show-error --max-time 120 --retry 2 --retry-delay 20 \
+            -X POST -H "Authorization: Bearer $CRON_TOKEN" "$APP_URL/taches-planifiees/notifications/"

@@ -1,0 +1,39 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Notifications — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'families:settings' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Réglages</a>
+  {% include "parent/_header.html" with title="Notifications" %}
+{% endblock %}
+
+{% block content %}
+<div class="page-grid">
+  <section class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="device-title"
+           x-data="pushSettings" data-public-key="{{ public_key }}"
+           data-subscribe-url="{% url 'notifications:subscribe' %}" data-unsubscribe-url="{% url 'notifications:unsubscribe' %}"
+           data-test-url="{% url 'notifications:test' %}">
+    <h2 id="device-title" class="text-lg">Cet appareil</h2>
+    <p class="text-ink-soft" x-text="message" aria-live="polite">Vérification…</p>
+    <div class="flex flex-wrap gap-space-2">
+      <button type="button" x-show="canEnable" x-on:click="enable" class="min-h-11 rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark">Activer sur cet appareil</button>
+      <button type="button" x-show="enabled" x-on:click="sendTest" class="min-h-11 rounded-lg border border-border-strong px-space-6 font-medium">Envoyer un test</button>
+      <button type="button" x-show="enabled" x-on:click="disable" class="min-h-11 rounded-lg border border-border-strong px-space-6 font-medium">Désactiver ici</button>
+    </div>
+    <p class="text-sm text-ink-soft">Sur iPhone : ajoutez d'abord La Ruche à l'écran d'accueil (Partager → « Sur l'écran d'accueil »), ouvrez-la depuis l'icône, puis activez ici. {{ devices }} appareil{{ devices|pluralize }} abonné{{ devices|pluralize }} pour vous.</p>
+  </section>
+
+  <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="prefs-title">
+    <h2 id="prefs-title" class="mb-space-2 text-lg">Ce que je reçois</h2>
+    <form method="post" class="space-y-space-2">
+      {% csrf_token %}
+      {% for name, label, value in prefs %}
+        <label class="flex min-h-11 cursor-pointer items-center gap-space-4 rounded-sm border border-border-strong p-space-4">
+          <input type="checkbox" name="{{ name }}" class="h-6 w-6 shrink-0 cursor-pointer accent-sage" {% if value %}checked{% endif %}>
+          <span>{{ label|capfirst }}</span>
+        </label>
+      {% endfor %}
+      <button type="submit" class="mt-space-2 w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

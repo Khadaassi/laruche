@@ -101,6 +101,66 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
+  // Notifications push de cet appareil (réglages parent). Le jeton CSRF vient de
+  // l'attribut hx-headers du <body> (cookie HttpOnly, jamais lu en JS).
+  Alpine.data('pushSettings', () => ({
+    supported: false,
+    enabled: false,
+    denied: false,
+    message: 'Vérification…',
+    get canEnable() { return this.supported && !this.enabled && !this.denied; },
+    async init() {
+      this.supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      if (!this.supported) { this.message = 'Cet appareil ne gère pas les notifications (sur iPhone : ouvrez La Ruche depuis l\'écran d\'accueil).'; return; }
+      this.denied = Notification.permission === 'denied';
+      const registration = await navigator.serviceWorker.ready;
+      this.enabled = Boolean(await registration.pushManager.getSubscription());
+      this.refresh();
+    },
+    refresh() {
+      if (this.denied) this.message = 'Notifications bloquées : autorisez-les dans les réglages du navigateur.';
+      else this.message = this.enabled ? 'Notifications activées sur cet appareil.' : 'Notifications désactivées sur cet appareil.';
+    },
+    csrf() {
+      try { return JSON.parse(document.body.getAttribute('hx-headers'))['X-CSRFToken']; } catch (error) { return ''; }
+    },
+    post(url, body) {
+      return fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': this.csrf() },
+        body: JSON.stringify(body || {}),
+      });
+    },
+    async enable() {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { this.denied = permission === 'denied'; this.refresh(); return; }
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlToBytes(this.$el.dataset.publicKey),
+      });
+      const response = await this.post(this.$el.dataset.subscribeUrl, subscription.toJSON());
+      this.enabled = response.ok;
+      this.message = response.ok ? 'Notifications activées sur cet appareil.' : 'Échec de l\'activation, réessayez.';
+    },
+    async disable() {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await this.post(this.$el.dataset.unsubscribeUrl, { endpoint: subscription.endpoint });
+        await subscription.unsubscribe();
+      }
+      this.enabled = false;
+      this.refresh();
+    },
+    async sendTest() {
+      const response = await this.post(this.$el.dataset.testUrl);
+      const data = response.ok ? await response.json() : { delivered: 0 };
+      this.message = data.delivered ? 'Test envoyé : il doit arriver dans quelques secondes.' : 'Le test n\'a pas pu être envoyé.';
+    },
+  }));
+
   // Compteur d'étoiles qui monte (ex. 11 → 12) après l'arrivée de l'étoile.
   // Mouvement réduit : la valeur finale reste affichée telle quelle.
   Alpine.data('countUp', () => ({
@@ -178,4 +238,10 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
   });
+}
+
+// Clé publique VAPID (base64url) → octets pour pushManager.subscribe.
+function base64UrlToBytes(value) {
+  const padded = (value + '='.repeat((4 - (value.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
 }

@@ -405,6 +405,26 @@ pas (404), rien sur la tablette. Toute requête passe par `Goal.objects.mine(use
   calendrier de l'année), modification. Carte « Mes petits pas du jour » sur l'accueil
   (la personne connectée seulement) et étape « Mes objectifs (privé) » dans la revue.
 
+### Notifications push (`notifications/`, parents) et appli installable
+
+- **PWA** (`core`) : `/manifest.webmanifest`, `/sw.js` (portée `/`, ne met **jamais** les pages
+  en cache, seulement `/static/` ; page `/hors-ligne/`), icônes `static/icons/`.
+- **Clés VAPID dérivées de `SECRET_KEY`** (HKDF, `keys.py`) : rien à configurer, aucune clé
+  dans le code ; `VAPID_PRIVATE_KEY` pour surcharger. Changer `SECRET_KEY` = réabonner.
+- `PushSubscription` (appareil d'un parent), `NotificationPrefs` (dîner, revue, journée
+  terminée ; tout actif sans ligne), `SentNotification` (anti-doublon : parent + type + clé).
+- **Journée terminée** : `award_day_star` → `notify_day_done` (aujourd'hui seulement).
+- **Rappels programmés** : `/taches-planifiees/notifications/` (POST, `Authorization: Bearer
+  CRON_TOKEN`, 404 sans jeton) appelé par `.github/workflows/notifications.yml` vers 15 h
+  (dîner non prévu, 15 h–20 h) et le dimanche vers 17 h (revue non faite). Peu d'appels :
+  Render/Neon gratuits.
+- Abonnement expiré (404/410) supprimé à l'envoi. iPhone : seulement l'appli installée.
+
+### Sauvegarde
+
+`.github/workflows/backup.yml` : `pg_dump` chiffré chaque dimanche, artefact 90 jours.
+Mise en place et restauration : `docs/sauvegarde.md`.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée
