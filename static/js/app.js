@@ -107,18 +107,40 @@ document.addEventListener('alpine:init', () => {
     supported: false,
     enabled: false,
     denied: false,
+    busy: false,
     message: 'Vérification…',
-    get canEnable() { return this.supported && !this.enabled && !this.denied; },
+    urls: {},
+    publicKey: '',
+    get canEnable() { return this.supported && !this.enabled && !this.denied && !this.busy; },
     async init() {
+      // Lu ici une fois : dans un clic, `this.$el` désigne le bouton, pas la section.
+      const data = this.$el.dataset;
+      this.publicKey = data.publicKey;
+      this.urls = { subscribe: data.subscribeUrl, unsubscribe: data.unsubscribeUrl, test: data.testUrl };
       this.supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-      if (!this.supported) { this.message = 'Cet appareil ne gère pas les notifications (sur iPhone : ouvrez La Ruche depuis l\'écran d\'accueil).'; return; }
+      if (!this.supported) {
+        this.message = isIos()
+          ? 'Sur iPhone : ajoutez La Ruche à l\'écran d\'accueil (Partager → « Sur l\'écran d\'accueil »), ouvrez-la depuis l\'icône, puis revenez ici.'
+          : 'Ce navigateur ne gère pas les notifications. Essayez avec Chrome ou l\'appli installée.';
+        return;
+      }
       this.denied = Notification.permission === 'denied';
-      const registration = await navigator.serviceWorker.ready;
-      this.enabled = Boolean(await registration.pushManager.getSubscription());
-      this.refresh();
+      try {
+        const registration = await this.registration();
+        this.enabled = Boolean(await registration.pushManager.getSubscription());
+        this.refresh();
+      } catch (error) {
+        this.message = 'Impossible de préparer les notifications sur cet appareil (' + error.message + ').';
+      }
+    },
+    // Le service worker peut ne pas être encore enregistré : on l'enregistre, avec un délai maximal.
+    async registration() {
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('service worker indisponible')), 10000));
+      return Promise.race([navigator.serviceWorker.ready, timeout]);
     },
     refresh() {
-      if (this.denied) this.message = 'Notifications bloquées : autorisez-les dans les réglages du navigateur.';
+      if (this.denied) this.message = 'Notifications bloquées : autorisez-les dans les réglages du navigateur (ou de l\'appli), puis rechargez la page.';
       else this.message = this.enabled ? 'Notifications activées sur cet appareil.' : 'Notifications désactivées sur cet appareil.';
     },
     csrf() {
@@ -133,31 +155,58 @@ document.addEventListener('alpine:init', () => {
       });
     },
     async enable() {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') { this.denied = permission === 'denied'; this.refresh(); return; }
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: base64UrlToBytes(this.$el.dataset.publicKey),
-      });
-      const response = await this.post(this.$el.dataset.subscribeUrl, subscription.toJSON());
-      this.enabled = response.ok;
-      this.message = response.ok ? 'Notifications activées sur cet appareil.' : 'Échec de l\'activation, réessayez.';
+      this.busy = true;
+      this.message = 'Activation…';
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') { this.denied = permission === 'denied'; this.refresh(); return; }
+        const registration = await this.registration();
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('le service de notifications ne répond pas, réessayez')), 20000));
+          subscription = await Promise.race([
+            registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: base64UrlToBytes(this.publicKey),
+            }),
+            timeout,
+          ]);
+        }
+        const response = await this.post(this.urls.subscribe, subscription.toJSON());
+        if (!response.ok) throw new Error('serveur ' + response.status);
+        this.enabled = true;
+        this.message = 'Notifications activées sur cet appareil. Essayez « Envoyer un test ».';
+      } catch (error) {
+        this.message = 'L\'activation a échoué (' + error.message + ').';
+      } finally {
+        this.busy = false;
+      }
     },
     async disable() {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      if (subscription) {
-        await this.post(this.$el.dataset.unsubscribeUrl, { endpoint: subscription.endpoint });
-        await subscription.unsubscribe();
+      try {
+        const registration = await this.registration();
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await this.post(this.urls.unsubscribe, { endpoint: subscription.endpoint });
+          await subscription.unsubscribe();
+        }
+        this.enabled = false;
+        this.refresh();
+      } catch (error) {
+        this.message = 'La désactivation a échoué (' + error.message + ').';
       }
-      this.enabled = false;
-      this.refresh();
     },
     async sendTest() {
-      const response = await this.post(this.$el.dataset.testUrl);
-      const data = response.ok ? await response.json() : { delivered: 0 };
-      this.message = data.delivered ? 'Test envoyé : il doit arriver dans quelques secondes.' : 'Le test n\'a pas pu être envoyé.';
+      this.message = 'Envoi du test…';
+      try {
+        const response = await this.post(this.urls.test);
+        const data = response.ok ? await response.json() : { delivered: 0 };
+        this.message = data.delivered
+          ? 'Test envoyé : il doit arriver dans quelques secondes.'
+          : 'Le test n\'a pas pu être envoyé (réactivez les notifications ici).';
+      } catch (error) {
+        this.message = 'Le test a échoué (' + error.message + ').';
+      }
     },
   }));
 
@@ -244,4 +293,8 @@ if ('serviceWorker' in navigator) {
 function base64UrlToBytes(value) {
   const padded = (value + '='.repeat((4 - (value.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
   return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
+}
+
+function isIos() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
