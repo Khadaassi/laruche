@@ -7,7 +7,8 @@
   les 14 derniers jours ou déjà au menu de la semaine. Pas assez de recettes : on
   reprend les moins récemment servies.
 - **Soirs chargés** (un rendez-vous qui finit après 17 h, ou au moins deux dans la
-  journée) : le dîner est pris parmi les recettes **rapides** (≤ 30 min) s'il y en a.
+  journée) : le dîner est pris parmi les recettes **rapides** (≤ 30 min) s'il y en a ;
+  les autres repas ne les prennent pas tant qu'il reste un soir chargé à couvrir.
 - Tirage reproductible pour une famille et une semaine (même proposition si on
   recommence sur une semaine vide).
 """
@@ -86,11 +87,16 @@ def suggest_week(family, monday: datetime.date) -> list[MealSlot]:
         (r for r in recipes if r.pk in last_served), key=lambda r: (last_served[r.pk], r.pk)
     )
     busy = busy_evenings(family, monday)
+    busy_left = sum(1 for day, meal in slots if meal == Meal.DINNER and day in busy)
     created = []
     for day, meal in slots:
         pool = fresh
         if meal == Meal.DINNER and day in busy:
+            busy_left -= 1
             pool = [r for r in fresh if is_quick(r)] or fresh
+        elif busy_left:
+            # Les recettes rapides sont gardées pour les soirs chargés encore à venir.
+            pool = [r for r in fresh if not is_quick(r)] or fresh
         if pool:
             weights = [2 if r.is_favorite else 1 for r in pool]
             recipe = rng.choices(pool, weights=weights)[0]
