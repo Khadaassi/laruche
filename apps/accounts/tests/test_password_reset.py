@@ -35,7 +35,9 @@ class ResetLinkTests(SecureClientMixin, TestCase):
             form.redirect_chain[-1][0],
             {"new_password1": "Abeilles-dorees-2027", "new_password2": "Abeilles-dorees-2027"},
         )
-        self.assertRedirects(done, reverse("accounts:password_reset_done"))
+        self.assertRedirects(
+            done, reverse("accounts:password_reset_done"), fetch_redirect_response=False
+        )
         self.partner.refresh_from_db()
         self.assertTrue(self.partner.check_password("Abeilles-dorees-2027"))
         self.assertContains(self.get(path, follow=True), "Lien expiré")  # usage unique
@@ -71,7 +73,7 @@ class ResetLinkTests(SecureClientMixin, TestCase):
                 "new_password2": "Nouveau-mot-de-passe-2",
             },
         )
-        self.assertRedirects(response, reverse("families:settings"))
+        self.assertRedirects(response, reverse("families:settings"), fetch_redirect_response=False)
         self.me.refresh_from_db()
         self.assertTrue(self.me.check_password("Nouveau-mot-de-passe-2"))
 
