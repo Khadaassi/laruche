@@ -26,7 +26,7 @@ L'origine (menu / habituel / ajouté) est dite en texte, jamais par la couleur s
     <span class="hidden text-sm font-medium text-sage group-has-[:checked]:inline">Acheté</span>
     <noscript><button type="submit" class="rounded-sm border border-border-strong px-space-2 text-sm">OK</button></noscript>
   </form>
-  {% if item.is_from_menu %}
+  {% if item.is_from_menu and not store %}
     {# Une fois acheté (même coché à l'instant), « à la maison » n'a plus de sens : masqué. #}
     <form method="post" action="{% url 'shopping:at_home' item.pk %}" class="group-has-[:checked]/row:hidden">
       {% csrf_token %}
@@ -35,7 +35,9 @@ L'origine (menu / habituel / ajouté) est dite en texte, jamais par la couleur s
       </button>
     </form>
   {% endif %}
+  {% if not store %}
   <a href="{% url 'shopping:edit' item.pk %}" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border border-border-strong" aria-label="Modifier « {{ item.name }} »">
     {% include "components/_icon.html" with name="edit" icon_size="h-5 w-5" %}
   </a>
+  {% endif %}
 </li>

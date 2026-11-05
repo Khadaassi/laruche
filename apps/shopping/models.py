@@ -5,6 +5,8 @@ from django.db import models
 
 from apps.meals.units import Unit, format_quantity
 
+from .aisles import Aisle, guess_aisle
+
 
 class Origin(models.TextChoices):
     MENU = "menu", "Menu de la semaine"
@@ -56,6 +58,13 @@ class ShoppingItem(models.Model):
     )
     merge_key = models.CharField(max_length=120, blank=True)
     recipes = models.CharField("pour", max_length=200, blank=True)
+    aisle = models.CharField(
+        "rayon",
+        max_length=10,
+        choices=Aisle.choices,
+        blank=True,
+        help_text="Deviné d'après le nom ; modifiable.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = ShoppingItemQuerySet.as_manager()
@@ -82,6 +91,13 @@ class ShoppingItem(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.aisle:
+            self.aisle = guess_aisle(self.name)
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = {*kwargs["update_fields"], "aisle"}
+        super().save(*args, **kwargs)
 
     @property
     def quantity_display(self) -> str:

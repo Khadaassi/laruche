@@ -433,6 +433,12 @@ pas (404), rien sur la tablette. Toute requête passe par `Goal.objects.mine(use
 `.github/workflows/backup.yml` : `pg_dump` chiffré chaque dimanche, artefact 90 jours.
 Mise en place et restauration : `docs/sauvegarde.md`.
 
+### Rayons et mode magasin (`shopping/aisles.py`)
+
+`ShoppingItem.aisle` (11 rayons, ordre du parcours : fruits et légumes → … → surgelés,
+hygiène, entretien, autres), deviné à l'enregistrement d'après le nom (mots-clés en début
+de mot, exceptions : conserves, bouillons, lait de coco), modifiable. `/courses/magasin/` :
+ce qui reste à acheter groupé par rayon, « Dans le panier » replié en bas.
 ### Convives et portions (`meals/presence.py`)
 
 - `Recipe.servings` (défaut 4 : les recettes de la bibliothèque sont pour 4).

@@ -8,12 +8,13 @@ import datetime
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.families.access import parent_required
 from apps.household.models import monday_of
 from apps.household.views import WEEK_PARAM, requested_monday
 
+from .aisles import STORE_ORDER, Aisle
 from .forms import ShoppingItemForm
 from .models import Origin, ShoppingItem, ShoppingTransfer, Status
 from .transfer import DECISIONS, MissingDecision, apply_transfer, build_plan, clear_bought
@@ -42,6 +43,39 @@ def transfer_week(request):
 def _sorted(items):
     """À acheter d'abord, puis achetés ; ordre alphabétique dans chaque groupe."""
     return sorted(items, key=lambda i: (i.status != Status.TO_BUY, i.name.casefold()))
+
+
+@require_GET
+@parent_required
+def store(request):
+    """Mode magasin : tout ce qui reste à acheter, rangé par rayon dans l'ordre du parcours.
+
+    Cocher fonctionne comme dans la liste (même ligne, enregistrement immédiat) ; les
+    articles déjà dans le panier descendent en bas.
+    """
+    items = [
+        i for i in ShoppingItem.objects.for_family(request.family) if i.status != Status.AT_HOME
+    ]
+    groups = []
+    for aisle in STORE_ORDER:
+        in_aisle = sorted(
+            (i for i in items if (i.aisle or Aisle.OTHER) == aisle and i.status == Status.TO_BUY),
+            key=lambda i: i.name.casefold(),
+        )
+        if in_aisle:
+            groups.append((Aisle(aisle).label, in_aisle))
+    return render(
+        request,
+        "parent/shopping_store.html",
+        {
+            "nav_active": "kitchen",
+            "kitchen_tab": "shopping",
+            "groups": groups,
+            "in_cart": sorted(
+                (i for i in items if i.status == Status.BOUGHT), key=lambda i: i.name.casefold()
+            ),
+        },
+    )
 
 
 @require_http_methods(["GET", "POST"])

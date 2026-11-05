@@ -6,6 +6,7 @@ app_name = "shopping"
 
 urlpatterns = [
     path("courses/", views.index, name="index"),
+    path("courses/magasin/", views.store, name="store"),
     path("courses/envoyer-le-menu/", views.transfer, name="transfer"),
     path("courses/retirer-les-achats/", views.clear, name="clear"),
     path("courses/<int:pk>/fait/", views.toggle, name="toggle"),
