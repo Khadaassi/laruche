@@ -123,7 +123,8 @@ uv sync                                   # dépendances Python
 npm ci && npm run build                   # CSS + vendor JS
 npm run watch:css                         # Tailwind en continu (dev)
 uv run python manage.py runserver
-uv run python manage.py test
+uv run python manage.py test             # rapide, sans navigateur
+PLAYWRIGHT_CHROMIUM_EXECUTABLE=… uv run python manage.py test --tag browser  # parcours Chromium
 uv run ruff check . && uv run ruff format --check .
 npm run check:tokens                      # tokens conformes à la charte
 ```
