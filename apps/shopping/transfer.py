@@ -1,6 +1,9 @@
 """Transfert menu → courses.
 
-1. `week_needs` additionne les ingrédients des recettes au menu d'une semaine :
+1. `week_needs` additionne les ingrédients des recettes au menu d'une semaine,
+   **adaptés au nombre de convives** (`meals.presence`) : quantité × convives / portions
+   de la recette (une recette pour 4 servie à 6 → ×1,5). Pièces, boîtes et paquets
+   sont arrondis à l'unité supérieure, cuillères à la demi.
    même ingrédient (nom normalisé) et même grandeur → une seule ligne.
    g/kg et ml/cl/l se convertissent ; unités différentes et non convertibles
    (200 g de farine + 2 c. à soupe de farine) → deux lignes. Une recette
@@ -16,12 +19,13 @@ Les produits ajoutés à la main ne sont jamais touchés par le transfert.
 
 import datetime
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import ROUND_CEILING, Decimal
 
 from django.db import transaction
 
 from apps.families.models import Family
 from apps.meals.models import MealKind, MealSlot, RecipeIngredient
+from apps.meals.presence import eaters, presence_range
 from apps.meals.units import dimension, format_quantity, from_base, normalize_name, to_base
 
 from .models import Origin, ShoppingItem, ShoppingTransfer, Status
@@ -51,6 +55,28 @@ class Need:
         return format_quantity(self.quantity, self.unit)
 
 
+WHOLE_UNITS = {"piece", "can", "pack"}
+HALF_UNITS = {"tbsp", "tsp"}
+
+
+def scale_factor(slot, presence) -> Decimal:
+    """Convives / portions de la recette ; 1 si personne n'est compté (repas prévu quand même)."""
+    count = eaters(slot, presence)
+    servings = slot.recipe.servings or 0
+    if not count or not servings:
+        return Decimal(1)
+    return Decimal(count) / Decimal(servings)
+
+
+def round_for_shopping(quantity: Decimal, unit: str) -> Decimal:
+    """Pièces, boîtes, paquets : unité supérieure ; cuillères : demi supérieure ; sinon 0,01."""
+    if unit in WHOLE_UNITS:
+        return quantity.to_integral_value(rounding=ROUND_CEILING)
+    if unit in HALF_UNITS:
+        return (quantity * 2).to_integral_value(rounding=ROUND_CEILING) / 2
+    return quantity.quantize(Decimal("0.01"))
+
+
 def merge_key(name: str, quantity, unit: str) -> str:
     kind = NO_QUANTITY if quantity is None else dimension(unit)
     return f"{normalize_name(name)}|{kind}"[:120]
@@ -74,13 +100,15 @@ def week_needs(family, monday: datetime.date) -> list[Need]:
     ):
         by_recipe.setdefault(ingredient.recipe_id, []).append(ingredient)
 
+    presence = presence_range(family, monday, 7)
     groups = {}  # clé → [nom affiché, total en unité de base, unités vues, recettes]
     for slot in slots:
+        factor = scale_factor(slot, presence)
         for ingredient in by_recipe.get(slot.recipe_id, []):
             key = merge_key(ingredient.name, ingredient.quantity, ingredient.unit)
             group = groups.setdefault(key, [ingredient.name.strip(), Decimal(0), set(), []])
             if ingredient.quantity is not None:
-                group[1] += to_base(ingredient.quantity, ingredient.unit)
+                group[1] += to_base(ingredient.quantity * factor, ingredient.unit)
                 group[2].add(ingredient.unit)
             if slot.recipe.name not in group[3]:
                 group[3].append(slot.recipe.name)
@@ -89,7 +117,7 @@ def week_needs(family, monday: datetime.date) -> list[Need]:
     for key, (name, total, units, recipes) in groups.items():
         if units:
             quantity, unit = from_base(total, key.rsplit("|", 1)[1], units)
-            quantity = quantity.quantize(Decimal("0.01"))
+            quantity = round_for_shopping(quantity, unit)
         else:
             quantity, unit = None, "piece"
         needs.append(Need(key=key, name=name, quantity=quantity, unit=unit, recipes=recipes))

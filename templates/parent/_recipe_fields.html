@@ -1,6 +1,9 @@
 {# Champs d'une recette (création et modification). Paramètre : form. #}
 {% include "components/_field.html" with field=form.name %}
-{% include "components/_field.html" with field=form.prep_minutes %}
+<div class="grid grid-cols-2 gap-space-2">
+  {% include "components/_field.html" with field=form.prep_minutes %}
+  {% include "components/_field.html" with field=form.servings %}
+</div>
 <label class="flex min-h-11 cursor-pointer items-center gap-space-2">
   {{ form.is_favorite }}<span class="font-medium">Recette favorite</span>
 </label>

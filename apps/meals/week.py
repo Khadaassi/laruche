@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from django.utils import timezone
 
 from .models import Meal, MealSlot
+from .presence import eaters, presence_range
 
 
 @dataclass
@@ -33,9 +34,11 @@ def build_menu_week(family, monday: datetime.date) -> dict:
         )
         for offset in range(7)
     }
+    presence = presence_range(family, monday, 7)
     for slot in (
         MealSlot.objects.for_family(family).filter(date__in=days.keys()).select_related("recipe")
     ):
+        slot.eaters = eaters(slot, presence)
         setattr(days[slot.date], "lunch" if slot.meal == Meal.LUNCH else "dinner", slot)
     return {
         "monday": monday,

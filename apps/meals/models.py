@@ -18,6 +18,11 @@ class Recipe(models.Model):
     family = models.ForeignKey("families.Family", on_delete=models.CASCADE, related_name="recipes")
     name = models.CharField("nom", max_length=120)
     prep_minutes = models.PositiveSmallIntegerField("préparation (minutes)", null=True, blank=True)
+    servings = models.PositiveSmallIntegerField(
+        "pour (personnes)",
+        default=4,
+        help_text="Les quantités des ingrédients sont pour ce nombre de personnes.",
+    )
     is_favorite = models.BooleanField("favori", default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -151,6 +156,12 @@ class MealSlot(models.Model):
         max_length=80,
         blank=True,
         help_text="Restes du couscous, chez mamie, pizza…",
+    )
+    guests = models.PositiveSmallIntegerField(
+        "convives",
+        null=True,
+        blank=True,
+        help_text="Vide = calculé (cantine, absences). Un invité ? Indiquez le total.",
     )
 
     objects = MealSlotQuerySet.as_manager()

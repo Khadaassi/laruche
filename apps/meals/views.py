@@ -20,6 +20,7 @@ from apps.household.views import WEEK_PARAM, requested_monday
 from .forms import IngredientForm, MealSlotForm, RecipeForm
 from .library import BY_KEY, CUISINES, LIBRARY
 from .models import MealSlot, Recipe, RecipeIngredient
+from .presence import presence_range
 from .services import family_recipe_names, import_library
 from .suggest import empty_slots, suggest_week
 from .units import normalize_name
@@ -92,6 +93,7 @@ def slot_edit(request, day, meal):
             "date": date,
             "meal": meal,
             "menu_url": _menu_url(date),
+            "presence": presence_range(request.family, date, 1).get((date, meal)),
         },
         status=400 if form.is_bound and form.errors else 200,
     )
