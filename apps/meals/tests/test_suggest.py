@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from apps.families.tests.factories import SecureClientMixin, join, make_family
 from apps.meals.models import Meal, MealKind, MealSlot, Recipe
-from apps.meals.suggest import empty_slots, suggest_week
+from apps.meals.suggest import busy_evenings, empty_slots, suggest_week
 
 MONDAY = datetime.date(2026, 11, 16)
 # Dimanche 15 novembre, 18h : on prépare la semaine du 16.
@@ -78,3 +78,36 @@ class SuggestTests(SecureClientMixin, TestCase):
             fetch_redirect_response=False,
         )
         self.assertEqual(MealSlot.objects.filter(family=self.family).count(), 10)
+
+
+@mock.patch("django.utils.timezone.now", return_value=SUNDAY_6PM)
+class BusyEveningTests(TestCase):
+    def setUp(self):
+        self.family = make_family()
+        join(self.family, "Sam")
+        self.slow = [
+            Recipe.objects.create(family=self.family, name=f"Mijoté {i}", prep_minutes=90)
+            for i in range(8)
+        ]
+        self.quick = Recipe.objects.create(family=self.family, name="Omelette", prep_minutes=15)
+
+    def test_busy_evening_gets_a_quick_dinner(self, _now):
+        from apps.agenda.models import Event
+
+        tuesday = MONDAY + datetime.timedelta(days=1)
+        Event.objects.create(
+            family=self.family,
+            title="Piscine",
+            start_time=datetime.time(17, 30),
+            end_time=datetime.time(18, 30),
+            weekdays=1 << tuesday.weekday(),
+            start_date=tuesday,
+            end_date=tuesday,
+        )
+        self.assertEqual(busy_evenings(self.family, MONDAY), {tuesday})
+        suggest_week(self.family, MONDAY)
+        dinner = MealSlot.objects.get(date=tuesday, meal=Meal.DINNER)
+        self.assertEqual(dinner.recipe, self.quick)
+
+    def test_no_busy_evening_without_late_events(self, _now):
+        self.assertEqual(busy_evenings(self.family, MONDAY), set())

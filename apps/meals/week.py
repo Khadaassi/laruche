@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from .models import Meal, MealSlot
 from .presence import eaters, presence_range
+from .suggest import busy_evenings
 
 
 @dataclass
@@ -18,6 +19,7 @@ class MenuDay:
     is_today: bool
     lunch: MealSlot | None = None
     dinner: MealSlot | None = None
+    busy_evening: bool = False
 
     @property
     def meals(self):
@@ -35,6 +37,8 @@ def build_menu_week(family, monday: datetime.date) -> dict:
         for offset in range(7)
     }
     presence = presence_range(family, monday, 7)
+    for day in busy_evenings(family, monday):
+        days[day].busy_evening = True
     for slot in (
         MealSlot.objects.for_family(family).filter(date__in=days.keys()).select_related("recipe")
     ):
