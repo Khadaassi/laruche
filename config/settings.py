@@ -244,6 +244,8 @@ CONTENT_SECURITY_POLICY = {
         "font-src": [SELF, "https://fonts.gstatic.com"],
         "img-src": [SELF, "data:"],
         "connect-src": [SELF],
+        "manifest-src": [SELF],
+        "worker-src": [SELF],
         "object-src": [NONE],
         "base-uri": [SELF],
         "form-action": [SELF],

@@ -171,3 +171,11 @@ function playFanfare(kind) {
     // Son indisponible : la célébration visuelle suffit.
   }
 }
+
+// Appli installable : enregistre le service worker (cache des fichiers statiques,
+// page hors connexion, notifications). Sans effet si le navigateur ne le gère pas.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+  });
+}
