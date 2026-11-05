@@ -13,6 +13,7 @@ from apps.core.preparation import tomorrow_items
 from apps.families.access import family_member_required, parent_required
 from apps.families.models import Person
 from apps.meals.week import dinner_of
+from apps.review.selectors import REVIEW_FROM_WEEKDAY, is_done, review_monday
 from apps.saturday.draw import close_past_plans, current_plan
 from apps.school.selectors import school_days_for
 from apps.stars.selectors import balances, pot
@@ -110,6 +111,9 @@ def home(request):
             "saturday_plan": saturday_plan,
             "is_saturday": now.date().weekday() == SATURDAY,
             "dinner": dinner_of(request.family, now.date()),
+            # Revue du dimanche : proposée du vendredi au dimanche tant qu'elle n'est pas faite.
+            "review_due": now.date().weekday() >= REVIEW_FROM_WEEKDAY
+            and not is_done(request.family, review_monday(now.date())),
             "absences_today": Absence.objects.for_family(request.family)
             .overlapping(now.date(), now.date())
             .select_related("person"),

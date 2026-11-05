@@ -23,6 +23,7 @@ app_name = "meals"
 
 urlpatterns = [
     path("menu/", views.menu, name="menu"),
+    path("menu/proposer/", views.suggest, name="suggest"),
     path("menu/<str:day>/<meal:meal>/", views.slot_edit, name="slot_edit"),
     path("recettes/", views.recipes, name="recipes"),
     path("recettes/<int:pk>/", views.recipe_detail, name="recipe_detail"),

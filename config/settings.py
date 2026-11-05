@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "apps.holidays",
     "apps.progress",
     "apps.flylady",
+    "apps.review",
     "apps.agenda",
 ]
 

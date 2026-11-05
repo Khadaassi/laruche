@@ -13,6 +13,16 @@
     </p>
   {% endif %}
 
+  {% if has_recipes and empty_count %}
+    {# Menu assisté : ne remplace jamais un repas déjà prévu. #}
+    <form method="post" action="{% url 'meals:suggest' %}?semaine={{ monday|date:'Y-m-d' }}"
+          class="mb-space-4 flex flex-wrap items-center gap-space-4 rounded-md border border-honey-dark bg-surface-0 p-space-4">
+      {% csrf_token %}
+      <p class="flex-1">{{ empty_count }} repas encore vide{{ empty_count|pluralize }} cette semaine (dîners, et midis du mercredi et du week-end).</p>
+      <button type="submit" class="min-h-11 rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark">Proposer des recettes</button>
+    </form>
+  {% endif %}
+
   <div class="grid gap-space-4 md:grid-cols-2 lg:grid-cols-3">
     {% for day in days %}
       <section class="rounded-md border {% if day.is_today %}border-honey-dark{% else %}border-border{% endif %} bg-surface-0 p-space-4" aria-labelledby="day-{{ forloop.counter }}">
