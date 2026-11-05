@@ -221,6 +221,25 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
+  // Lien de réinitialisation : copier ou partager (feuille de partage du téléphone).
+  Alpine.data('copyLink', () => ({
+    copied: false,
+    canShare: Boolean(navigator.share),
+    async copy() {
+      const input = this.$refs.link;
+      try {
+        await navigator.clipboard.writeText(input.value);
+      } catch (error) {
+        input.select();
+        document.execCommand('copy');
+      }
+      this.copied = true;
+    },
+    share() {
+      navigator.share({ title: 'La Ruche', text: 'Lien pour choisir ton nouveau mot de passe :', url: this.$refs.link.value }).catch(() => {});
+    },
+  }));
+
   // Compteur d'étoiles qui monte (ex. 11 → 12) après l'arrivée de l'étoile.
   // Mouvement réduit : la valeur finale reste affichée telle quelle.
   Alpine.data('countUp', () => ({

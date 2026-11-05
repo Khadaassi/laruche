@@ -176,6 +176,9 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "tasks:home"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
+# Lien de réinitialisation créé par un parent : valable 24 h, usage unique.
+PASSWORD_RESET_TIMEOUT = 24 * 3600
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {

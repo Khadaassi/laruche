@@ -1,6 +1,11 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth import password_validation
+from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_GET, require_POST
 
@@ -190,3 +195,37 @@ def promote(request, pk):
 def regenerate_code(request):
     regenerate_invite_code(request.family)
     return redirect("families:settings")
+
+
+@require_POST
+@parent_required
+def reset_link(request, user_pk):
+    """Lien de réinitialisation du mot de passe d'un autre membre (pas d'e-mail dans l'app).
+
+    Seulement pour un compte de la même famille, jamais pour soi-même (404 sinon). Le lien
+    est à usage unique : il cesse de marcher dès que le mot de passe est changé, et expire
+    après PASSWORD_RESET_TIMEOUT. Rien n'est enregistré : la page l'affiche une seule fois.
+    """
+    membership = get_object_or_404(
+        FamilyMembership.objects.filter(family=request.family).exclude(user=request.user),
+        user_id=user_pk,
+    )
+    user = membership.user
+    path = reverse(
+        "accounts:password_reset",
+        kwargs={
+            "uidb64": urlsafe_base64_encode(force_bytes(user.pk)),
+            "token": default_token_generator.make_token(user),
+        },
+    )
+    return render(
+        request,
+        "parent/reset_link.html",
+        {
+            "nav_active": "settings",
+            "who": getattr(getattr(user, "person", None), "name", None)
+            or membership.get_role_display(),
+            "link": request.build_absolute_uri(path),
+            "hours": settings.PASSWORD_RESET_TIMEOUT // 3600,
+        },
+    )

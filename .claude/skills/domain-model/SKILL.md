@@ -422,7 +422,7 @@ pas (404), rien sur la tablette. Toute requête passe par `Goal.objects.mine(use
 - `PushSubscription` (appareil d'un parent), `NotificationPrefs` (dîner, revue, journée
   terminée ; tout actif sans ligne), `SentNotification` (anti-doublon : parent + type + clé).
 - **Journée terminée** : `award_day_star` → `notify_day_done` (aujourd'hui seulement).
-- **Rappels programmés** : `/taches-planifiees/notifications/` (POST, `Authorization: Bearer
+- **Rappels programmés** : `/taches-planifiees/` (POST, `Authorization: Bearer
   CRON_TOKEN`, 404 sans jeton) appelé par `.github/workflows/notifications.yml` vers 15 h
   (dîner non prévu, 15 h–20 h) et le dimanche vers 17 h (revue non faite). Peu d'appels :
   Render/Neon gratuits.

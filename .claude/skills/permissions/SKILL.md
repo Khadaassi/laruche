@@ -223,3 +223,13 @@ un compte enfant y accède aussi, avec sa seule colonne cochable (voir §2).
 - [ ] Le rôle est vérifié côté serveur, y compris pour le fragment HTMX.
 - [ ] L'écriture d'un enfant ne porte que sur ses propres données.
 - [ ] Les tests d'accès inter-familles et de rôle existent.
+
+
+## Mot de passe oublié (sans e-mail)
+
+- Un **parent** crée, depuis Réglages → Comptes et identifiants, un **lien de
+  réinitialisation** pour un **autre** compte de **sa** famille (`families:reset_link`,
+  POST ; soi-même ou autre famille → 404 ; enfant → refusé). Jeton Django standard :
+  usage unique (invalide dès que le mot de passe change), 24 h (`PASSWORD_RESET_TIMEOUT`).
+  Le lien n'est affiché qu'une fois, jamais stocké.
+- Chacun change son propre mot de passe : `accounts:password_change` (ancien + nouveau).

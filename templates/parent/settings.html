@@ -63,6 +63,12 @@
               </div>
               {% for error in form.login_name.errors %}<p class="mt-1 text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
             </form>
+            {% if account.pk != request.user.pk %}
+              <form method="post" action="{% url 'families:reset_link' account.pk %}" class="mt-space-2">
+                {% csrf_token %}
+                <button type="submit" class="text-sm font-medium underline">Mot de passe oublié ? Créer un lien de réinitialisation</button>
+              </form>
+            {% endif %}
           </li>
           {% endwith %}
         {% endfor %}
@@ -132,6 +138,7 @@
   <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="account-title">
     <h2 id="account-title" class="mb-space-2 text-lg">Mon compte</h2>
     <p class="mb-space-4 text-ink-soft">{% if request.user.login_name %}{{ request.user.login_name }} · {% endif %}{{ request.user.email }} · {{ request.membership.get_role_display }}</p>
+    <a href="{% url 'accounts:password_change' %}" class="mb-space-4 inline-flex min-h-11 items-center font-medium underline">Changer mon mot de passe</a>
     <form method="post" action="{% url 'accounts:logout' %}">
       {% csrf_token %}
       <button type="submit" class="w-full rounded-lg border border-border-strong px-space-6 py-3 font-medium">Se déconnecter</button>
