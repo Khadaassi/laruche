@@ -20,7 +20,7 @@ Puis lancer le workflow une fois à la main pour vérifier qu'il est vert.
 ## Restaurer
 
 1. Télécharger l'artefact (`laruche-AAAA-MM-JJ.dump.gpg`) depuis le run voulu.
-2. Déchiffrer : `gpg --decrypt laruche-AAAA-MM-JJ.dump.gpg > laruche.dump` (demande la phrase).
+2. Déchiffrer (outils PostgreSQL **18** ou plus, comme le serveur Neon) : `gpg --decrypt laruche-AAAA-MM-JJ.dump.gpg > laruche.dump` (demande la phrase).
 3. Créer une base vide (nouvelle branche Neon de préférence), puis :
    `pg_restore --no-owner --no-privileges --clean --if-exists -d "URL_DE_LA_BASE" laruche.dump`
 4. Pointer `DATABASE_URL` de Render vers cette base si besoin, redéployer.

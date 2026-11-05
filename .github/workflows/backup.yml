@@ -6,6 +6,7 @@ name: Sauvegarde hebdomadaire
 #   BACKUP_DATABASE_URL : URL Neon **directe** (sans « -pooler »), lecture suffit
 #   BACKUP_PASSPHRASE   : phrase secrète de chiffrement (à garder hors du dépôt !)
 # Restauration : docs/sauvegarde.md
+# pg_dump doit être d'une version >= celle du serveur Neon (actuellement PostgreSQL 18).
 
 on:
   schedule:
@@ -35,17 +36,17 @@ jobs:
             exit 1
           fi
 
-      - name: Copie de la base (pg_dump 17, format custom)
+      - name: Copie de la base (pg_dump 18, format custom)
         run: |
           stamp=$(date -u +%Y-%m-%d)
           echo "STAMP=$stamp" >> "$GITHUB_ENV"
-          docker run --rm -e DATABASE_URL -v "$PWD:/out" postgres:17 \
+          docker run --rm -e DATABASE_URL -v "$PWD:/out" postgres:18 \
             sh -c 'pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL" -f /out/laruche.dump'
           size=$(stat -c %s laruche.dump)
           echo "Taille : $size octets"
           # Une base La Ruche vide fait déjà plusieurs dizaines de Ko : en dessous, c'est suspect.
           if [ "$size" -lt 20000 ]; then echo "::error::Sauvegarde anormalement petite."; exit 1; fi
-          docker run --rm -v "$PWD:/out" postgres:17 pg_restore --list /out/laruche.dump | grep -c "TABLE DATA" \
+          docker run --rm -v "$PWD:/out" postgres:18 pg_restore --list /out/laruche.dump | grep -c "TABLE DATA" \
             | xargs -I{} echo "Tables sauvegardées : {}"
 
       - name: Chiffrement (AES-256)
