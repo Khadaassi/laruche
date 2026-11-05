@@ -1,0 +1,53 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Mon année {{ year }} — La Ruche{% endblock %}
+{% block head %}{% include "parent/_goal_fonts.html" %}{% endblock %}
+
+{% block header %}
+  <a href="{% url 'tasks:home' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Accueil</a>
+{% endblock %}
+
+{% block content %}
+<div class="vision-page -mx-space-4 rounded-lg px-space-4 pb-space-8 pt-space-6 md:mx-0 md:px-space-8">
+  <header class="vision-paper vision-torn mx-auto mb-space-8 max-w-xl px-space-6 py-space-6 text-center">
+    <h1 class="font-serif text-4xl font-semibold uppercase tracking-wide text-vision-wine-dark">Vision board {{ year }}</h1>
+    <div class="vision-rule mx-auto my-space-2 w-2/3"></div>
+    <p class="font-script text-3xl text-vision-wine">{{ tagline }}</p>
+    <p class="mt-space-2 text-xs text-vision-wine-dark">Privé : visible par vous seule.</p>
+  </header>
+
+  {% if not started %}
+    <p class="mb-space-6 text-center font-script text-2xl">On commence dès aujourd'hui : chaque petit pas compte déjà.</p>
+  {% endif %}
+
+  <ul class="vision-grid grid gap-x-space-6 gap-y-space-8 sm:grid-cols-2 lg:grid-cols-3">
+    {% for state in states %}
+      <li>
+        <article class="vision-card p-space-2 pb-space-4" aria-labelledby="goal-{{ state.goal.pk }}">
+          <a href="{% url 'goals:detail' state.goal.pk %}" class="vision-scene flex h-32 items-center justify-center" aria-hidden="true" tabindex="-1">
+            {% include "parent/_goal_illustration.html" with icon=state.goal.icon %}
+          </a>
+          <h2 id="goal-{{ state.goal.pk }}" class="vision-label vision-torn vision-paper relative -mt-space-6 mx-space-4 px-space-4 py-space-2 text-center font-script text-2xl font-semibold leading-tight shadow">
+            <a href="{% url 'goals:detail' state.goal.pk %}">{{ state.goal.title }}</a>
+          </h2>
+          <div class="mt-space-4 px-space-2">
+            <div class="flex items-center justify-between text-xs font-medium">
+              <span>Cette semaine</span><span>{{ state.week_percent }} %</span>
+            </div>
+            <div class="mt-1 h-2 overflow-hidden rounded-sm bg-vision-gold/25" role="img" aria-label="{{ state.week_percent }} % des petits pas de la semaine">
+              <div class="h-full {{ state.week_bar }} bg-vision-gold"></div>
+            </div>
+            {% if state.savings_percent is not None %}
+              <p class="mt-space-2 text-xs font-medium">Épargne : {{ state.saved|floatformat:0 }} € / {{ state.goal.savings_target|floatformat:0 }} € ({{ state.savings_percent }} %)</p>
+            {% endif %}
+            <ul class="mt-space-2 space-y-1">
+              {% for s in state.steps %}{% if s.show_today %}{% include "parent/_goal_step.html" %}{% endif %}{% endfor %}
+            </ul>
+          </div>
+        </article>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <p class="vision-paper vision-torn mx-auto mt-space-8 max-w-md px-space-6 py-space-4 text-center font-serif text-2xl font-semibold italic">{{ motto }}</p>
+</div>
+{% endblock %}

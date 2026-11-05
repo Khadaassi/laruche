@@ -70,6 +70,21 @@
       {% else %}<p class="text-ink-soft">Rien dans les deux semaines.</p>{% endif %}
     </li>
 
+    {% if goal_states %}
+      <li class="vision-page rounded-md p-space-4">
+        <h2 class="mb-space-2 flex items-center gap-space-2 text-lg"><span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-vision-paper font-display text-vision-wine-dark">6</span>Mes objectifs (privé)</h2>
+        <ul class="space-y-1 text-sm">
+          {% for state in goal_states %}
+            <li class="flex items-center gap-space-2">
+              <a href="{% url 'goals:detail' state.goal.pk %}" class="min-w-0 flex-1 underline">{{ state.goal.title }}</a>
+              <span class="h-2 w-20 overflow-hidden rounded-sm bg-vision-gold/25" aria-hidden="true"><span class="block h-full {{ state.week_bar }} bg-vision-gold"></span></span>
+              <span class="w-10 text-right font-medium">{{ state.week_percent }} %</span>
+            </li>
+          {% endfor %}
+        </ul>
+        <p class="mt-space-2 font-script text-xl">Un petit pas, chaque jour.</p>
+      </li>
+    {% endif %}
     <li class="rounded-md border {% if done %}border-sage{% else %}border-honey-dark{% endif %} bg-surface-0 p-space-4">
       {% if done %}
         <p class="flex items-center gap-space-2 font-display text-lg text-sage">{% include "components/_check.html" %}Revue terminée, bonne semaine !</p>

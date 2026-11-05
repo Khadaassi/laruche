@@ -389,6 +389,22 @@ de Noël au catalogue du samedi ; migrations de renommage pour l'existant). On f
   tablette (grand format, pluie d'alvéoles une fois pour l'Aïd et l'anniversaire) et
   l'accueil parent (+ rappels d'anniversaires à venir). Réglages `/reglages/moments/`.
 
+### Mon année (`goals/`) — objectifs personnels, **privés**
+
+Rattachés à un **compte** (`Goal.user`), jamais à la famille : l'autre parent ne les voit
+pas (404), rien sur la tablette. Toute requête passe par `Goal.objects.mine(user)` /
+`Step.objects.mine(user)`. Enfants : aucun accès (`parent_required`).
+- `Goal` (année, titre, illustration, `journal_label`, `savings_target`, `has_contacts`),
+  `Step` (petit pas : `unit` vide = case, sinon nombre ; `daily_target` ; `days_per_week`
+  1…7, quotidien si ≥ 5), `StepLog` (valeur du jour, unique pas + date), `Entry` (journal ou
+  versement `amount`), `Contact` (proche, `every_days`, `last_contact`).
+- Vision board de départ (9 objectifs, `defaults.VISION_2027`) créé à la 1re visite pour
+  l'année par défaut (`default_year` : l'année suivante dès novembre). On peut cocher avant
+  le 1er janvier : le calendrier commence au mois en cours.
+- Pages `/mon-annee/` (board), détail (petits pas, semaine, tirelire, journal, proches,
+  calendrier de l'année), modification. Carte « Mes petits pas du jour » sur l'accueil
+  (la personne connectée seulement) et étape « Mes objectifs (privé) » dans la revue.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée

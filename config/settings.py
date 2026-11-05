@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "apps.flylady",
     "apps.review",
     "apps.moments",
+    "apps.goals",
     "apps.agenda",
 ]
 

@@ -17,6 +17,10 @@
     --color-honey-dark: theme('colors.honey.dark');
     --color-terracotta: theme('colors.terracotta');
     --color-sage: theme('colors.sage');
+    --vision-wine: theme('colors.vision.wine');
+    --vision-wine-dark: theme('colors.vision.wine-dark');
+    --vision-paper: theme('colors.vision.paper');
+    --vision-gold: theme('colors.vision.gold');
   }
 
   html {
@@ -481,4 +485,67 @@
       var(--color-sage) 32px 48px
     );
   }
+}
+
+/* --- Mon année (vision board) -----------------------------------------------
+   Ambiance réservée à l'espace « Mon année » : toile bordeaux, papier crème déchiré,
+   rubans adhésifs, filets dorés, écriture manuscrite. Tokens `vision-*` uniquement.
+   Aucune animation (sauf le micro-feedback de coche commun). */
+@layer components {
+  .vision-page {
+    background-color: var(--vision-wine);
+    background-image:
+      repeating-linear-gradient(45deg, color-mix(in srgb, var(--vision-wine-dark) 35%, transparent) 0 2px, transparent 2px 6px),
+      repeating-linear-gradient(-45deg, color-mix(in srgb, var(--vision-wine-dark) 25%, transparent) 0 1px, transparent 1px 5px);
+    color: var(--vision-paper);
+  }
+  .vision-torn {
+    clip-path: polygon(
+      0% 6%, 4% 0%, 9% 5%, 15% 1%, 22% 6%, 30% 0%, 37% 5%, 45% 1%, 52% 6%, 60% 0%, 67% 4%,
+      75% 0%, 82% 6%, 89% 1%, 95% 5%, 100% 0%, 100% 94%, 96% 100%, 90% 95%, 83% 100%,
+      76% 94%, 69% 100%, 61% 95%, 54% 100%, 46% 94%, 39% 100%, 31% 95%, 24% 100%,
+      16% 94%, 9% 100%, 3% 95%, 0% 100%
+    );
+  }
+  .vision-paper {
+    background-color: var(--vision-paper);
+    color: var(--vision-wine-dark);
+  }
+  .vision-card {
+    position: relative;
+    background-color: var(--vision-paper);
+    color: var(--vision-wine-dark);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--vision-wine-dark) 60%, transparent);
+  }
+  .vision-grid > :nth-child(3n + 1) .vision-card { transform: rotate(-1.2deg); }
+  .vision-grid > :nth-child(3n + 2) .vision-card { transform: rotate(0.8deg); }
+  .vision-grid > :nth-child(3n) .vision-card { transform: rotate(-0.4deg); }
+  .vision-card::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: 72px;
+    height: 22px;
+    margin-left: -36px;
+    transform: rotate(-3deg);
+    background-color: color-mix(in srgb, var(--vision-paper) 70%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--vision-wine-dark) 30%, transparent);
+  }
+  .vision-scene {
+    background:
+      radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--vision-gold) 45%, transparent), transparent 65%),
+      var(--vision-wine-dark);
+    color: var(--vision-gold);
+  }
+  .vision-label { transform: rotate(-2deg); }
+  .vision-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--vision-gold), transparent);
+  }
+  .vision-level-empty { background-color: color-mix(in srgb, var(--vision-wine-dark) 12%, var(--vision-paper)); }
+  .vision-level-low { background-color: color-mix(in srgb, var(--vision-gold) 35%, var(--vision-paper)); }
+  .vision-level-mid { background-color: color-mix(in srgb, var(--vision-gold) 70%, var(--vision-paper)); }
+  .vision-level-full { background-color: var(--vision-wine); color: var(--vision-paper); }
+  .vision-level-future { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vision-gold) 30%, transparent); }
 }

@@ -18,10 +18,20 @@ const expected = {
     'honey-dark': '#B97A1E',
     terracotta: '#B34F39',
     sage: '#3F6B47',
+    // Espace « Mon année » (vision board) uniquement.
+    'vision-wine': '#5B1A24',
+    'vision-wine-dark': '#3A0F16',
+    'vision-paper': '#F2E4CB',
+    'vision-gold': '#B98A3E',
   },
   borderRadius: { sm: '10px', md: '16px', lg: '28px' },
   spacing: { 'space-2': '8px', 'space-4': '16px', 'space-6': '24px', 'space-8': '32px' },
-  fontFamily: { display: 'Fredoka', sans: 'Inter' },
+  fontFamily: {
+    display: 'Fredoka',
+    sans: 'Inter',
+    serif: 'Cormorant Garamond',
+    script: 'Caveat',
+  },
 };
 
 // Aplatit { ink: { DEFAULT, soft } } en { ink, 'ink-soft' }, comme les classes.
@@ -61,4 +71,4 @@ if (errors.length) {
   console.error('Tokens non conformes à la charte :\n- ' + errors.join('\n- '));
   process.exit(1);
 }
-console.log(`Tokens conformes : ${Object.keys(expected.colors).length} couleurs, 3 rayons, 4 espacements, 2 polices.`);
+console.log(`Tokens conformes : ${Object.keys(expected.colors).length} couleurs, 3 rayons, 4 espacements, ${Object.keys(expected.fontFamily).length} polices.`);

@@ -1,0 +1,57 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Modifier — {{ goal.title }}{% endblock %}
+{% block head %}{% include "parent/_goal_fonts.html" %}{% endblock %}
+
+{% block header %}
+  <a href="{% url 'goals:detail' goal.pk %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>{{ goal.title }}</a>
+  {% include "parent/_header.html" with title="Modifier l'objectif" %}
+{% endblock %}
+
+{% block content %}
+<div class="page-grid">
+  <section class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="goal-title">
+    <h2 id="goal-title" class="text-lg">Objectif</h2>
+    <form method="post" class="space-y-space-4" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="goal">
+      {% include "components/_field.html" with field=form.title %}
+      {% include "components/_field.html" with field=form.journal_label %}
+      {% include "components/_field.html" with field=form.savings_target %}
+      <label class="flex min-h-11 items-center gap-space-2"><input type="checkbox" name="{{ form.has_contacts.html_name }}" class="h-6 w-6 accent-sage" {% if form.has_contacts.value %}checked{% endif %}>{{ form.has_contacts.label|capfirst }}</label>
+      <button type="submit" class="w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
+    </form>
+  </section>
+
+  <section class="space-y-space-4 rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="steps-title">
+    <h2 id="steps-title" class="text-lg">Petits pas</h2>
+    <p class="text-sm text-ink-soft">Sans unité : une case à cocher. Avec une unité (pages, minutes…) : un nombre à atteindre chaque jour. « Jours par semaine » : 7 = tous les jours, 1 = une fois par semaine.</p>
+    {% for step, step_form in steps %}
+      <form method="post" class="space-y-space-2 rounded-md border border-border p-space-2">
+        {% csrf_token %}
+        <input type="hidden" name="pk" value="{{ step.pk }}">
+        {% include "components/_field.html" with field=step_form.title %}
+        <div class="grid grid-cols-3 gap-space-2">
+          {% include "components/_field.html" with field=step_form.unit %}
+          {% include "components/_field.html" with field=step_form.daily_target %}
+          {% include "components/_field.html" with field=step_form.days_per_week %}
+        </div>
+        <div class="flex gap-space-2">
+          <button type="submit" name="action" value="update_step" class="min-h-11 flex-1 rounded-lg border border-border-strong font-medium">Enregistrer</button>
+          <button type="submit" name="action" value="delete_step" class="min-h-11 rounded-lg border border-border-strong px-space-4 font-medium">Supprimer</button>
+        </div>
+      </form>
+    {% endfor %}
+    <form method="post" class="space-y-space-2 rounded-md border border-honey-dark p-space-2" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_step">
+      {% include "components/_field.html" with field=step_form.title %}
+      <div class="grid grid-cols-3 gap-space-2">
+        {% include "components/_field.html" with field=step_form.unit %}
+        {% include "components/_field.html" with field=step_form.daily_target %}
+        {% include "components/_field.html" with field=step_form.days_per_week %}
+      </div>
+      <button type="submit" class="min-h-11 w-full rounded-lg bg-honey font-medium text-ink hover:bg-honey-dark">Ajouter un petit pas</button>
+    </form>
+  </section>
+</div>
+{% endblock %}
