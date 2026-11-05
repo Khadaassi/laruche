@@ -451,6 +451,12 @@ ce qui reste à acheter groupé par rayon, « Dans le panier » replié en bas.
   arrondis à l'unité supérieure, cuillères à la demi. Personne compté → ×1.
 - Le menu affiche « N à table » ; la fiche du repas explique le calcul.
 
+### Saisie rapide (`core/quick.py`)
+
+Bouton « + » sur toutes les pages parent (`{% quick_add %}`, parents seulement) : une
+**course** (article manuel), un **rendez-vous** (une fois, 1 h, pour une personne ou toute
+la famille) ou une **tâche d'enfant pour aujourd'hui seulement** (période en cours).
+Retour à la page d'origine (`next`, même site) avec `?ajoute=…` (confirmation).
 ### Préparatifs des rendez-vous (`agenda/`)
 
 - `Event.driver` (parent qui accompagne d'habitude), `EventPrep` (choses à préparer,

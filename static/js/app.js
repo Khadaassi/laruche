@@ -240,6 +240,22 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
+  // Saisie rapide (bouton « + ») : onglet choisi et texte d'exemple adapté.
+  Alpine.data('quickAdd', () => ({
+    kind: 'course',
+    dismissed: false,
+    get placeholder() {
+      return { course: 'Lait, pain…', rdv: 'Dentiste, réunion…', tache: 'Ranger son cartable…' }[this.kind];
+    },
+    init() {
+      setTimeout(() => { this.dismissed = true; }, 6000);
+    },
+    pick(event) {
+      this.kind = event.currentTarget.dataset.kind;
+      this.$nextTick(() => this.$refs.title && this.$refs.title.focus());
+    },
+  }));
+
   // Compteur d'étoiles qui monte (ex. 11 → 12) après l'arrivée de l'étoile.
   // Mouvement réduit : la valeur finale reste affichée telle quelle.
   Alpine.data('countUp', () => ({
