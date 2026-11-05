@@ -1,6 +1,7 @@
 """Menu assisté : remplit les repas vides sans jamais écraser, varie les recettes."""
 
 import datetime
+import random
 from unittest import mock
 
 from django.test import TestCase
@@ -105,9 +106,13 @@ class BusyEveningTests(TestCase):
             end_date=tuesday,
         )
         self.assertEqual(busy_evenings(self.family, MONDAY), {tuesday})
-        suggest_week(self.family, MONDAY)
-        dinner = MealSlot.objects.get(date=tuesday, meal=Meal.DINNER)
-        self.assertEqual(dinner.recipe, self.quick)
+        # Quel que soit le tirage (la graine dépend de la famille), l'omelette va au mardi soir.
+        for seed in range(20):
+            MealSlot.objects.all().delete()
+            with mock.patch("apps.meals.suggest.random.Random", return_value=random.Random(seed)):
+                suggest_week(self.family, MONDAY)
+            dinner = MealSlot.objects.get(date=tuesday, meal=Meal.DINNER)
+            self.assertEqual(dinner.recipe, self.quick, seed)
 
     def test_no_busy_evening_without_late_events(self, _now):
         self.assertEqual(busy_evenings(self.family, MONDAY), set())
