@@ -4,10 +4,11 @@ from django.db import models, transaction
 from apps.absences.forms import Scope
 from apps.accounts.forms import FIELD_CLASSES
 from apps.families.models import Person
+from apps.families.models import Role as PersonRole
 from apps.tasks.forms import ScheduleFieldsMixin
 from apps.tasks.models import ALL_WEEKDAYS
 
-from .models import Event
+from .models import Event, EventPrep
 
 
 class Repeat(models.TextChoices):
@@ -44,10 +45,18 @@ class EventForm(ScheduleFieldsMixin, forms.ModelForm):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
     )
+    preps_text = forms.CharField(
+        label="À préparer",
+        required=False,
+        widget=forms.Textarea(
+            attrs={"rows": 3, "placeholder": "Sac de piscine\nBonnet\nCertificat médical"}
+        ),
+        help_text="Une chose par ligne. Rappelée la veille, avec une case à cocher.",
+    )
 
     class Meta:
         model = Event
-        fields = ["title", "start_time", "end_time", "location"]
+        fields = ["title", "start_time", "end_time", "location", "driver"]
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Dentiste, foot, piano…"}),
             "start_time": TIME_WIDGET,
@@ -59,7 +68,13 @@ class EventForm(ScheduleFieldsMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.instance.family = family
         self.fields["people"].queryset = Person.objects.for_family(family)
+        self.fields["driver"].queryset = Person.objects.for_family(family).filter(
+            role=PersonRole.PARENT
+        )
+        self.fields["driver"].empty_label = "Personne en particulier"
         event = self.instance
+        if event.pk:
+            self.initial["preps_text"] = "\n".join(p.title for p in event.preps.all())
         if event.pk:
             chosen = list(event.people.all())
             self.initial.update(
@@ -79,6 +94,8 @@ class EventForm(ScheduleFieldsMixin, forms.ModelForm):
             "start_time",
             "end_time",
             "location",
+            "driver",
+            "preps_text",
             "date",
             "start_date",
             "end_date",
@@ -106,4 +123,13 @@ class EventForm(ScheduleFieldsMixin, forms.ModelForm):
         event.save()
         people = self.cleaned_data["people"] if self.cleaned_data["scope"] == Scope.PEOPLE else []
         event.people.set(people)
+        titles = [line.strip()[:80] for line in self.cleaned_data["preps_text"].splitlines()]
+        titles = [t for t in titles if t]
+        # Garder les préparatifs inchangés (et leurs cases cochées), remplacer le reste.
+        kept = {p.title: p for p in event.preps.all()}
+        event.preps.exclude(title__in=titles).delete()
+        for position, title in enumerate(titles):
+            prep = kept.get(title) or EventPrep(event=event, title=title)
+            prep.position = position
+            prep.save()
         return event

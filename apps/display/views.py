@@ -11,6 +11,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.absences.selectors import absences_on
 from apps.accounts.forms import LoginForm
+from apps.agenda.preparation import upcoming as upcoming_preparations
 from apps.celebrations.models import Celebration
 from apps.core.ratelimit import BLOCKED_MESSAGE
 from apps.families.access import get_membership, parent_required
@@ -80,6 +81,8 @@ def child_columns(request, person=None):
     # Mode vacances : bonus et objectifs de la semaine, proposés toute la journée.
     bonus = [t for t in day_tasks if t.optional]
     week_counts = weekly_done_counts(bonus, today)
+    # Rendez-vous d'aujourd'hui / demain avec des choses à préparer (lecture seule).
+    occurrences = [o for o in upcoming_preparations(request.family, today) if o.preps]
     # Rattrapables oubliés hier : les faire aujourd'hui rend l'étoile de la veille.
     catch_up = catch_up_for(request.family, today, people=children)
     school_today = school_days_for(request.family, today, people=children)
@@ -96,6 +99,9 @@ def child_columns(request, person=None):
     for column in columns:
         column.overdue = [t for t in overdue if t.person_id == column.person.pk]
         column.catch_up = [t for t in catch_up if t.person_id == column.person.pk]
+        column.event_preps = [
+            o for o in occurrences if column.person.pk in {p.pk for p in o.event.people.all()}
+        ]
         column.bonus = [t for t in bonus if t.person_id == column.person.pk]
         for task in column.bonus:
             task.label = task.title

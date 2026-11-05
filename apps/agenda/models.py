@@ -39,6 +39,15 @@ class Event(models.Model):
     start_date = models.DateField("du", null=True, blank=True)
     end_date = models.DateField("au", null=True, blank=True)
     location = models.CharField("où", max_length=80, blank=True)
+    driver = models.ForeignKey(
+        "families.Person",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name="qui accompagne",
+        help_text="D'habitude ; modifiable pour une date (« Je m'en occupe »).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = EventQuerySet.as_manager()
@@ -97,3 +106,53 @@ class Event(models.Model):
         if self.start_date and self.end_date:
             return f"{days}, du {self.start_date:%d/%m} au {self.end_date:%d/%m}"
         return f"chaque semaine : {days}"
+
+
+class EventPrep(models.Model):
+    """Chose à préparer pour un rendez-vous (« sac de piscine », « carnet de santé »)."""
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="preps")
+    title = models.CharField("à préparer", max_length=80)
+    position = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "préparatif"
+        ordering = ["position", "pk"]
+
+    def __str__(self):
+        return self.title
+
+
+class EventPrepCheck(models.Model):
+    """Préparatif fait pour **une date** du rendez-vous (absence de ligne = à faire)."""
+
+    prep = models.ForeignKey(EventPrep, on_delete=models.CASCADE, related_name="checks")
+    date = models.DateField()
+    checked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["prep", "date"], name="unique_event_prep_check"),
+        ]
+
+    def __str__(self):
+        return f"{self.prep} — {self.date:%d/%m}"
+
+
+class EventOccurrence(models.Model):
+    """Exception pour une date : qui accompagne ce jour-là (« Je m'en occupe »)."""
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="occurrences")
+    date = models.DateField()
+    driver = models.ForeignKey(
+        "families.Person", on_delete=models.CASCADE, related_name="+", verbose_name="accompagne"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["event", "date"], name="unique_event_occurrence"),
+        ]
+
+    def __str__(self):
+        return f"{self.event} — {self.date:%d/%m} : {self.driver}"

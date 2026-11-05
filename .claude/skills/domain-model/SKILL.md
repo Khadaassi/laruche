@@ -451,6 +451,17 @@ ce qui reste à acheter groupé par rayon, « Dans le panier » replié en bas.
   arrondis à l'unité supérieure, cuillères à la demi. Personne compté → ×1.
 - Le menu affiche « N à table » ; la fiche du repas explique le calcul.
 
+### Préparatifs des rendez-vous (`agenda/`)
+
+- `Event.driver` (parent qui accompagne d'habitude), `EventPrep` (choses à préparer,
+  saisies une par ligne dans le formulaire ; modifier garde les préparatifs inchangés et
+  leurs cases), `EventPrepCheck` (fait pour **une date**), `EventOccurrence` (accompagnateur
+  d'une date : « Je m'en occupe », sans toucher au réglage habituel).
+- `agenda.preparation.upcoming` : rendez-vous d'aujourd'hui et de demain avec préparatifs
+  ou accompagnateur. Accueil parent : carte « Rendez-vous à préparer » (cases, « Je m'en
+  occupe »). Tablette : rappel en lecture seule dans la colonne des enfants concernés.
+- Endpoints parents : date valide pour le rendez-vous et à ±7 jours, sinon 404.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée
