@@ -19,6 +19,7 @@ from apps.household.views import WEEK_PARAM, requested_monday
 
 from .forms import IngredientForm, MealSlotForm, RecipeForm
 from .models import MealSlot, Recipe, RecipeIngredient
+from .suggest import empty_slots, suggest_week
 from .week import build_menu_week
 
 FAVORITES_PARAM = "favoris"
@@ -46,9 +47,24 @@ def menu(request):
             "nav_active": "kitchen",
             "kitchen_tab": "menu",
             "has_recipes": Recipe.objects.for_family(request.family).exists(),
+            "empty_count": len(empty_slots(request.family, requested_monday(request))),
             **build_menu_week(request.family, requested_monday(request)),
         },
     )
+
+
+@require_POST
+@parent_required
+def suggest(request):
+    """Menu assisté : remplit les repas vides de la semaine (jamais ceux déjà prévus).
+
+    `suivant=revue` ramène à la revue du dimanche au lieu du menu.
+    """
+    monday = requested_monday(request)  # ?semaine= dans l'URL du formulaire
+    suggest_week(request.family, monday)
+    if request.POST.get("suivant") == "revue":
+        return redirect(f"{reverse('review:week')}?semaine={monday.isoformat()}")
+    return redirect(_menu_url(monday))
 
 
 @require_http_methods(["GET", "POST"])

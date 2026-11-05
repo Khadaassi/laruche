@@ -346,6 +346,19 @@ Page `/menage/flylady/` (lien depuis Semaine) et réglages `/reglages/flylady/`.
 - Minuteur 15 min (`minuteur`, Alpine) avec petite fanfare à la fin.
 - Indépendant du ménage assigné (`household`), qui reste la répartition des corvées.
 
+### Revue du dimanche (`review/`) et menu assisté (`meals/suggest.py`)
+
+- **Menu assisté** (`meals:suggest`, POST, `?semaine=`) : remplit les repas **vides** de la
+  semaine (tous les dîners + midis du mercredi, samedi, dimanche ; jamais un jour passé ;
+  ne remplace jamais un repas prévu). Favoris tirés deux fois plus souvent ; on évite les
+  recettes servies les 14 derniers jours ou déjà dans la semaine ; à court de recettes, on
+  reprend les moins récentes. Tirage reproductible par famille et semaine.
+- **Revue** (`/revue/`, parents) : page guidée pour la semaine à préparer (`review_monday` :
+  la suivante dès le vendredi). Étapes : rendez-vous, école/absences/vacances, menu
+  (bouton menu assisté), courses (transfert existant), fêtes à venir, puis « La semaine
+  est prête » → `WeeklyReview` (unique famille + lundi). Carte sur l'accueil du vendredi au
+  dimanche tant que la revue n'est pas faite.
+
 ### Étoile du jour (`stars/services.py`, Phase 5)
 
 **`stars.selectors.day_progress(person, day) -> (cochées, prévues)`** : la journée

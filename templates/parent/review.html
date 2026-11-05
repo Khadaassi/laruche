@@ -1,0 +1,85 @@
+{% extends "layouts/parent_mobile.html" %}
+{% block title %}Revue de la semaine — La Ruche{% endblock %}
+
+{% block header %}
+  <a href="{% url 'tasks:home' %}" class="mb-space-2 inline-flex min-h-11 items-center font-medium text-ink-soft"><span aria-hidden="true">←&nbsp;</span>Accueil</a>
+  {% include "parent/_header.html" with title="Revue de la semaine" subtitle="Semaine du "|add:monday_label %}
+{% endblock %}
+
+{% block content %}
+  <p class="mb-space-4 text-ink-soft">5 minutes pour préparer la semaine du {{ monday|date:"j F" }} au {{ sunday|date:"j F" }}, étape par étape.</p>
+
+  <ol class="space-y-space-4">
+    <li class="rounded-md border border-border bg-surface-0 p-space-4">
+      <h2 class="mb-space-2 flex items-center gap-space-2 text-lg"><span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey font-display text-ink">1</span>Rendez-vous et activités</h2>
+      {% if days_with_events %}
+        <ul class="space-y-space-2">
+          {% for day in days_with_events %}
+            <li>
+              <p class="font-medium">{{ day.date|date:"l j"|capfirst }}</p>
+              <ul class="text-sm text-ink-soft">{% for block in day.blocks %}<li>{{ block.event.time_display }} · {{ block.event.title }}</li>{% endfor %}</ul>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="text-ink-soft">Aucun rendez-vous prévu.</p>{% endif %}
+      <a href="{% url 'household:week' %}?semaine={{ monday|date:'Y-m-d' }}" class="mt-space-2 inline-flex min-h-11 items-center font-medium underline">Voir ou ajouter dans la semaine →</a>
+    </li>
+
+    <li class="rounded-md border border-border bg-surface-0 p-space-4">
+      <h2 class="mb-space-2 flex items-center gap-space-2 text-lg"><span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey font-display text-ink">2</span>École, absences, vacances</h2>
+      <ul class="space-y-1">
+        {% for holiday in holidays %}<li class="font-medium">{{ holiday.name }} · {{ holiday.dates_display }}</li>{% endfor %}
+        {% for absence in absences %}<li>{{ absence.who }} · {{ absence.label }} · {{ absence.dates_display }}</li>{% endfor %}
+        {% if not holidays and not absences %}<li class="text-ink-soft">Ni vacances ni absence prévue.</li>{% endif %}
+      </ul>
+      <p class="mt-space-2 text-sm text-ink-soft">Une sortie scolaire, pas de cantine un jour, une étude annulée ?</p>
+      <div class="flex flex-wrap gap-x-space-4">
+        <a href="{% url 'school:manage' %}" class="inline-flex min-h-11 items-center font-medium underline">Cantine et étude →</a>
+        <a href="{% url 'absences:manage' %}" class="inline-flex min-h-11 items-center font-medium underline">Absences →</a>
+      </div>
+    </li>
+
+    <li class="rounded-md border border-border bg-surface-0 p-space-4">
+      <h2 class="mb-space-2 flex items-center gap-space-2 text-lg"><span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey font-display text-ink">3</span>Menu</h2>
+      {% if empty_meals %}
+        <p>{{ empty_meals }} repas encore vide{{ empty_meals|pluralize }} (dîners, midis du mercredi et du week-end).</p>
+        {% if has_recipes %}
+          <form method="post" action="{% url 'meals:suggest' %}?semaine={{ monday|date:'Y-m-d' }}" class="mt-space-2">
+            {% csrf_token %}
+            <input type="hidden" name="suivant" value="revue">
+            <button type="submit" class="min-h-11 w-full rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark">Proposer des recettes pour les repas vides</button>
+          </form>
+        {% endif %}
+      {% else %}
+        <p class="flex items-center gap-space-2 font-medium text-sage">{% include "components/_check.html" %}Tous les repas sont prévus.</p>
+      {% endif %}
+      <a href="{% url 'meals:menu' %}?semaine={{ monday|date:'Y-m-d' }}" class="mt-space-2 inline-flex min-h-11 items-center font-medium underline">Ajuster le menu →</a>
+    </li>
+
+    <li class="rounded-md border border-border bg-surface-0 p-space-4">
+      <h2 class="mb-space-2 flex items-center gap-space-2 text-lg"><span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey font-display text-ink">4</span>Courses</h2>
+      <p class="text-ink-soft">Envoyer les ingrédients du menu dans la liste de courses (quantités additionnées).</p>
+      <a href="{% url 'shopping:transfer' %}?semaine={{ monday|date:'Y-m-d' }}" class="mt-space-2 inline-flex min-h-11 items-center font-medium underline">Préparer la liste de courses →</a>
+    </li>
+
+    <li class="rounded-md border border-border bg-surface-0 p-space-4">
+      <h2 class="mb-space-2 flex items-center gap-space-2 text-lg"><span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey font-display text-ink">5</span>Fêtes à venir</h2>
+      {% if celebrations %}
+        <ul class="space-y-1">{% for celebration in celebrations %}<li><span class="font-medium">{{ celebration.name }}</span> · {{ celebration.date|date:"l j F" }}</li>{% endfor %}</ul>
+        <a href="{% url 'celebrations:index' %}" class="mt-space-2 inline-flex min-h-11 items-center font-medium underline">Préparatifs et cadeaux →</a>
+      {% else %}<p class="text-ink-soft">Rien dans les deux semaines.</p>{% endif %}
+    </li>
+
+    <li class="rounded-md border {% if done %}border-sage{% else %}border-honey-dark{% endif %} bg-surface-0 p-space-4">
+      {% if done %}
+        <p class="flex items-center gap-space-2 font-display text-lg text-sage">{% include "components/_check.html" %}Revue terminée, bonne semaine !</p>
+      {% else %}
+        <form method="post" action="{% url 'review:done' %}">
+          {% csrf_token %}
+          <input type="hidden" name="semaine" value="{{ monday|date:'Y-m-d' }}">
+          <button type="submit" class="min-h-14 w-full rounded-lg bg-ink px-space-6 font-display text-lg font-semibold text-surface-0">La semaine est prête</button>
+        </form>
+      {% endif %}
+    </li>
+  </ol>
+{% endblock %}
