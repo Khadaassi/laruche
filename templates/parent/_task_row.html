@@ -19,7 +19,7 @@ que les compteurs (hx-swap-oob). En cas de refus, app.js recoche la case.
     <label for="task-{{ task.pk }}" class="flex-1 cursor-pointer">
       <span class="block group-has-[:checked]:text-ink-soft group-has-[:checked]:line-through">{{ task.title }}</span>
       {% if not selected %}<span class="text-sm text-ink-soft">{{ task.person.name }}</span>{% endif %}
-      {% if task.optional %}<span class="ml-1 rounded-sm bg-surface-0 px-1 text-xs font-semibold text-ink-soft">Bonus vacances</span>{% endif %}
+      {% if task.optional %}<span class="ml-1 rounded-sm bg-surface-0 px-1 text-xs font-semibold text-ink-soft">Bonus</span>{% endif %}
     </label>
     <span class="hidden text-sm font-medium text-sage group-has-[:checked]:inline">Fait</span>
     {# Badge hexagonal : miel = à faire, sauge + coche = fait. #}

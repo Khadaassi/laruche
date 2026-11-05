@@ -276,6 +276,15 @@ minimal, `layouts/public.html` : une carte centrée, sans navigation.
 Le choix mobile / tablette ne dépend jamais du user-agent : deux URL distinctes, et
 les adaptations de largeur passent par les breakpoints Tailwind.
 
+## Saisons et moments (thème)
+
+`<html data-season="autumn|winter|spring|summer">` et `data-moment="eid|ramadan|friday"`
+teintent légèrement le fond (`color-mix` avec un token, 5 à 8 %) et colorent une bande de
+6 px en haut de page (12 px en alvéoles tricolores le jour de l'Aïd, ciel nocturne étoilé
+pendant le Ramadan). **Uniquement des tokens de la charte**, aucun nouveau hex ; pas
+d'animation continue. Motif de saison (feuille, flocon, fleur, soleil ; croissant pendant
+le Ramadan et l'Aïd) dans l'en-tête parent et la barre de la tablette.
+
 ## Mouvement & célébration — règles pour toute animation future
 
 Implémenté : la roue du samedi (rotation ~3,6 s, puis révélation du résultat avec

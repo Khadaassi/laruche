@@ -1,0 +1,72 @@
+{% comment %}
+Bannière des moments du jour. Paramètres : moments (DayMoments), large (tablette),
+for_parents (rappels d'anniversaires à venir). Ton toujours positif, jamais en boucle.
+{% endcomment %}
+{% if moments %}
+<div class="space-y-space-2 {% if large %}mb-space-6{% else %}mb-space-4{% endif %}">
+  {% if moments.eid %}
+    <section class="moment-eid relative overflow-hidden rounded-md border-2 border-honey bg-surface-0 p-space-4" aria-label="Aïd">
+      {% if large %}<div class="rain" aria-hidden="true">{% for _ in "123456789012345678901234567890123456" %}<span class="hex"></span>{% endfor %}</div>{% endif %}
+      <div class="relative flex items-center gap-space-4">
+        <span class="hex flex {% if large %}h-16 w-16{% else %}h-12 w-12{% endif %} shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="crescent" icon_size="h-8 w-8" %}</span>
+        <div>
+          <p class="font-display {% if large %}text-4xl{% else %}text-2xl{% endif %} font-semibold">Aïd Moubarak !</p>
+          <p class="{% if large %}text-xl{% endif %} text-ink-soft">{{ moments.eid.name }} : bonne fête à toute la famille.</p>
+        </div>
+      </div>
+    </section>
+  {% elif moments.ramadan_day %}
+    <section class="moment-ramadan rounded-md border border-honey-dark bg-ink p-space-4 text-surface-0" aria-label="Ramadan">
+      <div class="flex items-center gap-space-4">
+        <span class="hex flex {% if large %}h-14 w-14{% else %}h-12 w-12{% endif %} shrink-0 items-center justify-center bg-honey text-ink">{% include "components/_icon.html" with name="crescent" icon_size="h-7 w-7" %}</span>
+        <div class="min-w-0 flex-1">
+          <p class="font-display {% if large %}text-3xl{% else %}text-xl{% endif %} font-semibold">Ramadan Moubarak · jour {{ moments.ramadan_day }}{% if moments.ramadan_length %} sur {{ moments.ramadan_length }}{% endif %}</p>
+          {% if moments.eid_in_days %}<p class="{% if large %}text-lg{% endif %}">L'Aïd dans {{ moments.eid_in_days }} jour{{ moments.eid_in_days|pluralize }}</p>{% endif %}
+        </div>
+      </div>
+      {% if moments.good_deed %}
+        <p class="mt-space-2 rounded-sm bg-surface-0 px-space-4 py-space-2 font-medium text-ink {% if large %}text-xl{% endif %}">Bonne action du jour : {{ moments.good_deed }}</p>
+      {% endif %}
+    </section>
+  {% elif moments.is_friday %}
+    <section class="moment-friday rounded-md border border-sage bg-surface-0 p-space-4" aria-label="Vendredi">
+      <div class="flex items-center gap-space-4">
+        <span class="hex flex {% if large %}h-14 w-14{% else %}h-12 w-12{% endif %} shrink-0 items-center justify-center bg-sage text-surface-0">{% include "components/_icon.html" with name="friday" icon_size="h-7 w-7" %}</span>
+        <div class="min-w-0 flex-1">
+          <p class="font-display {% if large %}text-3xl{% else %}text-xl{% endif %} font-semibold">Joumou'a Moubarak</p>
+          <p class="{% if large %}text-lg{% endif %} text-ink-soft">{% for reminder in moments.friday_reminders %}{{ reminder }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if moments.next_eid and not moments.ramadan_day %}
+    <p class="flex items-center gap-space-2 rounded-md border border-border bg-surface-0 px-space-4 py-space-2 font-medium {% if large %}text-xl{% endif %}">
+      {% include "components/_icon.html" with name="crescent" icon_size="h-5 w-5" %}{{ moments.next_eid.name }} dans {{ moments.eid_in_days }} jour{{ moments.eid_in_days|pluralize }}
+      <span class="font-normal text-ink-soft">· {{ moments.next_eid.date|date:"l j F" }}</span>
+    </p>
+  {% endif %}
+
+  {% for person, age in moments.birthdays_today %}
+    <section class="relative overflow-hidden rounded-md border-2 border-terracotta bg-surface-0 p-space-4" aria-label="Anniversaire de {{ person.name }}">
+      {% if large and forloop.first and not moments.eid %}<div class="rain" aria-hidden="true">{% for _ in "123456789012345678901234567890123456" %}<span class="hex"></span>{% endfor %}</div>{% endif %}
+      <div class="relative flex items-center gap-space-4">
+        <span class="hex flex {% if large %}h-16 w-16{% else %}h-12 w-12{% endif %} shrink-0 items-center justify-center bg-terracotta text-surface-0">{% include "components/_icon.html" with name="cake" icon_size="h-8 w-8" %}</span>
+        <div>
+          <p class="font-display {% if large %}text-4xl{% else %}text-2xl{% endif %} font-semibold">Joyeux anniversaire {{ person.name }} !</p>
+          <p class="{% if large %}text-xl{% endif %} text-ink-soft">{{ age }} an{{ age|pluralize }} aujourd'hui : toute la ruche te souhaite une belle journée.</p>
+        </div>
+      </div>
+    </section>
+  {% endfor %}
+
+  {% if for_parents %}
+    {% for person, date, days_left, age in moments.birthdays_soon %}
+      <p class="flex items-center gap-space-2 rounded-md border border-border bg-surface-0 px-space-4 py-space-2">
+        {% include "components/_icon.html" with name="cake" icon_size="h-5 w-5" %}
+        <span><span class="font-medium">Anniversaire de {{ person.name }}</span> dans {{ days_left }} jour{{ days_left|pluralize }} ({{ age }} ans, {{ date|date:"l j F" }}) : pensez au cadeau !</span>
+      </p>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endif %}

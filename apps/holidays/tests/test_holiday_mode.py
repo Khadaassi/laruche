@@ -14,7 +14,7 @@ from apps.stars.services import award_day_star
 from apps.tasks.models import HolidayMode, Task, TaskCompletion
 from apps.tasks.periods import Period
 
-# Lundi 21 décembre 2026, 19h à Paris (UTC+1) : vacances de Noël.
+# Lundi 21 décembre 2026, 19h à Paris (UTC+1) : vacances de fin d'année.
 DAY = datetime.date(2026, 12, 21)
 DAY_7PM = datetime.datetime(2026, 12, 21, 18, 0, tzinfo=datetime.UTC)
 
@@ -54,8 +54,8 @@ class HolidayModeTests(SecureClientMixin, TestCase):
     def test_board_shows_holiday_banner_and_bonus(self, _now):
         self.client.force_login(self.kid)
         board = self.get(reverse("display:board"))
-        self.assertContains(board, "Vacances de Noël")
-        self.assertContains(board, "Bonus vacances")
+        self.assertContains(board, "Vacances de fin d&#x27;année")
+        self.assertContains(board, "Bonus du jour")
         self.assertContains(board, "Devoirs · 0/3 cette semaine")
 
     def test_weekly_goal_counts_days_since_monday(self, _now):

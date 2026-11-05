@@ -441,3 +441,44 @@
     animation: count-glow 300ms ease-out;
   }
 }
+
+/* --- Thème des saisons et des moments ----------------------------------------
+   `<html data-season="autumn|winter|spring|summer" data-moment="eid|ramadan|friday">`
+   (context processor `moments.theme`). Uniquement avec les couleurs de la charte
+   (variables CSS), en légère teinte : le fond reste crème, jamais blanc pur.
+   Une bande décorative de 6 px en haut de page (12 px et alvéoles le jour de l'Aïd).
+   Aucune animation : rien ne bouge en continu. */
+@layer base {
+  html { --season-a: var(--color-honey); --season-b: var(--color-honey-dark); --season-tint: 0%; }
+  html[data-season='autumn'] { --season-a: var(--color-terracotta); --season-b: var(--color-honey-dark); --season-tint: 5%; }
+  html[data-season='winter'] { --season-a: var(--color-border-strong); --season-b: var(--color-ink-soft); --season-tint: 6%; }
+  html[data-season='spring'] { --season-a: var(--color-sage); --season-b: var(--color-honey); --season-tint: 5%; }
+  html[data-season='summer'] { --season-a: var(--color-honey); --season-b: var(--color-terracotta); --season-tint: 7%; }
+  html[data-moment='friday'] { --season-a: var(--color-sage); --season-b: var(--color-sage); }
+  html[data-moment='ramadan'] { --season-a: var(--color-ink); --season-b: var(--color-honey); }
+  html[data-moment='eid'] { --season-a: var(--color-honey); --season-b: var(--color-terracotta); --season-tint: 8%; }
+
+  html {
+    background-color: color-mix(in srgb, var(--color-surface-100), var(--season-a) var(--season-tint));
+  }
+  body::before {
+    content: '';
+    display: block;
+    height: 6px;
+    background: linear-gradient(90deg, var(--season-a), var(--season-b), var(--season-a));
+  }
+  html[data-moment='ramadan'] body::before {
+    background:
+      radial-gradient(circle, var(--color-honey) 1.5px, transparent 2px) 0 0 / 18px 6px,
+      var(--color-ink);
+  }
+  html[data-moment='eid'] body::before {
+    height: 12px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--color-honey) 0 16px,
+      var(--color-terracotta) 16px 32px,
+      var(--color-sage) 32px 48px
+    );
+  }
+}

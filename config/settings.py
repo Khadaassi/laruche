@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     "apps.progress",
     "apps.flylady",
     "apps.review",
+    "apps.moments",
     "apps.agenda",
 ]
 
@@ -121,6 +122,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "csp.context_processors.nonce",
+                "apps.moments.context_processors.theme",
             ],
         },
     },
