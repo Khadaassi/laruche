@@ -41,13 +41,37 @@ class NotificationPrefs(models.Model):
         return f"Préférences de {self.user}"
 
 
+class Delivery(models.TextChoices):
+    PENDING = "pending", "En attente"
+    ACCEPTED = "accepted", "Acceptée par le service push"  # pas la preuve d'un affichage
+    FAILED = "failed", "Échec"
+    NO_DEVICE = "no_device", "Aucun appareil"
+    EXPIRED = "expired", "Trop tard"
+
+
 class SentNotification(models.Model):
-    """Trace anti-doublon : une notification d'un type par clé (jour, semaine…) et par parent."""
+    """File d'envoi et trace anti-doublon : une notification d'un type par clé et par parent.
+
+    La ligne est créée **en attente** avec son contenu ; l'envoi a lieu ensuite (en
+    tâche de fond après un cochage, ou pendant la tâche planifiée), avec de nouvelles
+    tentatives espacées si le service push échoue, jusqu'à `expires_at`.
+    « Acceptée » signifie que le service push a pris le message, pas que le
+    téléphone l'a affiché.
+    """
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
     kind = models.CharField(max_length=20)
     key = models.CharField(max_length=40)
-    sent_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(auto_now_add=True)  # mise en file
+    status = models.CharField(
+        max_length=10, choices=Delivery.choices, default=Delivery.PENDING, db_index=True
+    )
+    payload = models.JSONField(default=dict, blank=True)  # title, body, url, tag
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.CharField(max_length=120, blank=True)
 
     class Meta:
         constraints = [
@@ -57,4 +81,14 @@ class SentNotification(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.kind} · {self.key}"
+        return f"{self.kind} · {self.key} · {self.get_status_display()}"
+
+
+class ScheduledRun(models.Model):
+    """Dernière exécution réussie de la tâche planifiée (une ligne par tâche)."""
+
+    name = models.CharField(max_length=30, unique=True)
+    last_success_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.name} · {self.last_success_at:%d/%m %H:%M}"

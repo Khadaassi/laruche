@@ -35,5 +35,17 @@
       <button type="submit" class="mt-space-2 w-full rounded-lg bg-honey px-space-6 py-3 font-medium text-ink hover:bg-honey-dark">Enregistrer</button>
     </form>
   </section>
+
+  <section class="rounded-md border {% if scheduled.late %}border-2 border-terracotta{% else %}border-border{% endif %} bg-surface-0 p-space-4" aria-labelledby="cron-title">
+    <h2 id="cron-title" class="mb-space-2 text-lg">Tâches planifiées</h2>
+    <p class="text-sm text-ink-soft">Chaque nuit : étoiles oubliées, tâches récurrentes, fêtes ; et les rappels (dîner à 15 h, revue du dimanche).</p>
+    {% if not scheduled.configured %}
+      <p class="mt-space-2 font-medium text-terracotta" role="status">Configuration incomplète : la variable CRON_TOKEN manque sur Render. Ni la maintenance de nuit ni les rappels ne tournent.</p>
+    {% elif scheduled.last_success_at %}
+      <p class="mt-space-2 {% if scheduled.late %}font-medium text-terracotta{% endif %}" role="status">Dernière exécution réussie : {{ scheduled.last_success_at|date:"l j F à H:i" }}.{% if scheduled.late %} C'est trop ancien : vérifiez le secret CRON_TOKEN sur GitHub (Actions → « Tâches planifiées »).{% endif %}</p>
+    {% else %}
+      <p class="mt-space-2 font-medium text-terracotta" role="status">Aucune exécution réussie pour l'instant. Vérifiez le secret CRON_TOKEN sur GitHub (Actions → « Tâches planifiées »).</p>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

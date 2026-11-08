@@ -426,12 +426,23 @@ pas (404), rien sur la tablette. Toute requête passe par `Goal.objects.mine(use
 - **Clés VAPID dérivées de `SECRET_KEY`** (HKDF, `keys.py`) : rien à configurer, aucune clé
   dans le code ; `VAPID_PRIVATE_KEY` pour surcharger. Changer `SECRET_KEY` = réabonner.
 - `PushSubscription` (appareil d'un parent), `NotificationPrefs` (dîner, revue, journée
-  terminée ; tout actif sans ligne), `SentNotification` (anti-doublon : parent + type + clé).
-- **Journée terminée** : `award_day_star` → `notify_day_done` (aujourd'hui seulement).
+  terminée ; tout actif sans ligne), `SentNotification` (**file d'envoi** et anti-doublon :
+  parent + type + clé ; `status` en attente / acceptée par le service push / échec / aucun
+  appareil / trop tard, `payload`, `attempts`, `next_attempt_at`, `expires_at`).
+- **Envoi** : `enqueue` met en file ; `deliver_pending` envoie ce qui est dû (réservation
+  par UPDATE conditionnel, pas de double envoi), retente après 5 min, 30 min, 2 h, puis
+  échec ; rien après `expires_at`. « Acceptée » ≠ affichée sur le téléphone.
+- **Journée terminée** : `award_day_star` → `notify_day_done` (aujourd'hui seulement,
+  expire à minuit) → `dispatch_soon` : envoi **en tâche de fond après le commit** (le
+  cochage n'attend jamais le service push ; `PUSH_INLINE` pour les tests).
 - **Rappels programmés** : `/taches-planifiees/` (POST, `Authorization: Bearer
   CRON_TOKEN`, 404 sans jeton) appelé par `.github/workflows/notifications.yml` vers 15 h
-  (dîner non prévu, 15 h–20 h) et le dimanche vers 17 h (revue non faite). Peu d'appels :
-  Render/Neon gratuits.
+  (dîner non prévu, 15 h–20 h) et le dimanche vers 17 h (revue non faite), plus la
+  maintenance de nuit ; chaque appel relance aussi les envois en attente. Réussite
+  enregistrée dans `ScheduledRun` (« daily ») et affichée dans Réglages → Notifications
+  (alerte si `CRON_TOKEN` manque côté Render ou si plus de 26 h sans réussite). Le
+  workflow **échoue** si le secret GitHub `CRON_TOKEN` manque. Peu d'appels : Render/Neon
+  gratuits.
 - Abonnement expiré (404/410) supprimé à l'envoi. iPhone : seulement l'appli installée.
 
 ### Sauvegarde
