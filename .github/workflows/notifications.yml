@@ -30,8 +30,10 @@ jobs:
       - name: Appeler La Ruche
         run: |
           if [ -z "$CRON_TOKEN" ]; then
-            echo "::warning::Secret CRON_TOKEN absent : rappels programmés désactivés."
-            exit 0
+            # Échec visible (et non simple avertissement) : sans jeton, ni la maintenance
+            # de nuit (étoiles, tâches récurrentes, fêtes) ni les rappels ne tournent.
+            echo "::error::Secret CRON_TOKEN absent : configuration incomplète (maintenance et rappels arrêtés)."
+            exit 1
           fi
           # Render gratuit peut mettre ~1 min à se réveiller : délai long et nouvel essai.
           curl --fail --silent --show-error --max-time 120 --retry 2 --retry-delay 20 \

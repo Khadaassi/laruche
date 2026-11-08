@@ -1,5 +1,6 @@
 """Réglages des notifications (parents), abonnement d'un appareil, déclencheur planifié."""
 
+import datetime
 import hmac
 import json
 
@@ -14,10 +15,24 @@ from apps.core.maintenance import run_daily
 from apps.families.access import parent_required
 
 from .keys import public_key_b64
-from .models import NotificationPrefs, PushSubscription
+from .models import NotificationPrefs, PushSubscription, ScheduledRun
 from .services import prefs_for, run_scheduled, send_to_user
 
 PREF_FIELDS = ("dinner", "review", "day_done")
+CRON_RUN = "daily"
+# Au moins une exécution par nuit : au-delà de 26 h, quelque chose ne va pas.
+CRON_LATE_AFTER = datetime.timedelta(hours=26)
+
+
+def scheduled_status() -> dict:
+    """État de la tâche planifiée pour les réglages : configurée ? dernière réussite ?"""
+    run = ScheduledRun.objects.filter(name=CRON_RUN).first()
+    last = run.last_success_at if run else None
+    return {
+        "configured": bool(getattr(settings, "CRON_TOKEN", "")),
+        "last_success_at": last,
+        "late": last is None or timezone.now() - last > CRON_LATE_AFTER,
+    }
 
 
 @require_http_methods(["GET", "POST"])
@@ -41,6 +56,7 @@ def manage(request):
             ],
             "public_key": public_key_b64(),
             "devices": PushSubscription.objects.filter(user=request.user).count(),
+            "scheduled": scheduled_status(),
         },
     )
 
@@ -102,4 +118,8 @@ def cron(request):
     if not expected or not hmac.compare_digest(given.encode(), expected.encode()):
         raise Http404
     maintenance = run_daily(timezone.localdate())
-    return JsonResponse({**run_scheduled(), "maintenance": maintenance})
+    result = {**run_scheduled(), "maintenance": maintenance}
+    ScheduledRun.objects.update_or_create(
+        name=CRON_RUN, defaults={"last_success_at": timezone.now()}
+    )
+    return JsonResponse(result)

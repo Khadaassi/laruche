@@ -119,6 +119,8 @@ VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "https://laruche.onrender.com")
 # Jeton de la tâche planifiée (GitHub Actions) ; vide = rappels programmés désactivés.
 CRON_TOKEN = os.environ.get("CRON_TOKEN", "")
+# Envoi des notifications en attente dans la requête plutôt qu'en tâche de fond (tests).
+PUSH_INLINE = env_bool("PUSH_INLINE", default=False)
 
 # --- E-mails (réinitialisation du mot de passe des parents) -----------------------
 # Render gratuit bloque le SMTP : envoi par l'API HTTPS de Brevo (apps/core/email.py).
