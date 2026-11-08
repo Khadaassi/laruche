@@ -37,10 +37,8 @@ def tasks_for_day(family, day: datetime.date, *, people=None, period=None) -> li
         tasks = tasks.filter(period=period)
     # Vacances / absence : les tâches de la personne sont suspendues ce jour-là.
     absent = absences_on(family, day)
-    if absent.family_wide:
-        return []
-    if absent.people:
-        tasks = tasks.exclude(person_id__in=absent.people.keys())
+    if absent.any:
+        tasks = [task for task in tasks if not absent.is_absent(task.person_id)]
     tasks = list(tasks)
     # Vacances scolaires, Aïd, ou Ramadan (rythme allégé) : seul l'obligatoire compte.
     relaxed = bool(tasks) and (

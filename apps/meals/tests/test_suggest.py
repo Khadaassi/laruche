@@ -7,7 +7,12 @@ from unittest import mock
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.families.tests.factories import SecureClientMixin, join, make_family
+from apps.families.tests.factories import (
+    SecureClientMixin,
+    join,
+    make_child_profile,
+    make_family,
+)
 from apps.meals.models import Meal, MealKind, MealSlot, Recipe
 from apps.meals.suggest import busy_evenings, empty_slots, suggest_week
 
@@ -21,6 +26,7 @@ class SuggestTests(SecureClientMixin, TestCase):
     def setUp(self):
         self.family = make_family()
         self.parent = join(self.family, "Sam")
+        self.child = make_child_profile(self.family, "Lina")
         self.recipes = [
             Recipe.objects.create(family=self.family, name=f"Recette {i}", is_favorite=i < 3)
             for i in range(12)

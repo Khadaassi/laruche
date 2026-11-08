@@ -8,6 +8,16 @@ class AbsenceKind(models.TextChoices):
     OTHER = "other", "Absent"
 
 
+# Effets proposés par motif : (dispensé de tâches, absent de l'école, mange à la maison).
+# Un enfant malade reste à la maison : il ne fait pas ses tâches, ne va pas à l'école,
+# mais mange avec la famille. Modifiables absence par absence.
+KIND_EFFECTS = {
+    AbsenceKind.VACATION: (True, True, False),
+    AbsenceKind.SICK: (True, True, True),
+    AbsenceKind.OTHER: (True, True, False),
+}
+
+
 class AbsenceQuerySet(models.QuerySet):
     def for_family(self, family):
         return self.filter(family=family)
@@ -20,9 +30,12 @@ class AbsenceQuerySet(models.QuerySet):
 class Absence(models.Model):
     """Période où une personne (ou toute la famille) est absente.
 
-    `person` vide = toute la famille (vacances). Ces jours-là, les tâches du
-    quotidien et le ménage de la personne sont suspendus (masqués, non
-    cochables, rien de perdu côté étoiles) et l'école affiche l'absence.
+    `person` vide = toute la famille (vacances). Trois effets indépendants,
+    préremplis selon le motif (`KIND_EFFECTS`) :
+    - `skips_tasks` : tâches du quotidien et ménage suspendus (masqués, non
+      cochables, rien de perdu côté étoiles) ;
+    - `misses_school` : l'école affiche l'absence à la place de la journée type ;
+    - `eats_at_home` : la personne reste comptée à table (malade à la maison).
     """
 
     family = models.ForeignKey("families.Family", on_delete=models.CASCADE, related_name="absences")
@@ -39,6 +52,9 @@ class Absence(models.Model):
     note = models.CharField("précision", max_length=80, blank=True)
     start_date = models.DateField("du")
     end_date = models.DateField("au")
+    skips_tasks = models.BooleanField("dispensé de tâches", default=True)
+    misses_school = models.BooleanField("absent de l'école", default=True)
+    eats_at_home = models.BooleanField("mange à la maison", default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = AbsenceQuerySet.as_manager()
@@ -71,6 +87,17 @@ class Absence(models.Model):
         """« Malade », « Vacances · chez mamie »."""
         base = self.get_kind_display()
         return f"{base} · {self.note}" if self.note else base
+
+    @property
+    def effects_display(self) -> str:
+        """« Pas de tâches · pas d'école · mange à la maison »."""
+        parts = []
+        if self.skips_tasks:
+            parts.append("pas de tâches")
+        if self.misses_school:
+            parts.append("pas d'école")
+        parts.append("mange à la maison" if self.eats_at_home else "absent des repas")
+        return " · ".join(parts).capitalize()
 
     @property
     def dates_display(self) -> str:

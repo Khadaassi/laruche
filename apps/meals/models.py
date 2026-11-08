@@ -197,3 +197,27 @@ class MealSlot(models.Model):
             return self.note
         base = self.get_kind_display()
         return f"{base} · {self.note}" if self.note else base
+
+
+class MealPreferences(models.Model):
+    """Réglages du menu assisté de la famille (une ligne au plus, absente = défauts)."""
+
+    family = models.OneToOneField(
+        "families.Family", on_delete=models.CASCADE, related_name="meal_preferences"
+    )
+    adult_lunches = models.BooleanField(
+        "prévoir aussi les midis entre adultes",
+        default=False,
+        help_text="Sinon, le menu assisté ne prévoit le midi que si un enfant mange à la maison.",
+    )
+
+    class Meta:
+        verbose_name = "réglages du menu"
+
+    def __str__(self):
+        return f"Menu — {self.family}"
+
+    @classmethod
+    def for_family(cls, family) -> "MealPreferences":
+        """Réglages enregistrés, ou défauts non enregistrés (aucune écriture)."""
+        return cls.objects.filter(family=family).first() or cls(family=family)

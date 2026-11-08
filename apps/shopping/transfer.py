@@ -23,7 +23,7 @@ from decimal import ROUND_CEILING, Decimal
 
 from django.db import transaction
 
-from apps.families.models import Family
+from apps.families.models import Family, Person
 from apps.meals.models import MealKind, MealSlot, RecipeIngredient
 from apps.meals.presence import eaters, presence_range
 from apps.meals.units import dimension, format_quantity, from_base, normalize_name, to_base
@@ -61,12 +61,45 @@ HALF_UNITS = {"tbsp", "tsp"}
 
 
 def scale_factor(slot, presence) -> Decimal:
-    """Convives / portions de la recette ; 1 si personne n'est compté (repas prévu quand même)."""
+    """Convives / portions de la recette (1 si la recette n'indique pas de portions).
+
+    Un repas où personne n'est compté n'arrive pas ici : il est écarté du transfert
+    (`unattended_slots`) tant qu'on n'a pas saisi ses convives.
+    """
     count = eaters(slot, presence)
     servings = slot.recipe.servings or 0
     if not count or not servings:
         return Decimal(1)
     return Decimal(count) / Decimal(servings)
+
+
+def _week_slots(family, monday: datetime.date) -> list:
+    return list(
+        MealSlot.objects.for_family(family)
+        .filter(
+            date__gte=monday,
+            date__lt=monday + datetime.timedelta(days=7),
+            kind=MealKind.RECIPE,
+        )
+        .select_related("recipe")
+        .order_by("date", "-meal")
+    )
+
+
+def split_slots(family, monday: datetime.date) -> tuple[list, list, dict]:
+    """(repas à transférer, repas sans convive, présences) de la semaine.
+
+    Personne n'est compté (tout le monde absent, cantine) et aucun nombre saisi :
+    on ne devine pas, le repas est écarté et signalé dans l'aperçu.
+    """
+    presence = presence_range(family, monday, 7)
+    if not Person.objects.for_family(family).exists():
+        # Aucune personne déclarée : présences inconnues, on envoie tout tel quel.
+        return _week_slots(family, monday), [], presence
+    counted, unattended = [], []
+    for slot in _week_slots(family, monday):
+        (counted if eaters(slot, presence) else unattended).append(slot)
+    return counted, unattended, presence
 
 
 def round_for_shopping(quantity: Decimal, unit: str) -> Decimal:
@@ -83,25 +116,15 @@ def merge_key(name: str, quantity, unit: str) -> str:
     return f"{normalize_name(name)}|{kind}"[:120]
 
 
-def week_needs(family, monday: datetime.date) -> list[Need]:
+def week_needs(family, monday: datetime.date, split=None) -> list[Need]:
     """Ingrédients des recettes au menu de la semaine, quantités additionnées."""
-    slots = list(
-        MealSlot.objects.for_family(family)
-        .filter(
-            date__gte=monday,
-            date__lt=monday + datetime.timedelta(days=7),
-            kind=MealKind.RECIPE,
-        )
-        .select_related("recipe")
-        .order_by("date", "-meal")
-    )
+    slots, _, presence = split or split_slots(family, monday)
     by_recipe = {}
     for ingredient in RecipeIngredient.objects.for_family(family).filter(
         recipe_id__in={slot.recipe_id for slot in slots}
     ):
         by_recipe.setdefault(ingredient.recipe_id, []).append(ingredient)
 
-    presence = presence_range(family, monday, 7)
     groups = {}  # clé → [nom affiché, total en unité de base, unités vues, recettes]
     for slot in slots:
         factor = scale_factor(slot, presence)
@@ -143,6 +166,7 @@ class TransferPlan:
     kept: list = field(default_factory=list)  # [(article coché / à la maison, Need)] inchangé
     removed: list = field(default_factory=list)  # [article] plus au menu, retiré
     stale_bought: list = field(default_factory=list)  # [article acheté] plus au menu, gardé
+    unattended: list = field(default_factory=list)  # [MealSlot] personne à table : non envoyé
 
     @property
     def has_changes(self) -> bool:
@@ -155,12 +179,13 @@ class TransferPlan:
 
 def build_plan(family, monday: datetime.date) -> TransferPlan:
     """Compare le menu de la semaine à la liste, sans rien écrire (aperçu)."""
-    plan = TransferPlan(week=monday)
+    split = split_slots(family, monday)
+    plan = TransferPlan(week=monday, unattended=split[1])
     items = {
         item.merge_key: item
         for item in ShoppingItem.objects.for_family(family).filter(origin=Origin.MENU)
     }
-    for need in week_needs(family, monday):
+    for need in week_needs(family, monday, split):
         item = items.pop(need.key, None)
         if item is None:
             plan.added.append(need)

@@ -42,7 +42,7 @@
     <li class="rounded-md border border-border bg-surface-0 p-space-4">
       <h2 class="mb-space-2 flex items-center gap-space-2 text-lg"><span class="hex flex h-8 w-8 shrink-0 items-center justify-center bg-honey font-display text-ink">3</span>Menu</h2>
       {% if empty_meals %}
-        <p>{{ empty_meals }} repas encore vide{{ empty_meals|pluralize }} (dîners, midis du mercredi et du week-end).</p>
+        <p>{{ empty_meals }} repas encore vide{{ empty_meals|pluralize }} (dîners, et midis où un enfant mange à la maison).</p>
         {% if has_recipes %}
           <form method="post" action="{% url 'meals:suggest' %}?semaine={{ monday|date:'Y-m-d' }}" class="mt-space-2">
             {% csrf_token %}

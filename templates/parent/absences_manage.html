@@ -10,8 +10,8 @@
 <div class="page-grid">
   <section class="rounded-md border border-border bg-surface-0 p-space-4" aria-labelledby="add-title">
     <h2 id="add-title" class="mb-space-2 text-lg">Déclarer une absence</h2>
-    <p class="mb-space-4 text-sm text-ink-soft">Ces jours-là, les tâches du quotidien et le ménage de la personne sont mis en pause (rien n'est perdu) et l'école affiche l'absence.</p>
-    <form method="post" class="space-y-space-4" novalidate>
+    <p class="mb-space-4 text-sm text-ink-soft">Le motif préremplit ce que l'absence change (tâches, école, repas) ; ajustez si besoin. Les tâches mises en pause ne font rien perdre côté étoiles.</p>
+    <form method="post" class="space-y-space-4" novalidate x-data="absenceEffects" data-effects="{{ kind_effects }}">
       {% csrf_token %}
       <fieldset class="group/scope">
         <legend class="mb-1 font-medium">{{ form.scope.label }}</legend>
@@ -22,10 +22,21 @@
           {% include "parent/_person_choices.html" with field=form.people %}
         </div>
       </fieldset>
-      <fieldset>
+      <fieldset @change="applyKind">
         <legend class="mb-1 font-medium">{{ form.kind.label }}</legend>
         <div class="grid grid-cols-3 gap-space-2">
           {% for radio in form.kind %}<label class="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-border-strong px-space-2 text-center has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-surface-0 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-honey-dark">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend class="mb-1 font-medium">Ce que ça change</legend>
+        <div class="space-y-1">
+          {% for field in form %}{% if field.name in form.EFFECTS %}
+            <label class="flex min-h-11 cursor-pointer items-center gap-space-2">
+              <input type="checkbox" name="{{ field.html_name }}" id="{{ field.id_for_label }}" data-effect="{{ field.name }}" class="h-6 w-6 shrink-0 cursor-pointer accent-sage"{% if field.value %} checked{% endif %}>
+              <span>{{ field.label }}</span>
+            </label>
+          {% endif %}{% endfor %}
         </div>
       </fieldset>
       <div class="grid grid-cols-2 gap-space-2">
@@ -46,6 +57,7 @@
           <div class="min-w-0 flex-1">
             <p class="font-medium">{{ absence.who }} · {{ absence.label }}</p>
             <p class="text-sm text-ink-soft">{{ absence.dates_display }}{% if absence.start_date <= today %} · en cours{% endif %}</p>
+            <p class="text-sm text-ink-soft">{{ absence.effects_display }}</p>
           </div>
           <form method="post" action="{% url 'absences:delete' absence.pk %}">
             {% csrf_token %}
