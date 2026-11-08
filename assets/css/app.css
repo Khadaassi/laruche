@@ -1,5 +1,10 @@
 /* La Ruche — feuille source Tailwind (compilée vers static/css/app.css). */
 @tailwind base;
+
+/* Alpine : masqué jusqu'à l'initialisation du composant. */
+[x-cloak] {
+  display: none !important;
+}
 @tailwind components;
 @tailwind utilities;
 

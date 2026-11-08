@@ -17,6 +17,7 @@ def healthz(request):
 
 from django.shortcuts import render  # noqa: E402
 from django.templatetags.static import static  # noqa: E402
+from django.urls import reverse  # noqa: E402
 from django.views.decorators.cache import cache_control  # noqa: E402
 
 
@@ -56,7 +57,12 @@ def service_worker(request):
     response = render(
         request,
         "core/sw.js",
-        {"offline_url": "/hors-ligne/", "app_css": static("css/app.css")},
+        {
+            "offline_url": "/hors-ligne/",
+            "app_css": static("css/app.css"),
+            "store_url": reverse("shopping:store"),
+            "login_url": reverse("accounts:login"),
+        },
         content_type="application/javascript",
     )
     response["Service-Worker-Allowed"] = "/"

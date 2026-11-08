@@ -4,8 +4,10 @@ Les enfants n'y ont pas accès, ni sur l'écran partagé ni avec un compte.
 """
 
 import datetime
+import json
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
@@ -17,6 +19,7 @@ from apps.household.views import WEEK_PARAM, requested_monday
 from .aisles import STORE_ORDER, Aisle
 from .forms import ShoppingItemForm
 from .models import Origin, ShoppingItem, ShoppingTransfer, Status
+from .sync import MAX_CHANGES, apply_changes, store_states
 from .transfer import DECISIONS, MissingDecision, apply_transfer, build_plan, clear_bought
 
 CHOICE_PREFIX = "choice_"
@@ -74,7 +77,32 @@ def store(request):
             "in_cart": sorted(
                 (i for i in items if i.status == Status.BOUGHT), key=lambda i: i.name.casefold()
             ),
+            "generated_at": timezone.localtime(),
         },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@parent_required
+def sync(request):
+    """Synchronisation de la page « En magasin » (fetch JSON, même origine).
+
+    POST `{"changes": [{"id", "done", "at"}]}` : cochages faits sur ce téléphone, même
+    hors connexion ; le plus récent gagne (`sync.apply_changes`). GET : rien à envoyer,
+    juste l'état actuel (changements de l'autre parent) et un jeton CSRF frais (la page
+    gardée hors connexion peut en avoir un périmé).
+    """
+    result = {"applied": 0, "ignored": 0}
+    if request.method == "POST":
+        try:
+            changes = json.loads(request.body or b"{}").get("changes", [])
+        except (ValueError, AttributeError):
+            return JsonResponse({"error": "Données invalides."}, status=400)
+        if not isinstance(changes, list) or len(changes) > MAX_CHANGES:
+            return JsonResponse({"error": "Données invalides."}, status=400)
+        result = apply_changes(request.family, changes)
+    return JsonResponse(
+        {**result, "items": store_states(request.family), "csrf": get_token(request)}
     )
 
 
@@ -170,8 +198,7 @@ def _week_nav(monday):
 def toggle(request, pk):
     """Coche (acheté) / décoche un article (endpoint HTMX, état fixé, idempotent)."""
     item = _item(request, pk)
-    item.status = Status.BOUGHT if request.POST.get("done") == "on" else Status.TO_BUY
-    item.save(update_fields=["status"])
+    item.set_status(Status.BOUGHT if request.POST.get("done") == "on" else Status.TO_BUY)
     if request.headers.get("HX-Request") == "true":
         return HttpResponse(status=204)
     return redirect("shopping:index")
@@ -182,8 +209,7 @@ def toggle(request, pk):
 def at_home(request, pk):
     """« Déjà à la maison » : hors de la liste active, sans toucher au menu."""
     item = _item(request, pk)
-    item.status = Status.AT_HOME
-    item.save(update_fields=["status"])
+    item.set_status(Status.AT_HOME)
     return redirect("shopping:index")
 
 
@@ -191,8 +217,7 @@ def at_home(request, pk):
 @parent_required
 def restore(request, pk):
     item = _item(request, pk)
-    item.status = Status.TO_BUY
-    item.save(update_fields=["status"])
+    item.set_status(Status.TO_BUY)
     return redirect("shopping:index")
 
 

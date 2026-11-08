@@ -7,6 +7,12 @@
 {% endblock %}
 
 {% block content %}
+<div x-data="storeSync" data-sync-url="{% url 'shopping:sync' %}" data-generated-at="{{ generated_at|date:'l j F à H:i' }}" @change="toggle">
+  <div x-show="banner" x-cloak class="mb-space-4 rounded-md border-2 border-honey-dark bg-surface-0 p-space-4" role="status" aria-live="polite">
+    <p class="font-medium" x-text="banner"></p>
+    <p class="text-sm text-ink-soft" x-show="offline" x-text="savedAt"></p>
+    <button type="button" x-show="hasNewItems" @click="reload" class="mt-space-2 min-h-11 font-medium underline">Afficher les nouveaux articles</button>
+  </div>
   {% if groups %}
     <div class="space-y-space-4">
       {% for label, items in groups %}
@@ -30,4 +36,6 @@
       </ul>
     </details>
   {% endif %}
+  <p class="mt-space-6 text-sm text-ink-soft">Sans réseau dans le magasin ? Cochez quand même : les cochages restent sur ce téléphone et partent dès que le réseau revient.</p>
+</div>
 {% endblock %}

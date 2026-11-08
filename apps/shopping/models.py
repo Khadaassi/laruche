@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 from apps.meals.units import Unit, format_quantity
 
@@ -34,6 +35,7 @@ class ShoppingItem(models.Model):
       « à acheter » quand on retire les achats, au lieu de le supprimer.
     - `status = at_home` : « déjà à la maison », hors de la liste active mais
       conservé (l'ingrédient reste au menu, et le transfert suivant le sait).
+    - `set_status` horodate chaque changement (`status_changed_at`).
     """
 
     family = models.ForeignKey(
@@ -66,6 +68,9 @@ class ShoppingItem(models.Model):
         help_text="Deviné d'après le nom ; modifiable.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    # Heure du dernier cochage / décochage (synchronisation hors connexion : le
+    # changement le plus récent gagne, voir shopping/sync.py).
+    status_changed_at = models.DateTimeField(null=True, blank=True)
 
     objects = ShoppingItemQuerySet.as_manager()
 
@@ -98,6 +103,12 @@ class ShoppingItem(models.Model):
             if kwargs.get("update_fields") is not None:
                 kwargs["update_fields"] = {*kwargs["update_fields"], "aisle"}
         super().save(*args, **kwargs)
+
+    def set_status(self, status: str, at=None) -> None:
+        """Change le statut et l'horodate (enregistre)."""
+        self.status = status
+        self.status_changed_at = at or timezone.now()
+        self.save(update_fields=["status", "status_changed_at"])
 
     @property
     def quantity_display(self) -> str:

@@ -450,6 +450,23 @@ pas (404), rien sur la tablette. Toute requête passe par `Goal.objects.mine(use
 `.github/workflows/backup.yml` : `pg_dump` chiffré chaque dimanche, artefact 90 jours.
 Mise en place et restauration : `docs/sauvegarde.md`.
 
+### Courses hors connexion (`shopping/sync.py`)
+
+- La page **En magasin** est la seule page gardée par le service worker (cache
+  `laruche-private`, réseau d'abord, copie si le réseau manque ; préchargée depuis la
+  liste de courses). La copie est effacée dès qu'on arrive sur la page de connexion
+  (déconnexion, session expirée) ou si la page redirige vers la connexion.
+- Cochages en magasin : composant Alpine `storeSync` (pas d'HTMX sur cette page). Chaque
+  cochage est mis dans une file locale (`localStorage`, un changement par article,
+  heure du téléphone) puis envoyé à `shopping:sync` (POST JSON) ; au retour du réseau
+  (`online`, retour sur l'app) la file part d'un bloc. GET `shopping:sync` : états actuels
+  et jeton CSRF frais (la copie hors connexion peut en avoir un périmé).
+- Règle de conflit : `ShoppingItem.status_changed_at` (posé par `set_status` partout) ;
+  pour un article, **le changement le plus récent gagne** ; heure future ramenée à
+  maintenant ; articles d'une autre famille, supprimés ou « à la maison » ignorés. La
+  page applique ensuite l'état du serveur (cochages de l'autre parent, articles retirés
+  masqués, « Afficher les nouveaux articles »).
+
 ### Rayons et mode magasin (`shopping/aisles.py`)
 
 `ShoppingItem.aisle` (11 rayons, ordre du parcours : fruits et légumes → … → surgelés,

@@ -1,14 +1,16 @@
 {% comment %}
 Article de la liste de courses. Cochage optimiste (réponse 204), comme les préparatifs.
+En magasin (`store`) : pas d'HTMX, le composant `storeSync` envoie les cochages et les
+garde sur le téléphone tant que le réseau manque.
 L'origine (menu / habituel / ajouté) est dite en texte, jamais par la couleur seule.
 {% endcomment %}
 {% url 'shopping:toggle' item.pk as toggle_url %}
-<li class="group/row flex items-center gap-space-2 py-space-2">
-  <form method="post" action="{{ toggle_url }}" data-task-form hx-sync="this:queue last" hx-post="{{ toggle_url }}" hx-trigger="change" hx-swap="none"
+<li class="group/row flex items-center gap-space-2 py-space-2"{% if store %} data-row="{{ item.pk }}"{% endif %}>
+  <form method="post" action="{{ toggle_url }}"{% if not store %} data-task-form hx-sync="this:queue last" hx-post="{{ toggle_url }}" hx-trigger="change" hx-swap="none"{% endif %}
         class="task-row group flex min-w-0 flex-1 items-center gap-space-4">
     {% csrf_token %}
     <span class="relative flex shrink-0">
-      <input type="checkbox" name="done" id="item-{{ item.pk }}"
+      <input type="checkbox" name="done" id="item-{{ item.pk }}"{% if store %} data-item="{{ item.pk }}"{% endif %}
              class="h-7 w-7 cursor-pointer appearance-none rounded-sm border-2 border-border-strong bg-surface-0 checked:border-sage checked:bg-sage"
              {% if item.status == "bought" %}checked{% endif %}>
       <span class="pointer-events-none absolute inset-0 hidden items-center justify-center text-surface-0 group-has-[:checked]:flex">{% include "components/_check.html" %}</span>
