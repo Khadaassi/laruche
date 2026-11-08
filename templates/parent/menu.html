@@ -18,8 +18,21 @@
     <form method="post" action="{% url 'meals:suggest' %}?semaine={{ monday|date:'Y-m-d' }}"
           class="mb-space-4 flex flex-wrap items-center gap-space-4 rounded-md border border-honey-dark bg-surface-0 p-space-4">
       {% csrf_token %}
-      <p class="flex-1">{{ empty_count }} repas encore vide{{ empty_count|pluralize }} cette semaine (dîners, et midis du mercredi et du week-end).</p>
+      <p class="flex-1">{{ empty_count }} repas encore vide{{ empty_count|pluralize }} cette semaine (dîners, et midis où {% if meal_preferences.adult_lunches %}quelqu'un{% else %}un enfant{% endif %} mange à la maison).</p>
       <button type="submit" class="min-h-11 rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark">Proposer des recettes</button>
+    </form>
+  {% endif %}
+  {% if has_recipes %}
+    <form method="post" action="{% url 'meals:preferences' %}?semaine={{ monday|date:'Y-m-d' }}" class="mb-space-4 flex flex-wrap items-center gap-space-2 text-sm">
+      {% csrf_token %}
+      {% if meal_preferences.adult_lunches %}
+        <span class="text-ink-soft">Le menu assisté prévoit aussi les midis entre adultes.</span>
+        <button type="submit" class="min-h-11 font-medium underline">Ne plus les prévoir</button>
+      {% else %}
+        <input type="hidden" name="adult_lunches" value="on">
+        <span class="text-ink-soft">Le menu assisté ne prévoit le midi que si un enfant mange à la maison.</span>
+        <button type="submit" class="min-h-11 font-medium underline">Prévoir aussi les midis entre adultes</button>
+      {% endif %}
     </form>
   {% endif %}
 

@@ -1,7 +1,11 @@
 """Menu assisté : propose des recettes pour les repas encore vides d'une semaine.
 
-- Repas visés : tous les dîners, et le déjeuner du mercredi, samedi et dimanche
-  (les autres midis, les enfants mangent à l'école). Jamais un jour passé.
+- Repas visés, d'après les présences (`presence.py`) : chaque dîner où quelqu'un
+  mange, et chaque déjeuner où un enfant mange à la maison (mercredi, week-end,
+  vacances scolaires, enfant malade…) ; aussi les midis entre adultes si la famille
+  l'a choisi (`MealPreferences.adult_lunches`). Sans semaine d'école renseignée, on
+  suppose l'école les lundis, mardis, jeudis et vendredis hors vacances. Jamais un
+  jour passé, jamais un repas où personne n'est compté.
 - Ne remplace **jamais** un repas déjà prévu.
 - Favoris d'abord (tirés deux fois plus souvent) ; on évite les recettes servies
   les 14 derniers jours ou déjà au menu de la semaine. Pas assez de recettes : on
@@ -20,10 +24,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.agenda.grid import events_by_day
+from apps.holidays.models import SchoolHoliday
+from apps.school.models import SchoolDaySchedule
 
-from .models import Meal, MealKind, MealSlot, Recipe
+from .models import Meal, MealKind, MealPreferences, MealSlot, Recipe
+from .presence import presence_range
 
-LUNCH_WEEKDAYS = (2, 5, 6)  # mercredi, samedi, dimanche
+# Sans semaine d'école renseignée : midis à la maison supposés (mercredi, week-end).
+LUNCH_WEEKDAYS = (2, 5, 6)
 RECENT_DAYS = 14
 QUICK_MINUTES = 30
 EVENING = datetime.time(17, 0)
@@ -42,15 +50,33 @@ def is_quick(recipe) -> bool:
     return recipe.prep_minutes is not None and recipe.prep_minutes <= QUICK_MINUTES
 
 
-def target_slots(monday: datetime.date, today: datetime.date) -> list[tuple[datetime.date, str]]:
+def target_slots(family, monday: datetime.date, today: datetime.date) -> list:
+    """Repas à prévoir de la semaine [(date, repas)], d'après les présences."""
+    presence = presence_range(family, monday, 7)
+    adult_lunches = MealPreferences.for_family(family).adult_lunches
+    school_known = SchoolDaySchedule.objects.for_family(family).exists()
+    sunday = monday + datetime.timedelta(days=6)
+    holidays = list(
+        SchoolHoliday.objects.for_family(family)
+        .filter(start_date__lte=sunday, end_date__gte=monday)
+        .values_list("start_date", "end_date")
+    )
     slots = []
     for offset in range(7):
         day = monday + datetime.timedelta(days=offset)
         if day < today:
             continue
-        if day.weekday() in LUNCH_WEEKDAYS:
+        lunch = presence.get((day, Meal.LUNCH))
+        at_home_guess = (
+            school_known
+            or day.weekday() in LUNCH_WEEKDAYS
+            or any(first <= day <= last for first, last in holidays)
+        )
+        if lunch and lunch.count and (adult_lunches or (lunch.children and at_home_guess)):
             slots.append((day, Meal.LUNCH))
-        slots.append((day, Meal.DINNER))
+        dinner = presence.get((day, Meal.DINNER))
+        if dinner and dinner.count:
+            slots.append((day, Meal.DINNER))
     return slots
 
 
@@ -61,7 +87,7 @@ def empty_slots(family, monday: datetime.date, today: datetime.date | None = Non
         .filter(date__range=(monday, monday + datetime.timedelta(days=6)))
         .values_list("date", "meal")
     )
-    return [slot for slot in target_slots(monday, today) if slot not in taken]
+    return [slot for slot in target_slots(family, monday, today) if slot not in taken]
 
 
 @transaction.atomic

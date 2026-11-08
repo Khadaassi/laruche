@@ -240,6 +240,22 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
+  // Absence : le motif préremplit ses effets (tâches, école, repas), modifiables ensuite.
+  Alpine.data('absenceEffects', () => ({
+    effects: {},
+    init() {
+      try { this.effects = JSON.parse(this.$el.dataset.effects || '{}'); } catch (error) { this.effects = {}; }
+    },
+    applyKind(event) {
+      const values = event.target.name === 'kind' ? this.effects[event.target.value] : null;
+      if (!values) return;
+      ['skips_tasks', 'misses_school', 'eats_at_home'].forEach((name, index) => {
+        const box = this.$root.querySelector(`[data-effect="${name}"]`);
+        if (box) box.checked = Boolean(values[index]);
+      });
+    },
+  }));
+
   // Saisie rapide (bouton « + ») : onglet choisi et texte d'exemple adapté.
   Alpine.data('quickAdd', () => ({
     kind: 'course',

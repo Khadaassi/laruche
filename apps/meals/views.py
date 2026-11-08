@@ -19,7 +19,7 @@ from apps.household.views import WEEK_PARAM, requested_monday
 
 from .forms import IngredientForm, MealSlotForm, RecipeForm
 from .library import BY_KEY, CUISINES, LIBRARY
-from .models import MealSlot, Recipe, RecipeIngredient
+from .models import MealPreferences, MealSlot, Recipe, RecipeIngredient
 from .presence import presence_range
 from .services import family_recipe_names, import_library
 from .suggest import empty_slots, suggest_week
@@ -52,6 +52,7 @@ def menu(request):
             "kitchen_tab": "menu",
             "has_recipes": Recipe.objects.for_family(request.family).exists(),
             "empty_count": len(empty_slots(request.family, requested_monday(request))),
+            "meal_preferences": MealPreferences.for_family(request.family),
             **build_menu_week(request.family, requested_monday(request)),
         },
     )
@@ -69,6 +70,16 @@ def suggest(request):
     if request.POST.get("suivant") == "revue":
         return redirect(f"{reverse('review:week')}?semaine={monday.isoformat()}")
     return redirect(_menu_url(monday))
+
+
+@require_POST
+@parent_required
+def preferences(request):
+    """Menu assisté : prévoir aussi (ou non) les midis où seuls les adultes mangent."""
+    prefs = MealPreferences.for_family(request.family)
+    prefs.adult_lunches = request.POST.get("adult_lunches") == "on"
+    prefs.save()
+    return redirect(_menu_url(requested_monday(request)))
 
 
 @require_http_methods(["GET", "POST"])

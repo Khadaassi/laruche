@@ -17,7 +17,18 @@ class DayAbsences:
         return self.people.get(person_id) or self.family_wide
 
     def is_absent(self, person_id) -> bool:
-        return self.for_person(person_id) is not None
+        """Tâches et ménage suspendus ce jour-là (absence « dispensé de tâches »)."""
+        absence = self.for_person(person_id)
+        return absence is not None and absence.skips_tasks
+
+    def misses_school(self, person_id) -> bool:
+        absence = self.for_person(person_id)
+        return absence is not None and absence.misses_school
+
+    def misses_meals(self, person_id) -> bool:
+        """Pas à table ce jour-là (un enfant malade à la maison mange avec la famille)."""
+        absence = self.for_person(person_id)
+        return absence is not None and not absence.eats_at_home
 
     @property
     def any(self) -> bool:

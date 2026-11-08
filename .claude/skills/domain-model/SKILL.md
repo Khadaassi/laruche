@@ -77,7 +77,7 @@ families.Family ──1:N── meals.Recipe (nom, préparation, favori)
 | `meals` | `MealSlot` | Un repas du menu : `date`, `meal` (déjeuner / dîner), `kind` (recette / restes / extérieur / autre), `recipe` (si et seulement si `kind = recette`, contrainte en base), `note` libre. Unique `(family, date, meal)`. Pas de ligne = rien de prévu. |
 | `shopping` | `ShoppingItem` | Article de **la** liste de la famille : `name`, `quantity`, `unit`, `origin` (menu / ajouté à la main), `status` (à acheter / acheté / déjà à la maison), `recurring` (produit habituel, ajouts manuels seulement), `merge_key` et `recipes` (articles du menu). |
 | `shopping` | `ShoppingTransfer` | Dernier transfert menu → courses d'une famille (OneToOne) : `week` (lundi), `transferred_at`. |
-| `absences` | `Absence` | Période d'absence : `person` (vide = **toute la famille**), `kind` (vacances / malade / absent), `note`, `start_date` ≤ `end_date` (bornes incluses). |
+| `absences` | `Absence` | Période d'absence : `person` (vide = **toute la famille**), `kind` (vacances / malade / absent), `note`, `start_date` ≤ `end_date` (bornes incluses). Trois effets indépendants, préremplis par motif (`KIND_EFFECTS`, composant Alpine `absenceEffects`) : `skips_tasks` (tâches et ménage suspendus — `DayAbsences.is_absent`), `misses_school` (l'école affiche l'absence — `misses_school`), `eats_at_home` (reste compté à table — `misses_meals` = non). Malade : les trois « oui » ; vacances et absent : pas à table. |
 | `agenda` | `Event` | Rendez-vous / activité à heure fixe : `title`, `people` (M2M, vide = toute la famille), `start_time` < `end_time`, `weekdays` + `start_date` / `end_date` (une seule fois = début = fin), `location`. |
 | `display` | `SharedDisplayDevice` | Tablette commune autorisée par un parent. Stocke l'empreinte SHA-256 du jeton, `last_used_at`, `revoked_at`. |
 
@@ -357,8 +357,12 @@ Page `/menage/flylady/` (lien depuis Semaine) et réglages `/reglages/flylady/`.
 ### Revue du dimanche (`review/`) et menu assisté (`meals/suggest.py`)
 
 - **Menu assisté** (`meals:suggest`, POST, `?semaine=`) : remplit les repas **vides** de la
-  semaine (tous les dîners + midis du mercredi, samedi, dimanche ; jamais un jour passé ;
-  ne remplace jamais un repas prévu). Favoris tirés deux fois plus souvent ; on évite les
+  semaine d'après les **présences** : chaque dîner où quelqu'un mange, chaque midi où un
+  **enfant** mange à la maison (mercredi, week-end, vacances scolaires, enfant malade…),
+  et les midis entre adultes si `MealPreferences.adult_lunches` (interrupteur sous le
+  bouton, `meals:preferences`). Sans semaine d'école renseignée : midis enfants supposés
+  les mercredis, week-ends et vacances seulement. Jamais un jour passé, jamais un repas
+  où personne n'est compté ; ne remplace jamais un repas prévu. Favoris tirés deux fois plus souvent ; on évite les
   recettes servies les 14 derniers jours ou déjà dans la semaine ; à court de recettes, on
   reprend les moins récentes. **Soirs chargés** (`busy_evenings` : un rendez-vous qui finit
   après 17 h, ou deux dans la journée) : dîner pris parmi les recettes ≤ 30 min s'il y en a ;
@@ -445,10 +449,14 @@ ce qui reste à acheter groupé par rayon, « Dans le panier » replié en bas.
 
 - `Recipe.servings` (défaut 4 : les recettes de la bibliothèque sont pour 4).
 - `presence_range(family, start, days)` → `{(date, repas): Presence}` : toute la famille,
-  moins les absents ; le **midi**, moins les enfants qui ont école et mangent à la cantine,
-  au sandwich ou ailleurs. `MealSlot.guests` (facultatif) remplace le calcul (invités).
+  moins les absences « pas à table » (`misses_meals`) ; le **midi**, moins les enfants qui
+  ont école et mangent à la cantine, au sandwich ou ailleurs. Pendant les **vacances
+  scolaires**, la semaine type d'école ne s'applique pas (`school_days_range`, une
+  exception datée si). `MealSlot.guests` (facultatif) remplace le calcul (invités).
 - Transfert vers les courses : quantité × convives / portions ; pièces, boîtes, paquets
-  arrondis à l'unité supérieure, cuillères à la demi. Personne compté → ×1.
+  arrondis à l'unité supérieure, cuillères à la demi. Repas où **personne** n'est compté
+  et sans convives saisis : **pas envoyé**, listé en tête de l'aperçu (« Personne à
+  table ? », lien vers le repas). Famille sans personne déclarée : tout est envoyé ×1.
 - Le menu affiche « N à table » ; la fiche du repas explique le calcul.
 
 ### Saisie rapide (`core/quick.py`)

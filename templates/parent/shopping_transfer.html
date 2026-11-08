@@ -11,6 +11,21 @@
 {% block content %}
   {% include "parent/_week_nav.html" with base_url_name="shopping:transfer" %}
 
+  {% if plan.unattended %}
+    <section class="mb-space-4 rounded-md border-2 border-honey-dark bg-surface-0 p-space-4" aria-labelledby="unattended-title">
+      <h2 id="unattended-title" class="mb-space-2 text-lg">Personne à table ?</h2>
+      <p class="mb-space-2 text-sm text-ink-soft">Pour ces repas, personne n'est compté (absences, cantine). Ils ne sont pas envoyés aux courses ; indiquez le nombre de convives pour les inclure.</p>
+      <ul class="divide-y divide-border">
+        {% for slot in plan.unattended %}
+          <li class="flex flex-wrap items-center justify-between gap-space-2 py-space-2">
+            <span><span class="font-medium">{{ slot.date|date:"l j"|capfirst }} · {{ slot.get_meal_display|lower }}</span> <span class="text-ink-soft">· {{ slot.recipe.name }}</span></span>
+            <a href="{% url 'meals:slot_edit' slot.date|date:'Y-m-d' slot.meal %}" class="inline-flex min-h-11 items-center font-medium underline">Indiquer les convives</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
   {% if plan.is_empty and not plan.removed %}
     <div class="rounded-md border border-border bg-surface-0 p-space-4">
       <p class="mb-space-2 font-medium">Aucun ingrédient à envoyer cette semaine.</p>

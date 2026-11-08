@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.db import models, transaction
 from django.utils import timezone
@@ -5,7 +7,7 @@ from django.utils import timezone
 from apps.accounts.forms import FIELD_CLASSES
 from apps.families.models import Person
 
-from .models import Absence, AbsenceKind
+from .models import KIND_EFFECTS, Absence, AbsenceKind
 
 
 class Scope(models.TextChoices):
@@ -45,6 +47,12 @@ class AbsenceForm(forms.Form):
     note = forms.CharField(
         label="Précision", max_length=80, required=False, help_text="Chez mamie, gastro…"
     )
+    # Préremplis selon le motif (composant Alpine `absenceEffects`), modifiables.
+    skips_tasks = forms.BooleanField(label="Dispensé de tâches", required=False)
+    misses_school = forms.BooleanField(label="Absent de l'école", required=False)
+    eats_at_home = forms.BooleanField(label="Mange à la maison", required=False)
+
+    EFFECTS = ("skips_tasks", "misses_school", "eats_at_home")
 
     def __init__(self, *args, family, **kwargs):
         super().__init__(*args, **kwargs)
@@ -53,6 +61,9 @@ class AbsenceForm(forms.Form):
         today = timezone.localdate()
         self.initial.setdefault("start_date", today)
         self.initial.setdefault("end_date", today)
+        kind = self.initial.get("kind") or self.fields["kind"].initial
+        for name, value in zip(self.EFFECTS, KIND_EFFECTS[kind], strict=True):
+            self.initial.setdefault(name, value)
         for name in ("start_date", "end_date", "note"):
             self.fields[name].widget.attrs["class"] = FIELD_CLASSES
 
@@ -77,6 +88,12 @@ class AbsenceForm(forms.Form):
                 note=data["note"].strip(),
                 start_date=data["start_date"],
                 end_date=data["end_date"],
+                **{name: data[name] for name in self.EFFECTS},
             )
             for person in people
         ]
+
+
+def kind_effects_json() -> str:
+    """Effets par motif pour le composant Alpine (attribut data-, pas de script inline)."""
+    return json.dumps({str(kind): list(effects) for kind, effects in KIND_EFFECTS.items()})
