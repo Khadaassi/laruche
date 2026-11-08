@@ -24,6 +24,7 @@ app_name = "meals"
 urlpatterns = [
     path("menu/", views.menu, name="menu"),
     path("menu/proposer/", views.suggest, name="suggest"),
+    path("menu/reglages/", views.preferences, name="preferences"),
     path("menu/<str:day>/<meal:meal>/", views.slot_edit, name="slot_edit"),
     path("recettes/", views.recipes, name="recipes"),
     path("recettes/bibliotheque/", views.library, name="library"),

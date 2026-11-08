@@ -4,6 +4,7 @@ import datetime
 from dataclasses import dataclass
 
 from apps.absences.selectors import absences_range
+from apps.holidays.models import SchoolHoliday
 
 from .models import Lunch, SchoolDayOverride, SchoolDaySchedule
 
@@ -47,7 +48,8 @@ def school_days_range(family, start: datetime.date, days: int, people=None) -> d
 
     Un enfant absent du dictionnaire d'un jour n'a ni semaine type ni
     exception ce jour-là (rien à afficher). Une absence (vacances, malade)
-    remplace l'école ce jour-là (`SchoolDay.absence`).
+    remplace l'école ce jour-là (`SchoolDay.absence`) si elle dispense d'école.
+    Pendant les vacances scolaires, la semaine type ne s'applique pas.
     """
     end = start + datetime.timedelta(days=days)
     weekly = SchoolDaySchedule.objects.for_family(family)
@@ -58,10 +60,17 @@ def school_days_range(family, start: datetime.date, days: int, people=None) -> d
     by_weekday = {}
     for row in weekly:
         by_weekday.setdefault(row.weekday, {})[row.person_id] = _from(row, False)
+    # Vacances scolaires : la semaine type ne s'applique pas (une exception datée, si).
+    holidays = list(
+        SchoolHoliday.objects.for_family(family)
+        .filter(start_date__lt=end, end_date__gte=start)
+        .values_list("start_date", "end_date")
+    )
     result = {}
     for offset in range(days):
         day = start + datetime.timedelta(days=offset)
-        result[day] = dict(by_weekday.get(day.weekday(), {}))
+        on_holiday = any(first <= day <= last for first, last in holidays)
+        result[day] = {} if on_holiday else dict(by_weekday.get(day.weekday(), {}))
     for row in overrides:
         result[row.date][row.person_id] = _from(row, True)
     # Absence (vacances, malade) : remplace l'école de la personne ce jour-là.
@@ -73,7 +82,7 @@ def school_days_range(family, start: datetime.date, days: int, people=None) -> d
         targets = ids if ids is not None else set(result[day]) | set(absent.people)
         for person_id in targets:
             absence = absent.for_person(person_id)
-            if absence:
+            if absence and absence.misses_school:
                 result[day][person_id] = SchoolDay(
                     Lunch.NONE, "", False, True, absence.label, absence.kind
                 )

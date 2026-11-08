@@ -178,3 +178,32 @@ class AbsenceManageTests(AbsenceFixture, SecureClientMixin, TestCase):
         self.assertEqual(self.post(reverse("absences:delete", args=[foreign.pk])).status_code, 404)
         self.assertEqual(Absence.objects.count(), 2)
         self.assertNotContains(self.get(self.URL), "Toute la famille · Malade")
+
+
+class AbsenceFormEffectsTests(AbsenceFixture, SecureClientMixin, TestCase):
+    URL = reverse("absences:manage")
+
+    def test_effects_are_saved_as_chosen(self):
+        self.client.force_login(self.parent)
+        self.post(
+            self.URL,
+            {
+                "scope": "people",
+                "people": [self.lina.pk],
+                "kind": "sick",
+                "start_date": "2026-09-28",
+                "end_date": "2026-09-28",
+                "skips_tasks": "on",
+                "eats_at_home": "on",
+            },
+        )
+        absence = Absence.objects.get()
+        self.assertTrue(absence.skips_tasks)
+        self.assertFalse(absence.misses_school)
+        self.assertTrue(absence.eats_at_home)
+
+    def test_form_prefills_effects_from_the_default_reason(self):
+        self.client.force_login(self.parent)
+        page = self.get(self.URL).content.decode()
+        self.assertRegex(page, r'data-effect="eats_at_home"[^>]*checked')
+        self.assertIn('x-data="absenceEffects"', page)

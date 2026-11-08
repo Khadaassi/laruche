@@ -6,7 +6,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.families.access import parent_required
 
-from .forms import AbsenceForm
+from .forms import AbsenceForm, kind_effects_json
 from .models import Absence
 
 
@@ -25,6 +25,7 @@ def manage(request):
         {
             "nav_active": "settings",
             "form": form,
+            "kind_effects": kind_effects_json(),
             "current": absences.filter(end_date__gte=today),
             "past": absences.filter(end_date__lt=today).order_by("-start_date")[:10],
             "today": today,
