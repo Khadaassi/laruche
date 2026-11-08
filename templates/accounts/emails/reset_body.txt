@@ -1,0 +1,11 @@
+{% autoescape off %}Bonjour,
+
+Vous avez demandé à changer le mot de passe de votre compte La Ruche.
+Ouvrez ce lien pour en choisir un nouveau (valable 24 heures, une seule fois) :
+
+{{ protocol }}://{{ domain }}{% url 'accounts:password_reset' uidb64=uid token=token %}
+
+Vous n'avez rien demandé ? Ignorez ce message : votre mot de passe ne change pas.
+
+La Ruche
+{% endautoescape %}

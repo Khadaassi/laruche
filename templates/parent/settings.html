@@ -63,7 +63,7 @@
               </div>
               {% for error in form.login_name.errors %}<p class="mt-1 text-sm font-medium text-terracotta" role="alert">{{ error }}</p>{% endfor %}
             </form>
-            {% if account.pk != request.user.pk %}
+            {% if account.pk != request.user.pk and membership.role != "parent" %}
               <form method="post" action="{% url 'families:reset_link' account.pk %}" class="mt-space-2">
                 {% csrf_token %}
                 <button type="submit" class="text-sm font-medium underline">Mot de passe oublié ? Créer un lien de réinitialisation</button>

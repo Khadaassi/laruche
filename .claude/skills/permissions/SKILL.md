@@ -225,11 +225,20 @@ un compte enfant y accède aussi, avec sa seule colonne cochable (voir §2).
 - [ ] Les tests d'accès inter-familles et de rôle existent.
 
 
-## Mot de passe oublié (sans e-mail)
+## Mot de passe oublié
 
-- Un **parent** crée, depuis Réglages → Comptes et identifiants, un **lien de
-  réinitialisation** pour un **autre** compte de **sa** famille (`families:reset_link`,
-  POST ; soi-même ou autre famille → 404 ; enfant → refusé). Jeton Django standard :
-  usage unique (invalide dès que le mot de passe change), 24 h (`PASSWORD_RESET_TIMEOUT`).
-  Le lien n'est affiché qu'une fois, jamais stocké.
+- **Enfants et tablette** : un **parent** crée, depuis Réglages → Comptes et identifiants,
+  un **lien de réinitialisation** pour un compte **enfant ou écran partagé** de **sa**
+  famille (`families:reset_link`, POST ; soi-même, **un autre parent** ou autre famille →
+  404 ; enfant → refusé). Jamais pour un parent : sinon un parent pourrait prendre le
+  compte de l'autre et voir ses objectifs privés. Jeton Django standard : usage unique
+  (invalide dès que le mot de passe change), 24 h (`PASSWORD_RESET_TIMEOUT`). Le lien
+  n'est affiché qu'une fois, jamais stocké.
+- **Parents** : `accounts:forgot_password` (`/mot-de-passe-oublie/`, public) envoie le même
+  lien **par e-mail**, seulement à un compte **parent** actif de cette adresse
+  (`ParentPasswordResetForm`). Réponse identique que l'adresse existe ou non. Chaque
+  demande compte dans `FORGOT_PASSWORD` (5/h par IP, 3/h par adresse, 50/h au total).
+  Envoi par l'API HTTPS de Brevo (`apps/core/email.py`, le SMTP est bloqué sur Render
+  gratuit) ; sans `BREVO_API_KEY`, `EMAIL_ENABLED` est faux et la page dit que l'e-mail
+  n'est pas configuré (rien n'est promis).
 - Chacun change son propre mot de passe : `accounts:password_change` (ancien + nouveau).

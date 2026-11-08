@@ -122,6 +122,20 @@ CRON_TOKEN = os.environ.get("CRON_TOKEN", "")
 # Envoi des notifications en attente dans la requête plutôt qu'en tâche de fond (tests).
 PUSH_INLINE = env_bool("PUSH_INLINE", default=False)
 
+# --- E-mails (réinitialisation du mot de passe des parents) -----------------------
+# Render gratuit bloque le SMTP : envoi par l'API HTTPS de Brevo (apps/core/email.py).
+# Sans clé : rien n'est envoyé, l'interface indique que l'e-mail n'est pas configuré
+# (en DEBUG, les e-mails s'affichent dans la console).
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "La Ruche <noreply@localhost>")
+if BREVO_API_KEY:
+    EMAIL_BACKEND = "apps.core.email.BrevoEmailBackend"
+elif DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
+EMAIL_ENABLED = bool(BREVO_API_KEY) or DEBUG
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -181,7 +195,8 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 # Parcours navigateur (Playwright) exclus par défaut : `manage.py test --tag browser`.
 TEST_RUNNER = "apps.core.test_runner.LaRucheRunner"
 
-# Lien de réinitialisation créé par un parent : valable 24 h, usage unique.
+# Lien de réinitialisation (créé par un parent pour un enfant, ou reçu par e-mail par un
+# parent) : valable 24 h, usage unique.
 PASSWORD_RESET_TIMEOUT = 24 * 3600
 
 AUTH_PASSWORD_VALIDATORS = [
