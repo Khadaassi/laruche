@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from decimal import ROUND_CEILING, Decimal
 
 from django.db import transaction
+from django.utils import timezone
 
 from apps.families.models import Family, Person
 from apps.meals.models import MealKind, MealSlot, RecipeIngredient
@@ -233,8 +234,10 @@ def apply_transfer(family, monday: datetime.date, decisions: dict) -> TransferPl
         to_update.append(item)
     for item, _ in plan.conflicts:
         if decisions[item.pk] == REBUY:
-            item.status = Status.TO_BUY
-    ShoppingItem.objects.bulk_update(to_update, ["quantity", "unit", "recipes", "status"])
+            item.status, item.status_changed_at = Status.TO_BUY, timezone.now()
+    ShoppingItem.objects.bulk_update(
+        to_update, ["quantity", "unit", "recipes", "status", "status_changed_at"]
+    )
     ShoppingItem.objects.filter(pk__in=[item.pk for item in plan.removed]).delete()
     ShoppingTransfer.objects.update_or_create(family=family, defaults={"week": monday})
     return plan
@@ -243,6 +246,6 @@ def apply_transfer(family, monday: datetime.date, decisions: dict) -> TransferPl
 def clear_bought(family) -> int:
     """Retire les articles achetés ; les produits habituels repassent « à acheter »."""
     bought = ShoppingItem.objects.for_family(family).filter(status=Status.BOUGHT)
-    bought.filter(recurring=True).update(status=Status.TO_BUY)
+    bought.filter(recurring=True).update(status=Status.TO_BUY, status_changed_at=timezone.now())
     deleted, _ = bought.filter(recurring=False).delete()
     return deleted

@@ -5,5 +5,7 @@
     <p class="font-display text-2xl font-semibold">Pas de connexion</p>
     <p class="mt-space-2 text-ink-soft">La Ruche a besoin d'internet pour afficher les tâches de la famille. Vérifiez le Wi-Fi, puis réessayez.</p>
     <a href="/" class="mt-space-6 inline-flex min-h-11 items-center rounded-lg bg-honey px-space-6 font-medium text-ink hover:bg-honey-dark">Réessayer</a>
+    <p class="mt-space-6 text-ink-soft">Au magasin ? La liste de courses reste disponible sans réseau.</p>
+    <a href="{% url 'shopping:store' %}" class="mt-space-2 inline-flex min-h-11 items-center font-medium text-ink underline">Ouvrir la liste « En magasin »</a>
   </div>
 {% endblock %}

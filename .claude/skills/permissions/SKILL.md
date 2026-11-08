@@ -242,3 +242,11 @@ un compte enfant y accède aussi, avec sa seule colonne cochable (voir §2).
   gratuit) ; sans `BREVO_API_KEY`, `EMAIL_ENABLED` est faux et la page dit que l'e-mail
   n'est pas configuré (rien n'est promis).
 - Chacun change son propre mot de passe : `accounts:password_change` (ancien + nouveau).
+
+## Synchronisation des courses (`shopping:sync`)
+
+- Parents seulement (`parent_required`), JSON même origine, CSRF exigé (jeton envoyé en
+  `X-CSRFToken`, jamais lu dans `document.cookie`). Chaque identifiant reçu est cherché
+  dans `ShoppingItem.objects.for_family(request.family)` : un article d'une autre famille
+  est ignoré, jamais modifié ni révélé. Au plus 500 changements par envoi.
+

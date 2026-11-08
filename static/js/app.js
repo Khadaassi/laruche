@@ -256,6 +256,123 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
+  // En magasin : cochages enregistrés tout de suite si possible, sinon gardés sur le
+  // téléphone (localStorage) et envoyés au retour du réseau. Le plus récent gagne
+  // côté serveur ; l'écran reprend ensuite l'état du serveur (cochages de l'autre parent).
+  Alpine.data('storeSync', () => ({
+    syncUrl: '',
+    generatedAt: '',
+    pending: [],
+    offline: false,
+    hasNewItems: false,
+    sending: false,
+    csrf: '',
+    get banner() {
+      const count = this.pending.length;
+      if (this.offline) {
+        return count
+          ? `Hors connexion : ${count} cochage${count > 1 ? 's' : ''} gardé${count > 1 ? 's' : ''} sur ce téléphone, envoyé${count > 1 ? 's' : ''} au retour du réseau.`
+          : 'Hors connexion : vous pouvez cocher, rien ne sera perdu.';
+      }
+      if (this.hasNewItems) return "La liste a changé depuis l'ouverture de cette page.";
+      return '';
+    },
+    get savedAt() { return this.generatedAt ? `Liste enregistrée ${this.generatedAt}.` : ''; },
+    init() {
+      this.syncUrl = this.$el.dataset.syncUrl;
+      this.generatedAt = this.$el.dataset.generatedAt || '';
+      try { this.csrf = JSON.parse(document.body.getAttribute('hx-headers') || '{}')['X-CSRFToken'] || ''; } catch (error) { this.csrf = ''; }
+      this.pending = this.load();
+      this.offline = !navigator.onLine;
+      this.applyPending();
+      window.addEventListener('online', () => { this.offline = false; this.flush(); });
+      window.addEventListener('offline', () => { this.offline = true; });
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) this.flush(); });
+      this.flush();
+    },
+    load() {
+      try { return JSON.parse(localStorage.getItem('laruche-store-pending') || '[]'); } catch (error) { return []; }
+    },
+    save() {
+      try { localStorage.setItem('laruche-store-pending', JSON.stringify(this.pending)); } catch (error) { /* stockage indisponible : en mémoire seulement */ }
+    },
+    box(id) { return this.$root.querySelector(`[data-item="${id}"]`); },
+    applyPending() {
+      this.pending.forEach((change) => { const box = this.box(change.id); if (box) box.checked = change.done; });
+    },
+    toggle(event) {
+      const id = event.target.dataset && event.target.dataset.item;
+      if (!id) return;
+      this.pending = this.pending.filter((change) => change.id !== Number(id));
+      this.pending.push({ id: Number(id), done: event.target.checked, at: new Date().toISOString() });
+      this.save();
+      this.flush();
+    },
+    async refreshToken() {
+      const response = await fetch(this.syncUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(String(response.status));
+      const data = await response.json();
+      this.csrf = data.csrf;
+      return data;
+    },
+    async post(changes) {
+      return fetch(this.syncUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRFToken': this.csrf },
+        body: JSON.stringify({ changes }),
+      });
+    },
+    async flush() {
+      if (this.sending) return;
+      this.sending = true;
+      const sent = this.pending.slice();
+      try {
+        let response = await this.post(sent);
+        if (response.status === 403) {
+          await this.refreshToken(); // page gardée hors connexion : jeton CSRF périmé
+          response = await this.post(sent);
+        }
+        if (response.redirected || !response.ok) throw new Error(String(response.status));
+        const data = await response.json();
+        this.pending = this.pending.filter((change) => !sent.includes(change));
+        this.save();
+        this.offline = false;
+        this.show(data.items || {});
+      } catch (error) {
+        this.offline = true;
+      } finally {
+        this.sending = false;
+      }
+      // Cochés pendant l'envoi : on les envoie à leur tour.
+      if (!this.offline && this.pending.some((change) => !sent.includes(change))) this.flush();
+    },
+    show(states) {
+      const ids = new Set(Object.keys(states));
+      this.$root.querySelectorAll('[data-item]').forEach((box) => {
+        const id = box.dataset.item;
+        const row = box.closest('[data-row]');
+        if (!ids.has(id)) { if (row) row.classList.add('hidden'); return; } // retiré par l'autre parent
+        const local = this.pending.find((change) => String(change.id) === id);
+        box.checked = local ? local.done : states[id];
+      });
+      const shown = new Set([...this.$root.querySelectorAll('[data-item]')].map((box) => box.dataset.item));
+      this.hasNewItems = [...ids].some((id) => !shown.has(id) && !states[id]);
+    },
+    reload() { window.location.reload(); },
+  }));
+
+  // Liste de courses : garde une copie fraîche de la page « En magasin » pour l'ouvrir
+  // sans réseau (le service worker la met en cache au passage).
+  Alpine.data('warmStore', () => ({
+    init() {
+      const url = this.$el.dataset.storeUrl;
+      if (url && navigator.onLine && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        setTimeout(() => { fetch(url, { credentials: 'same-origin' }).catch(() => {}); }, 1500);
+      }
+    },
+  }));
+
   // Saisie rapide (bouton « + ») : onglet choisi et texte d'exemple adapté.
   Alpine.data('quickAdd', () => ({
     kind: 'course',

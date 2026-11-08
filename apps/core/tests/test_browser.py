@@ -4,8 +4,8 @@ Lancés à part (`manage.py test --tag browser`, job CI « Browser tests ») : i
 de Chromium et des fichiers statiques construits (`npm run build`). En local :
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/chemin/vers/chrome` pour utiliser un Chrome installé.
 
-Cinq parcours (revue externe) : connexion, activation de la tablette, cochage, transfert
-du menu vers les courses, coupure réseau pendant un cochage.
+Parcours : connexion, activation de la tablette, cochage, transfert du menu vers les
+courses, coupure réseau pendant un cochage, saisie rapide, courses en magasin sans réseau.
 """
 
 import datetime
@@ -178,3 +178,38 @@ class BrowserJourneyTests(StaticLiveServerTestCase):
         self.page.get_by_label("Ajout rapide").click()
         self.page.get_by_role("tab", name="Rendez-vous").click()
         self.page.locator("input[name=time]").wait_for(state="visible")
+
+    # --- 7. En magasin sans réseau --------------------------------------------
+
+    def test_store_list_works_offline_and_syncs_later(self):
+        milk = ShoppingItem.objects.create(family=self.family, name="Lait")
+        bread = ShoppingItem.objects.create(family=self.family, name="Pain")
+        self.login()
+        self.page.goto("/courses/magasin/")
+        # Le service worker prend la main, puis garde une copie de la page.
+        self.page.evaluate("navigator.serviceWorker.ready")
+        self.page.reload()
+        self.page.locator("[data-item]").first.wait_for()
+        self.context.set_offline(True)
+        self.page.reload()  # servie par la copie du service worker
+        self.page.locator(f'[data-item="{milk.pk}"]').check()
+        self.page.get_by_text("1 cochage gardé sur ce téléphone").wait_for(state="visible")
+        self.page.reload()  # toujours hors connexion : le cochage est conservé
+        self.assertTrue(self.page.locator(f'[data-item="{milk.pk}"]').is_checked())
+        milk.refresh_from_db()
+        self.assertEqual(milk.status, "to_buy")
+        with self.page.expect_response(lambda r: "/synchroniser/" in r.url and r.ok):
+            self.context.set_offline(False)
+            self.page.evaluate("window.dispatchEvent(new Event('online'))")
+        self.page.get_by_text("1 cochage gardé").wait_for(state="hidden")
+        milk.refresh_from_db()
+        bread.refresh_from_db()
+        self.assertEqual((milk.status, bread.status), ("bought", "to_buy"))
+        # Arrivée sur la page de connexion (déconnexion) : la copie privée est effacée.
+        self.context.clear_cookies()
+        self.page.goto("/connexion/")
+        self.page.wait_for_function("caches.keys().then(keys => !keys.includes('laruche-private'))")
+        self.context.set_offline(True)
+        self.page.goto("/courses/magasin/")
+        self.assertTrue(self.page.get_by_text("Pas de connexion").is_visible())
+        self.context.set_offline(False)

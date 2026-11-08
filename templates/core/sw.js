@@ -1,10 +1,16 @@
 // Service worker de La Ruche (servi par Django à /sw.js).
 // - Fichiers statiques : cache d'abord (ils sont versionnés par WhiteNoise).
 // - Pages : toujours le réseau ; hors connexion, page « Hors connexion ».
-//   Les pages ne sont JAMAIS mises en cache (données privées de la famille).
+//   Les pages ne sont pas mises en cache (données privées de la famille), SAUF la
+//   page « En magasin » (STORE_URL) : réseau d'abord, dernière copie si le réseau
+//   manque, pour cocher sans réseau au magasin. Cette copie (cache PRIVATE) est
+//   effacée dès qu'on arrive sur la page de connexion (déconnexion, session expirée).
 // - Notifications push : affichage et ouverture de la bonne page.
-const VERSION = 'laruche-v1';
+const VERSION = 'laruche-v2';
+const PRIVATE = 'laruche-private';
 const OFFLINE_URL = '{{ offline_url }}';
+const STORE_URL = '{{ store_url }}';
+const LOGIN_URL = '{{ login_url }}';
 const PRECACHE = [OFFLINE_URL, '{{ app_css }}'];
 
 self.addEventListener('install', (event) => {
@@ -14,7 +20,7 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)))),
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== PRIVATE).map((k) => caches.delete(k)))),
   );
   self.clients.claim();
 });
@@ -36,10 +42,33 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+  if (url.pathname === STORE_URL) {
+    event.respondWith(storePage(request));
+    return;
+  }
   if (request.mode === 'navigate') {
+    if (url.pathname === LOGIN_URL) event.waitUntil(caches.delete(PRIVATE));
     event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
   }
 });
+
+// Page « En magasin » : réseau d'abord ; copie gardée seulement si c'est bien la page
+// (pas une redirection vers la connexion) ; sans réseau, la dernière copie.
+async function storePage(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok && !response.redirected) {
+      const cache = await caches.open(PRIVATE);
+      await cache.put(STORE_URL, response.clone());
+    } else if (response.redirected) {
+      await caches.delete(PRIVATE);
+    }
+    return response;
+  } catch (error) {
+    const copy = await caches.match(STORE_URL, { cacheName: PRIVATE });
+    return copy || (request.mode === 'navigate' ? caches.match(OFFLINE_URL) : Response.error());
+  }
+}
 
 self.addEventListener('push', (event) => {
   let data = {};

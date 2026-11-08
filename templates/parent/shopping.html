@@ -6,6 +6,7 @@
 {% block content %}
   {% include "parent/_kitchen_tabs.html" %}
   {% if to_buy_count %}
+    <div x-data="warmStore" data-store-url="{% url 'shopping:store' %}"></div>
     <a href="{% url 'shopping:store' %}" class="mb-space-4 flex min-h-12 items-center justify-center gap-space-2 rounded-lg bg-ink px-space-6 font-medium text-surface-0">
       {% include "components/_icon.html" with name="shopping" icon_size="h-5 w-5" %}En magasin : la liste par rayon ({{ to_buy_count }})
     </a>
