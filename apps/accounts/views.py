@@ -1,3 +1,6 @@
+import logging
+
+from django.conf import settings
 from django.contrib.auth import login
 from django.contrib.auth.views import LoginView, PasswordChangeView, PasswordResetConfirmView
 from django.db import transaction
@@ -7,13 +10,14 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView
 
-from apps.core.ratelimit import BLOCKED_MESSAGE, JOIN_FAMILY, LOGIN
+from apps.core.ratelimit import BLOCKED_MESSAGE, FORGOT_PASSWORD, JOIN_FAMILY, LOGIN
 from apps.families.services import create_family, join_family
 
 from .forms import (
     MODE_CREATE,
     MODE_JOIN,
     LoginForm,
+    ParentPasswordResetForm,
     SignupForm,
     StyledPasswordChangeForm,
     StyledSetPasswordForm,
@@ -22,6 +26,8 @@ from .forms import (
 from .models import User
 
 TOO_MANY_REQUESTS = 429
+
+logger = logging.getLogger(__name__)
 
 
 class EmailLoginView(LoginView):
@@ -110,3 +116,39 @@ class ChangePasswordView(PasswordChangeView):
     template_name = "accounts/password_change.html"
     form_class = StyledPasswordChangeForm
     success_url = reverse_lazy("families:settings")
+
+
+@require_http_methods(["GET", "POST"])
+def forgot_password(request):
+    """« Mot de passe oublié » d'un parent : lien de réinitialisation par e-mail.
+
+    Même réponse que l'adresse corresponde à un compte parent ou non. Chaque demande
+    compte dans la limite (elle peut envoyer un e-mail). Sans service d'e-mail
+    configuré, la page le dit (aucune promesse d'envoi).
+    """
+    if request.user.is_authenticated:
+        return redirect("accounts:password_change")
+    form = ParentPasswordResetForm(request.POST or None)
+    context = {"form": form, "email_enabled": settings.EMAIL_ENABLED}
+    if request.method == "POST" and settings.EMAIL_ENABLED:
+        target = request.POST.get("email", "")
+        if FORGOT_PASSWORD.is_blocked(request, target=target):
+            context["blocked"] = BLOCKED_MESSAGE
+            return render(request, "accounts/forgot_password.html", context, status=429)
+        FORGOT_PASSWORD.record_failure(request, target=target)
+        if form.is_valid():
+            try:
+                form.save(
+                    request=request,
+                    use_https=request.is_secure(),
+                    subject_template_name="accounts/emails/reset_subject.txt",
+                    email_template_name="accounts/emails/reset_body.txt",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                )
+            except Exception:  # noqa: BLE001 (service tiers : on n'expose rien)
+                logger.exception("E-mail de réinitialisation non envoyé")
+            return render(
+                request, "accounts/forgot_password_sent.html", {"email": form.cleaned_data["email"]}
+            )
+    status = 400 if form.is_bound and form.errors else 200
+    return render(request, "accounts/forgot_password.html", context, status=status)

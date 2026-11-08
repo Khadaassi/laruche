@@ -200,14 +200,19 @@ def regenerate_code(request):
 @require_POST
 @parent_required
 def reset_link(request, user_pk):
-    """Lien de réinitialisation du mot de passe d'un autre membre (pas d'e-mail dans l'app).
+    """Lien de réinitialisation du mot de passe d'un compte **enfant ou tablette**.
 
-    Seulement pour un compte de la même famille, jamais pour soi-même (404 sinon). Le lien
+    Seulement pour un compte enfant ou écran partagé de la même famille (404 sinon) :
+    jamais pour un parent, qui récupère son compte lui-même par e-mail
+    (`accounts:forgot_password`) ; un parent ne peut donc pas prendre le compte de
+    l'autre ni voir ses objectifs privés. Le lien
     est à usage unique : il cesse de marcher dès que le mot de passe est changé, et expire
     après PASSWORD_RESET_TIMEOUT. Rien n'est enregistré : la page l'affiche une seule fois.
     """
     membership = get_object_or_404(
-        FamilyMembership.objects.filter(family=request.family).exclude(user=request.user),
+        FamilyMembership.objects.filter(family=request.family)
+        .exclude(user=request.user)
+        .exclude(role=Role.PARENT),
         user_id=user_pk,
     )
     user = membership.user

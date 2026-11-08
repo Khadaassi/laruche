@@ -11,6 +11,7 @@ urlpatterns = [
     path("inscription/", views.signup, name="signup"),
     # POST uniquement (Django 5) : pas de déconnexion par simple lien.
     path("deconnexion/", LogoutView.as_view(), name="logout"),
+    path("mot-de-passe-oublie/", views.forgot_password, name="forgot_password"),
     path(
         "mot-de-passe/<uidb64>/<token>/",
         views.ResetPasswordView.as_view(),

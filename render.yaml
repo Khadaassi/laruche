@@ -22,3 +22,8 @@ services:
       # Rappels programmés (notifications) : même valeur que le secret GitHub CRON_TOKEN.
       - key: CRON_TOKEN
         sync: false
+      # « Mot de passe oublié » des parents : clé API Brevo et expéditeur validé dans Brevo.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: DJANGO_DEFAULT_FROM_EMAIL
+        sync: false
