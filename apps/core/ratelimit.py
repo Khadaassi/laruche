@@ -70,4 +70,8 @@ JOIN_FAMILY = Guard("join-family", {"ip": "10/h", "global": "100/h"})
 # Sortie du mode tablette : par appareil (jeton) et par IP.
 EXIT_DISPLAY = Guard("exit-display", {"ip": "10/15m", "target": "5/15m"})
 
+# « Mot de passe oublié » : chaque demande compte (elle envoie un e-mail), par IP, par
+# adresse visée et au total, pour ne pas servir à inonder une boîte ni épuiser le quota.
+FORGOT_PASSWORD = Guard("forgot-password", {"ip": "5/h", "target": "3/h", "global": "50/h"})
+
 BLOCKED_MESSAGE = "Trop de tentatives. Réessayez dans quelques minutes."

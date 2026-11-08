@@ -1,8 +1,13 @@
 from django import forms
 from django.contrib.auth import password_validation
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, SetPasswordForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    PasswordResetForm,
+    SetPasswordForm,
+)
 
-from apps.families.models import Family, normalize_invite_code
+from apps.families.models import Family, Role, normalize_invite_code
 
 from .models import User, normalize_login_name
 
@@ -160,3 +165,27 @@ class StyledSetPasswordForm(StyledFormMixin, SetPasswordForm):
 
 class StyledPasswordChangeForm(StyledFormMixin, PasswordChangeForm):
     """Changer son propre mot de passe (ancien + nouveau)."""
+
+
+class ParentPasswordResetForm(PasswordResetForm):
+    """« Mot de passe oublié » par e-mail, réservé aux comptes **parents**.
+
+    Les comptes enfants et tablette passent par le lien qu'un parent crée dans les
+    réglages. Réponse identique que l'adresse existe ou non (pas d'énumération).
+    """
+
+    email = forms.EmailField(
+        label="Adresse e-mail du compte",
+        max_length=254,
+        widget=forms.EmailInput(attrs={"autocomplete": "email", "class": FIELD_CLASSES}),
+    )
+
+    def get_users(self, email):
+        email = normalize_email(email)
+        return (
+            user
+            for user in User.objects.filter(
+                email__iexact=email, is_active=True, membership__role=Role.PARENT
+            )
+            if user.has_usable_password()
+        )
