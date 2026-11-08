@@ -185,7 +185,7 @@ class AbsenceFormEffectsTests(AbsenceFixture, SecureClientMixin, TestCase):
 
     def test_effects_are_saved_as_chosen(self):
         self.client.force_login(self.parent)
-        self.client.post(
+        self.post(
             self.URL,
             {
                 "scope": "people",
@@ -204,6 +204,6 @@ class AbsenceFormEffectsTests(AbsenceFixture, SecureClientMixin, TestCase):
 
     def test_form_prefills_effects_from_the_default_reason(self):
         self.client.force_login(self.parent)
-        page = self.client.get(self.URL).content.decode()
+        page = self.get(self.URL).content.decode()
         self.assertRegex(page, r'data-effect="eats_at_home"[^>]*checked')
         self.assertIn('x-data="absenceEffects"', page)

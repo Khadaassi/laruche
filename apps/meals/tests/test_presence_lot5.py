@@ -138,14 +138,14 @@ class SuggestFromPresenceTests(Fixture, SecureClientMixin, TestCase):
     def test_preferences_endpoint_is_parent_only(self, _now):
         url = reverse("meals:preferences") + "?semaine=2026-11-16"
         self.client.force_login(self.parent)
-        self.client.post(url, {"adult_lunches": "on"})
+        self.post(url, {"adult_lunches": "on"})
         self.assertTrue(MealPreferences.for_family(self.family).adult_lunches)
-        self.client.post(url, {})
+        self.post(url, {})
         self.assertFalse(MealPreferences.for_family(self.family).adult_lunches)
         other = make_family()
         stranger = join(other, "Autre")
         self.client.force_login(stranger)
-        self.client.post(url, {"adult_lunches": "on"})
+        self.post(url, {"adult_lunches": "on"})
         self.assertFalse(MealPreferences.for_family(self.family).adult_lunches)
 
 
